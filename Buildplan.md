@@ -110,11 +110,11 @@
   - FK Klasse, Datum, Titel
   - **`art`**: `schulaufgabe` | `kleiner_ln` (Enum)
   - **`detailliert`**: Boolean – ob Aufgaben/Punkte einzeln erfasst werden oder nur Pauschalnote; bei `art=schulaufgabe` immer `True` (Constraint)
-  - Notenschluessel (JSON, optional bei `detailliert=False`)
   - Gewichtung (`0.5`|`1`|`2`)
+  - Kein konfigurierbarer Notenschlüssel – es gilt immer der **bayerische Abiturschlüssel** (fest eingebaut): 1 ≥ 85 %, 2 ≥ 70 %, 3 ≥ 55 %, 4 ≥ 40 %, 5 ≥ 20 %, 6 < 20 %
 - Modell `LeistungAufgabe` (M:N): verbindet `SchriftlicheLeistung` mit `Aufgabe`, Reihenfolge, Aufgabennummer (z.B. „1a")
 - Validierung:
-  - bei `detailliert=True` müssen Aufgaben + Notenschlüssel vorhanden sein
+  - bei `detailliert=True` müssen Aufgaben vorhanden sein
   - bei `detailliert=False` Pauschalnote-Eingabe pro Schüler in Phase 4
 - API: CRUD Aufgaben, CRUD Schriftliche Leistungen, Aufgabe-zu-Leistung zuordnen, Suche im Aufgabenpool
 
@@ -146,12 +146,18 @@
   - Bulk-Eingabe Punkte (für detaillierte LN: Matrix Schüler × Aufgabe)
   - Einzeleingabe Pauschalnote
 - Notenberechnung pro schriftlicher Leistung:
-  - Detailliert: Punktesumme → Note via Notenschlüssel
+  - Detailliert: Punktesumme / max_punkte → Prozent → Note via bayerischem Abiturschlüssel (fest, kein JSON-Feld nötig)
   - Pauschal: direkt eingegebene Note
 - Schnitte:
   - **Schnitt große LN** = gewichteter Ø aller `art=schulaufgabe`
   - **Schnitt kleine LN** = ein gemeinsamer gewichteter Ø aus allen `art=kleiner_ln` (detailliert + pauschal) **und** allen mündlichen Noten (jede Einzelnote mit ihrer eigenen Gewichtung)
   - **Gesamtschnitt** = `(2 × Ø große LN + Ø kleine LN) / 3`
+- **SA-Klassenauswertung** (`/schriftliche-leistungen/{id}/auswertung`):
+  - Matrix: Schüler × Aufgabe mit erreichten Punkten + Zeilensumme
+  - Berechnete Note + Prozent pro Schüler
+  - **Grenzfall-Flag** pro Schüler: `grenzfall=True` wenn Schüler ≤ 0,5 BE von der nächstbesseren Note entfernt ist (Berechnung: Schwellenpunkte_nächste_Note − erreichte_Punkte ≤ 0,5)
+  - Notenverteilung der Klasse: Anzahl + Prozent pro Note (1–6)
+  - Klassendurchschnitt der SA
 - Kompetenzprofil:
   - Aggregiert über *alle* detaillierten schriftlichen Leistungen (Schulaufgabe + detaillierter kleiner LN gleichermaßen)
   - Pauschal-LN fließen *nicht* ins Kompetenzprofil ein (nur in Schnitt)
@@ -159,9 +165,11 @@
 - Endpoints:
   - `/schueler/{id}/kompetenzprofil`
   - `/schueler/{id}/gesamtschnitt`
+  - `/schriftliche-leistungen/{id}/auswertung`
 
 **Akzeptanzkriterien:**
 - Schüler mit 2 SAs (detailliert) + 3 kleinen LN (1 detailliert, 2 pauschal) + 4 mündlichen Noten → alle drei Schnitte korrekt nach Handrechnung
+- Grenzfall-Erkennung korrekt: Schüler mit exakt 0,5 BE Abstand → markiert, 0,6 BE → nicht markiert
 - Kompetenzprofil zieht Daten aus SA *und* detailliertem kleinem LN, ignoriert pauschale
 - API liefert Metadaten zur Profil-Datenbasis
 - Edgecase: Schüler hat nur Pauschal-LN, keine Detail-Daten → Profil leer, aber Schnitt korrekt
@@ -186,6 +194,11 @@
   - Bei `detailliert=False`: einfaches Pauschalnoten-Eingabeformular pro Schüler (Liste)
   - Bei `detailliert=True`: Punkte-Matrix (Schüler × Aufgabe)
 - Aufgabenpool-Suche mit Live-Filter (HTMX)
+- **SA-Klassenübersicht** (eigene Seite pro SchriftlicheLeistung):
+  - Tabelle: Schüler (Zeilen) × Aufgaben (Spalten) mit Punkten, Summe, Prozent, Note
+  - Grenzfall-Schüler farblich hervorgehoben (z.B. gelber Hintergrund)
+  - Notenverteilung als Tabelle (Note | Anzahl | Prozent) + Klassendurchschnitt
+  - PDF-Button: druckt diese Seite als PDF (Phase 8)
 - Schüler-Dashboard:
   - Drei Schnitte separat (große LN, kleine LN, Gesamt)
   - Notenliste
@@ -267,14 +280,20 @@
 - WeasyPrint-Integration
 - Template 1: Aufgabenplan (Schülername, Datum, nummerierte Aufgabenliste mit Buch/Seite/Aufgabe, optional Lösungen separat)
 - Template 2: Kompetenzanalyse (Name, Datum, Schnitte, Kompetenzprofil als Balken/Radar, Begründungstext, Hinweis auf Datenbasis)
+- **Template 3: SA-Klassenauswertung** (Klasse, Datum, Titel der SA):
+  - Tabelle Schüler × Aufgabe mit Punkten, Summe, Prozent, Note
+  - Grenzfall-Schüler markiert (z.B. „⚠" in der Note-Spalte)
+  - Notenverteilung (Note | Anzahl | Prozent) + Klassendurchschnitt
 - API-Endpoints:
   - `/schueler/{id}/aufgabenplan.pdf`
   - `/schueler/{id}/analyse.pdf`
-- UI-Buttons auf Schüler-Dashboard
+  - `/schriftliche-leistungen/{id}/auswertung.pdf`
+- UI-Buttons auf Schüler-Dashboard und SA-Klassenübersicht
 
 **Akzeptanzkriterien:**
-- Beide PDFs werden korrekt generiert, enthalten alle geforderten Felder
+- Alle PDFs werden korrekt generiert, enthalten alle geforderten Felder
 - Umlaute, lange Aufgabenstellungen, mehrseitige Layouts funktionieren
+- Grenzfall-Markierung im SA-PDF korrekt
 - Snapshot-Test (PDF→Text-Extraktion, Vergleich Schlüsselfelder)
 
 **Deliverable:** Endpoints + Templates + Tests.
