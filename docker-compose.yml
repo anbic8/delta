@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     ports:
-      - "45:8000"
+      - "8045:8000"
     env_file: .env
     depends_on:
       db:
