@@ -7,8 +7,22 @@ from app.database import get_db
 from app.models.klasse import Klasse
 from app.models.schueler import Schueler
 from app.schemas.schueler import SchuelerCreate, SchuelerRead, SchuelerUpdate
+from app.schemas.schnitt import SchuelerSchnittRead
+from app.services import notenschnitt
 
 router = APIRouter(prefix="/schueler", tags=["Schüler"])
+
+
+@router.get("/{schueler_id}/schnitt", response_model=SchuelerSchnittRead)
+def get_schnitt(schueler_id: int, db: Session = Depends(get_db)):
+    if not db.get(Schueler, schueler_id):
+        raise HTTPException(status_code=404, detail="Schüler nicht gefunden")
+    return SchuelerSchnittRead(
+        schueler_id=schueler_id,
+        schnitt_kleine_ln=notenschnitt.schnitt_kleine_ln(schueler_id, db),
+        schnitt_grosse_ln=notenschnitt.schnitt_grosse_ln(schueler_id, db),
+        gesamtschnitt=notenschnitt.gesamtschnitt(schueler_id, db),
+    )
 
 
 @router.get("/{schueler_id}", response_model=SchuelerRead)

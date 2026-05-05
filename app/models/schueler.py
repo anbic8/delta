@@ -21,3 +21,4 @@ class Schueler(Base):
     geloescht_am: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
 
     klasse: Mapped["Klasse"] = relationship(back_populates="schueler")
+    muendliche_noten: Mapped[list["MuendlicheNote"]] = relationship(back_populates="schueler")
