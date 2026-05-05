@@ -25,6 +25,7 @@ class Klasse(Base):
 
     schuljahr: Mapped["Schuljahr"] = relationship(back_populates="klassen")
     schueler: Mapped[list["Schueler"]] = relationship(back_populates="klasse")
+    schriftliche_leistungen: Mapped[list["SchriftlicheLeistung"]] = relationship(back_populates="klasse")
 
     @property
     def name(self) -> str:
