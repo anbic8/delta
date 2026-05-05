@@ -34,7 +34,7 @@ docker compose down -v
 ## Health-Check
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:45/health
 # → {"status":"ok"}
 ```
 
