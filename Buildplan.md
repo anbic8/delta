@@ -219,6 +219,37 @@
 
 ---
 
+## Phase 5.1 – CSV-Import (Schüler + Punkte)
+
+**Ziel:** Schülerlisten und SA-Punkte per CSV einlesen statt manuell tippen.
+
+**Umfang:**
+
+### Import 1: Schüler-CSV
+- Endpoint: `POST /ui/klassen/{id}/schueler-import`
+- CSV-Format: `Nachname,Vorname` (Header optional, eine Zeile pro Schüler)
+- Idempotent: Schüler mit identischem Vor- + Nachname in derselben Klasse werden übersprungen (kein Duplikat)
+- UI: Datei-Upload-Formular auf der Klasse-Detailseite, Ergebnis-Meldung (X hinzugefügt, Y übersprungen)
+
+### Import 2: Punkte-CSV für eine SA
+- Endpoint: `POST /ui/schriftliche-leistungen/{id}/punkte-import`
+- CSV-Format: erste Spalte `Nachname`, zweite `Vorname`, dann eine Spalte pro Aufgabennummer (Kopfzeile = Aufgabennummer, z.B. `1a,1b,2,3`)
+- Matching: Schüler wird über `Nachname + Vorname` (case-insensitiv, Leerzeichen normalisiert) gesucht
+- Vorschau-Seite vor dem Speichern: zeigt Matching-Ergebnis (✓ gefunden / ⚠ nicht gefunden), keine Daten werden vor Bestätigung gespeichert
+- Aufgabennummern in der CSV müssen mit den `LeistungAufgabe.aufgabennummer`-Werten der SA übereinstimmen; unbekannte Spalten werden ignoriert
+
+**Akzeptanzkriterien:**
+- CSV mit 30 Schülern wird fehlerfrei importiert, Duplikate werden erkannt
+- Punkte-CSV für eine SA mit 5 Aufgaben und 25 Schülern: Vorschau zeigt alle Matches, Speichern übernimmt korrekte Werte
+- Schüler in CSV, die nicht in der Klasse gefunden werden: Warnung in Vorschau, kein Abbruch
+- Zweiter Import derselben Punkte-CSV überschreibt Werte (PUT-Semantik)
+
+**Deliverable:** UI-Formulare + Endpoints + Tests.
+
+**Nicht enthalten:** Export-Funktionen, Pseudonym-basiertes Matching.
+
+---
+
 ## Phase 6 – Buchaufgaben-Katalog
 
 **Ziel:** Importierten Buchaufgaben-Katalog verwalten, durchsuchbar machen.
