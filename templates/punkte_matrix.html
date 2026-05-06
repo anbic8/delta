@@ -13,7 +13,7 @@
 <p>Notensystem: <strong>{% if notensystem == 'sechserskala' %}Sechserskala{% else %}Punkte{% endif %}</strong>
    · Max. Punkte gesamt: <strong>{{ max_punkte_gesamt }}</strong></p>
 
-<p><small>Änderungen werden automatisch gespeichert (pro Zelle). Tab-Taste zum Navigieren.</small></p>
+<p><small>Punkte werden automatisch gespeichert sobald du eine Zelle verlässt (grüner Rand = gespeichert). Tab-Taste zum Navigieren.</small></p>
 
 <div style="overflow-x: auto;">
 <table>
@@ -37,6 +37,7 @@
         {% if val is not none %}{% set ns.summe = ns.summe + val %}{% else %}{% set ns.vollstaendig = false %}{% endif %}
         <td>
           <input type="number"
+                 name="punkte"
                  class="punkte-input"
                  step="0.5" min="0" max="{{ la.aufgabe.max_punkte }}"
                  value="{{ val if val is not none else '' }}"
@@ -44,7 +45,7 @@
                  hx-trigger="change"
                  hx-swap="none"
                  hx-vals='{"schueler_id": {{ s.id }}, "la_id": {{ la.id }}}'
-                 hx-on::after-request="this.classList.add('just-saved'); setTimeout(()=>this.classList.remove('just-saved'),1200)">
+                 hx-on:htmx:after-request="this.style.borderColor='#2d6a4f'; setTimeout(()=>this.style.borderColor='',1500)">
         </td>
       {% endfor %}
       <td id="summe-{{ s.id }}">
@@ -59,8 +60,11 @@
 </table>
 </div>
 
-<div style="margin-top:1.5rem; display:flex; gap:1rem;">
-  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button">📊 Auswertung anzeigen</a>
-  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline">← Zurück</a>
+<div style="margin-top:1.5rem; display:flex; gap:1rem; align-items:center;">
+  <button type="button" onclick="document.querySelectorAll('.punkte-input').forEach(el => { el.dispatchEvent(new Event('change')) })">
+    💾 Alle speichern
+  </button>
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button" class="outline">📊 Auswertung</a>
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline secondary">← Zurück</a>
 </div>
 {% endblock %}
