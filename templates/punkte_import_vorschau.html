@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}CSV-Vorschau – {{ leistung.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
+<h2>Punkte-Import – Vorschau</h2>
+
+{% if nicht_gefunden %}
+<div style="background:#fff3cd; padding:.75rem 1rem; border-radius:.5rem; margin-bottom:1rem;">
+  ⚠ <strong>{{ nicht_gefunden | length }} Schüler nicht gefunden</strong> (werden übersprungen):
+  {% for name in nicht_gefunden %}<em>{{ name }}</em>{% if not loop.last %}, {% endif %}{% endfor %}
+</div>
+{% endif %}
+
+{% if gematchte %}
+<p>{{ gematchte | length }} Schüler werden importiert. Bitte prüfen und bestätigen:</p>
+
+<form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte-import/bestaetigen">
+  <div style="overflow-x:auto; margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th>Schüler</th>
+        {% for la in aufgaben %}
+        <th>{{ la.aufgabennummer }}<br><small>max {{ la.aufgabe.max_punkte }}</small></th>
+        {% endfor %}
+        <th>Summe</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for eintrag in gematchte %}
+      {% set ns = namespace(summe=0) %}
+      <tr>
+        <td>{{ eintrag.schueler.nachname }}, {{ eintrag.schueler.vorname }}</td>
+        {% for la in aufgaben %}
+          {% set p = eintrag.punkte.get(la.aufgabennummer) %}
+          <td style="text-align:center;">
+            {% if p is not none %}
+              {{ p }}
+              <input type="hidden"
+                     name="s_{{ eintrag.schueler.id }}_{{ eintrag.la_ids.get(la.aufgabennummer) }}"
+                     value="{{ p }}">
+              {% set ns.summe = ns.summe + p %}
+            {% else %}
+              <span style="color:#adb5bd;">–</span>
+            {% endif %}
+          </td>
+        {% endfor %}
+        <td><strong>{{ ns.summe }}</strong></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <div style="display:flex; gap:1rem;">
+    <button type="submit">✅ Speichern</button>
+    <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline secondary">Abbrechen</a>
+  </div>
+</form>
+
+{% else %}
+<p>Keine Schüler aus der CSV konnten der Klasse zugeordnet werden.</p>
+<p><small>Prüfe ob Nachname und Vorname in der CSV mit den Schülerdaten übereinstimmen und ob die Kopfzeile die richtigen Aufgabennummern enthält
+  (erwartet: <code>Nachname,Vorname,{% for la in aufgaben %}{{ la.aufgabennummer }}{% if not loop.last %},{% endif %}{% endfor %}</code>).</small></p>
+<a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline">← Zurück</a>
+{% endif %}
+{% endblock %}

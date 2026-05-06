@@ -1,7 +1,10 @@
+import csv
+import io
 import math
+import unicodedata
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -447,3 +450,114 @@ async def aufgabe_kompetenzen_setzen(a_id: int, request: Request, db: Session = 
         db.add(AufgabeKompetenz(aufgabe_id=a_id, kompetenz_id=k_id, gewichtung=gew))
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a_id}?msg=Kompetenzen+gespeichert")
+
+
+# ── CSV-Import ────────────────────────────────────────────────
+
+def _normalize(s: str) -> str:
+    return unicodedata.normalize("NFC", s.strip().lower())
+
+
+@router.post("/klassen/{kl_id}/schueler-import")
+async def schueler_csv_import(kl_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    content = (await file.read()).decode("utf-8-sig")
+    reader = csv.reader(io.StringIO(content))
+    hinzugefuegt = uebersprungen = 0
+    for row in reader:
+        if len(row) < 2:
+            continue
+        nachname, vorname = row[0].strip(), row[1].strip()
+        if not nachname or not vorname:
+            continue
+        if _normalize(nachname) in ("nachname", "name", "familienname"):
+            continue
+        existing = db.query(Schueler).filter(
+            Schueler.klasse_id == kl_id,
+            Schueler.nachname.ilike(nachname),
+            Schueler.vorname.ilike(vorname),
+            Schueler.geloescht_am.is_(None),
+        ).first()
+        if existing:
+            uebersprungen += 1
+        else:
+            db.add(Schueler(vorname=vorname, nachname=nachname, klasse_id=kl_id))
+            hinzugefuegt += 1
+    db.commit()
+    msg = f"{hinzugefuegt}+Schüler+hinzugefügt"
+    if uebersprungen:
+        msg += f",+{uebersprungen}+übersprungen"
+    return REDIRECT(f"/ui/klassen/{kl_id}?msg={msg}")
+
+
+@router.post("/schriftliche-leistungen/{lid}/punkte-import")
+async def punkte_csv_import_vorschau(lid: int, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    leistung = db.get(SchriftlicheLeistung, lid)
+    if not leistung or not leistung.detailliert:
+        return REDIRECT(f"/ui/schriftliche-leistungen/{lid}")
+
+    las = sorted(leistung.leistung_aufgaben, key=lambda x: x.reihenfolge)
+    la_by_nr = {la.aufgabennummer.lower(): la for la in las}
+
+    content = (await file.read()).decode("utf-8-sig")
+    rows = list(csv.reader(io.StringIO(content)))
+    if not rows:
+        return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?err=Leere+CSV")
+
+    header = [c.strip().lower() for c in rows[0]]
+    aufgaben_cols = {i: la_by_nr[h] for i, h in enumerate(header) if h in la_by_nr}
+
+    schueler_liste = db.query(Schueler).filter(
+        Schueler.klasse_id == leistung.klasse_id, Schueler.geloescht_am.is_(None)
+    ).all()
+    schueler_by_name = {(_normalize(s.nachname), _normalize(s.vorname)): s for s in schueler_liste}
+
+    gematchte, nicht_gefunden = [], []
+    for row in rows[1:]:
+        if len(row) < 2 or not row[0].strip():
+            continue
+        nachname, vorname = row[0].strip(), row[1].strip()
+        schueler = schueler_by_name.get((_normalize(nachname), _normalize(vorname)))
+        punkte_row, la_ids_row = {}, {}
+        for col_idx, la in aufgaben_cols.items():
+            raw = row[col_idx].strip().replace(",", ".") if col_idx < len(row) else ""
+            try:
+                punkte_row[la.aufgabennummer] = float(raw) if raw else None
+            except ValueError:
+                punkte_row[la.aufgabennummer] = None
+            la_ids_row[la.aufgabennummer] = la.id
+        if schueler:
+            gematchte.append({"schueler": schueler, "punkte": punkte_row, "la_ids": la_ids_row})
+        else:
+            nicht_gefunden.append(f"{nachname}, {vorname}")
+
+    return templates.TemplateResponse("punkte_import_vorschau.html", {
+        "request": request, "leistung": leistung, "aufgaben": las,
+        "gematchte": gematchte, "nicht_gefunden": nicht_gefunden,
+    })
+
+
+@router.post("/schriftliche-leistungen/{lid}/punkte-import/bestaetigen")
+async def punkte_import_bestaetigen(lid: int, request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    count = 0
+    for key, val in form.items():
+        if not key.startswith("s_") or not val:
+            continue
+        parts = key.split("_")
+        if len(parts) != 3:
+            continue
+        try:
+            s_id, la_id, punkte = int(parts[1]), int(parts[2]), float(str(val).replace(",", "."))
+        except ValueError:
+            continue
+        existing = db.query(SchuelerErgebnis).filter(
+            SchuelerErgebnis.schueler_id == s_id,
+            SchuelerErgebnis.leistung_aufgabe_id == la_id,
+        ).first()
+        if existing:
+            existing.erreichte_punkte = punkte
+        else:
+            db.add(SchuelerErgebnis(schueler_id=s_id, leistung_aufgabe_id=la_id, erreichte_punkte=punkte))
+        count += 1
+    db.commit()
+    return REDIRECT(f"/ui/schriftliche-leistungen/{lid}/auswertung?msg={count}+Einträge+importiert")

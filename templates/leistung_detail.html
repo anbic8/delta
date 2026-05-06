@@ -76,6 +76,17 @@
         {% if leistung_aufgaben %}
         <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte" role="button">✏️ Punkte eintragen</a>
         <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button" class="outline">📊 Klassenauswertung</a>
+        <details style="margin-top:.25rem;">
+          <summary>📥 Punkte per CSV importieren</summary>
+          <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte-import"
+                enctype="multipart/form-data" style="margin-top:.75rem;">
+            <label>CSV-Datei
+              <input type="file" name="file" accept=".csv,.txt" required>
+            </label>
+            <small class="hint">Format: Nachname,Vorname,{{ leistung_aufgaben | map(attribute='aufgabennummer') | join(',') }}</small>
+            <button type="submit" style="margin-top:.5rem;">Vorschau</button>
+          </form>
+        </details>
         {% else %}
         <p><em>Zuerst Aufgaben zuordnen.</em></p>
         {% endif %}
