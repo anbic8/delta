@@ -7,7 +7,10 @@ from app.database import get_db
 from app.models.klasse import Klasse
 from app.models.schueler import Schueler
 from app.schemas.schueler import SchuelerCreate, SchuelerRead, SchuelerUpdate
+from app.models.kompetenz import Kompetenz
 from app.schemas.schnitt import SchuelerSchnittRead
+from app.schemas.schueler_ergebnis import KompetenzprofilRead, KompetenzScore
+from app.services import kompetenzprofil as kp_service
 from app.services import notenschnitt
 
 router = APIRouter(prefix="/schueler", tags=["Schüler"])
@@ -23,6 +26,21 @@ def get_schnitt(schueler_id: int, db: Session = Depends(get_db)):
         schnitt_grosse_ln=notenschnitt.schnitt_grosse_ln(schueler_id, db),
         gesamtschnitt=notenschnitt.gesamtschnitt(schueler_id, db),
     )
+
+
+@router.get("/{schueler_id}/kompetenzprofil", response_model=KompetenzprofilRead)
+def get_kompetenzprofil(schueler_id: int, db: Session = Depends(get_db)):
+    if not db.get(Schueler, schueler_id):
+        raise HTTPException(status_code=404, detail="Schüler nicht gefunden")
+    profil = kp_service.berechne_profil(schueler_id, db)
+    meta = kp_service.metadaten(schueler_id, db)
+    scores = []
+    for k_id, prozent in profil.items():
+        k = db.get(Kompetenz, k_id)
+        if k:
+            scores.append(KompetenzScore(kompetenz_id=k_id, kuerzel=k.kuerzel, bezeichnung=k.bezeichnung, prozent=prozent))
+    scores.sort(key=lambda s: s.kuerzel)
+    return KompetenzprofilRead(schueler_id=schueler_id, scores=scores, **meta)
 
 
 @router.get("/{schueler_id}", response_model=SchuelerRead)

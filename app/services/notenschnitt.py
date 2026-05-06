@@ -21,8 +21,39 @@ def _muendliche_noten(schueler_id: int, db: Session) -> list[tuple[float, float]
     return [(r.note, r.gewichtung) for r in rows]
 
 
-# Phase 4: weitere Quellen (kleine schriftliche LN) hier einhängen
-_KLEINE_LN_QUELLEN: list[NoteQuelle] = [_muendliche_noten]
+def _schriftliche_noten_fuer_art(schueler_id: int, art, db: Session) -> list[tuple[float, float]]:
+    from app.models.schueler import Schueler
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    from app.services.notenberechnung import note_fuer_schriftliche_leistung
+
+    schueler = db.get(Schueler, schueler_id)
+    if not schueler:
+        return []
+    leistungen = (
+        db.query(SchriftlicheLeistung)
+        .filter(SchriftlicheLeistung.klasse_id == schueler.klasse_id, SchriftlicheLeistung.art == art)
+        .all()
+    )
+    result = []
+    for leistung in leistungen:
+        note = note_fuer_schriftliche_leistung(schueler_id, leistung.id, db)
+        if note is not None:
+            result.append((note, leistung.gewichtung))
+    return result
+
+
+def _schriftliche_kleine_ln(schueler_id: int, db: Session) -> list[tuple[float, float]]:
+    from app.models.schriftliche_leistung import LeistungArt
+    return _schriftliche_noten_fuer_art(schueler_id, LeistungArt.kleiner_ln, db)
+
+
+def _schriftliche_grosse_ln(schueler_id: int, db: Session) -> list[tuple[float, float]]:
+    from app.models.schriftliche_leistung import LeistungArt
+    return _schriftliche_noten_fuer_art(schueler_id, LeistungArt.schulaufgabe, db)
+
+
+# Phase 4: schriftliche kleine LN als zweite Quelle eingehängt
+_KLEINE_LN_QUELLEN: list[NoteQuelle] = [_muendliche_noten, _schriftliche_kleine_ln]
 
 
 def schnitt_kleine_ln(schueler_id: int, db: Session) -> float | None:
@@ -33,8 +64,7 @@ def schnitt_kleine_ln(schueler_id: int, db: Session) -> float | None:
 
 
 def schnitt_grosse_ln(schueler_id: int, db: Session) -> float | None:
-    # Phase 4
-    return None
+    return berechne_gewichteten_schnitt(_schriftliche_grosse_ln(schueler_id, db))
 
 
 def gesamtschnitt(schueler_id: int, db: Session) -> float | None:

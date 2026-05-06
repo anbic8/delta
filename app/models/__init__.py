@@ -5,9 +5,11 @@ from app.models.muendliche_note import MuendlicheNote
 from app.models.kompetenz import Kompetenz
 from app.models.aufgabe import Aufgabe, AufgabeKompetenz, AfbNiveau
 from app.models.schriftliche_leistung import SchriftlicheLeistung, LeistungAufgabe, LeistungArt
+from app.models.schueler_ergebnis import SchuelerErgebnis
 
 __all__ = [
     "Schuljahr", "Klasse", "Notensystem", "Schueler", "MuendlicheNote",
     "Kompetenz", "Aufgabe", "AufgabeKompetenz", "AfbNiveau",
     "SchriftlicheLeistung", "LeistungAufgabe", "LeistungArt",
+    "SchuelerErgebnis",
 ]

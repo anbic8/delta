@@ -22,3 +22,4 @@ class Schueler(Base):
 
     klasse: Mapped["Klasse"] = relationship(back_populates="schueler")
     muendliche_noten: Mapped[list["MuendlicheNote"]] = relationship(back_populates="schueler")
+    ergebnisse: Mapped[list["SchuelerErgebnis"]] = relationship(back_populates="schueler")
