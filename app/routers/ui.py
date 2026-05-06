@@ -460,7 +460,7 @@ def _normalize(s: str) -> str:
 @router.post("/klassen/{kl_id}/schueler-import")
 async def schueler_csv_import(kl_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     raw = await file.read()
-    content = raw[3:].decode("utf-8") if raw.startswith(b"\xef\xbb\xbf") else raw.decode("utf-8", errors="replace")
+    content = raw.decode("utf-8", errors="replace").lstrip("﻿")
     reader = csv.reader(io.StringIO(content))
     hinzugefuegt = uebersprungen = 0
     for row in reader:
@@ -499,7 +499,7 @@ async def punkte_csv_import_vorschau(lid: int, request: Request, file: UploadFil
     la_by_nr = {la.aufgabennummer.lower(): la for la in las}
 
     raw = await file.read()
-    content = raw[3:].decode("utf-8") if raw.startswith(b"\xef\xbb\xbf") else raw.decode("utf-8", errors="replace")
+    content = raw.decode("utf-8", errors="replace").lstrip("﻿")
     rows = list(csv.reader(io.StringIO(content)))
     if not rows:
         return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?err=Leere+CSV")
