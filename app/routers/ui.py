@@ -60,8 +60,7 @@ def _radar(scores_by_kuerzel: dict, size: int = 220) -> dict:
 
 @router.get("/schuljahre")
 def schuljahre_liste(request: Request, db: Session = Depends(get_db)):
-    return templates.TemplateResponse("schuljahre.html", {
-        "request": request,
+    return templates.TemplateResponse(request, "schuljahre.html", {
         "schuljahre": db.query(Schuljahr).order_by(Schuljahr.name.desc()).all(),
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
@@ -96,8 +95,8 @@ def schuljahr_loeschen(sj_id: int, db: Session = Depends(get_db)):
 def klassen_liste(request: Request, schuljahr_id: int, db: Session = Depends(get_db)):
     sj = db.get(Schuljahr, schuljahr_id)
     klassen = db.query(Klasse).filter(Klasse.schuljahr_id == schuljahr_id).order_by(Klasse.jahrgangsstufe, Klasse.buchstabe).all()
-    return templates.TemplateResponse("klassen_liste.html", {
-        "request": request, "schuljahr": sj, "klassen": klassen,
+    return templates.TemplateResponse(request, "klassen_liste.html", {
+        "schuljahr": sj, "klassen": klassen,
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
     })
@@ -129,8 +128,8 @@ def klasse_detail(kl_id: int, request: Request, db: Session = Depends(get_db)):
     sj = db.get(Schuljahr, kl.schuljahr_id)
     schueler = db.query(Schueler).filter(Schueler.klasse_id == kl_id).order_by(Schueler.nachname, Schueler.vorname).all()
     leistungen = db.query(SchriftlicheLeistung).filter(SchriftlicheLeistung.klasse_id == kl_id).order_by(SchriftlicheLeistung.datum.desc()).all()
-    return templates.TemplateResponse("klasse_detail.html", {
-        "request": request, "klasse": kl, "schuljahr": sj,
+    return templates.TemplateResponse(request, "klasse_detail.html", {
+        "klasse": kl, "schuljahr": sj,
         "schueler": schueler, "leistungen": leistungen,
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
@@ -185,8 +184,8 @@ def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db
         "leistungen_gesamt": meta["leistungen_gesamt"],
     })()
 
-    return templates.TemplateResponse("schueler_dashboard.html", {
-        "request": request, "schueler": s, "klasse": kl,
+    return templates.TemplateResponse(request, "schueler_dashboard.html", {
+        "schueler": s, "klasse": kl,
         "muendliche_noten": noten, "schnitt": schnitt_data,
         "profil": profil, "radar": _radar(scores_by_kuerzel),
         "msg": request.query_params.get("msg"),
@@ -221,8 +220,8 @@ def muendliche_note_loeschen(n_id: int, db: Session = Depends(get_db)):
 
 @router.get("/leistung-neu")
 def leistung_neu_form(klasse_id: int, request: Request, db: Session = Depends(get_db)):
-    return templates.TemplateResponse("leistung_neu.html", {
-        "request": request, "klasse": db.get(Klasse, klasse_id),
+    return templates.TemplateResponse(request, "leistung_neu.html", {
+        "klasse": db.get(Klasse, klasse_id),
     })
 
 
@@ -253,8 +252,8 @@ def leistung_detail(lid: int, request: Request, db: Session = Depends(get_db)):
     has_ergebnisse = bool(la_ids and db.query(SchuelerErgebnis).filter(SchuelerErgebnis.leistung_aufgabe_id.in_(la_ids)).count() > 0) or \
                      bool(db.query(SchuelerErgebnis).filter(SchuelerErgebnis.schriftliche_leistung_id == lid).count() > 0)
     aufgaben_pool = db.query(Aufgabe).order_by(Aufgabe.titel).all()
-    return templates.TemplateResponse("leistung_detail.html", {
-        "request": request, "leistung": l, "leistung_aufgaben": las,
+    return templates.TemplateResponse(request, "leistung_detail.html", {
+        "leistung": l, "leistung_aufgaben": las,
         "max_punkte_gesamt": max_p, "has_ergebnisse": has_ergebnisse,
         "aufgaben_pool": aufgaben_pool,
         "msg": request.query_params.get("msg"),
@@ -293,8 +292,8 @@ def punkte_matrix_form(lid: int, request: Request, db: Session = Depends(get_db)
         summe = sum(v for v in punkte_map[s.id].values() if v is not None)
         if all(v is not None for v in punkte_map[s.id].values()) and las:
             noten_map[s.id] = notenberechnung.punkte_zu_note(summe, max_p)
-    return templates.TemplateResponse("punkte_matrix.html", {
-        "request": request, "leistung": l, "leistung_aufgaben": las,
+    return templates.TemplateResponse(request, "punkte_matrix.html", {
+        "leistung": l, "leistung_aufgaben": las,
         "schueler": schueler, "punkte_map": punkte_map, "noten_map": noten_map,
         "max_punkte_gesamt": max_p, "notensystem": l.klasse.notensystem,
     })
@@ -319,8 +318,8 @@ def pauschal_form(lid: int, request: Request, db: Session = Depends(get_db)):
     for s in schueler:
         e = db.query(SchuelerErgebnis).filter(SchuelerErgebnis.schueler_id == s.id, SchuelerErgebnis.schriftliche_leistung_id == lid).first()
         noten_map[s.id] = e.pauschalnote if e else None
-    return templates.TemplateResponse("pauschal_form.html", {
-        "request": request, "leistung": l, "schueler": schueler,
+    return templates.TemplateResponse(request, "pauschal_form.html", {
+        "leistung": l, "schueler": schueler,
         "noten_map": noten_map, "notensystem": l.klasse.notensystem,
     })
 
@@ -342,7 +341,7 @@ async def pauschal_speichern(lid: int, request: Request, db: Session = Depends(g
 def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
     from app.routers.schriftliche_leistung import auswertung as api_auswertung
     data = api_auswertung(lid, db)
-    return templates.TemplateResponse("auswertung.html", {"request": request, "auswertung": data})
+    return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data})
 
 
 # ── Aufgabenpool ──────────────────────────────────────────────
@@ -350,8 +349,8 @@ def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
 @router.get("/aufgaben")
 def aufgaben_pool(request: Request, db: Session = Depends(get_db)):
     aufgaben = db.query(Aufgabe).order_by(Aufgabe.erstellt_am.desc()).all()
-    return templates.TemplateResponse("aufgaben_pool.html", {
-        "request": request, "aufgaben": aufgaben,
+    return templates.TemplateResponse(request, "aufgaben_pool.html", {
+        "aufgaben": aufgaben,
         "msg": request.query_params.get("msg"),
     })
 
@@ -365,14 +364,14 @@ def aufgaben_suche(request: Request, q: str = "", afb: str = "", db: Session = D
         query = query.filter(sa.or_(Aufgabe.titel.ilike(term), Aufgabe.aufgabenstellung.ilike(term), Aufgabe.tags.ilike(term)))
     if afb:
         query = query.filter(Aufgabe.afb_niveau == AfbNiveau(afb))
-    return templates.TemplateResponse("htmx_aufgaben.html", {
-        "request": request, "aufgaben": query.order_by(Aufgabe.erstellt_am.desc()).all(),
+    return templates.TemplateResponse(request, "htmx_aufgaben.html", {
+        "aufgaben": query.order_by(Aufgabe.erstellt_am.desc()).all(),
     })
 
 
 @router.get("/aufgaben/neu")
 def aufgabe_neu_form(request: Request):
-    return templates.TemplateResponse("aufgabe_neu.html", {"request": request})
+    return templates.TemplateResponse(request, "aufgabe_neu.html")
 
 
 @router.post("/aufgaben")
@@ -404,8 +403,8 @@ def aufgabe_detail(a_id: int, request: Request, db: Session = Depends(get_db)):
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     aks = db.query(AufgabeKompetenz).filter(AufgabeKompetenz.aufgabe_id == a_id).all()
     kompetenzen_map = {ak.kompetenz_id: ak.gewichtung for ak in aks}
-    return templates.TemplateResponse("aufgabe_detail.html", {
-        "request": request, "aufgabe": a,
+    return templates.TemplateResponse(request, "aufgabe_detail.html", {
+        "aufgabe": a,
         "kompetenzen_aktuell": aks, "alle_kompetenzen": alle_k,
         "kompetenzen_map": kompetenzen_map,
         "msg": request.query_params.get("msg"),
@@ -460,7 +459,8 @@ def _normalize(s: str) -> str:
 
 @router.post("/klassen/{kl_id}/schueler-import")
 async def schueler_csv_import(kl_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
-    content = (await file.read()).decode("utf-8-sig")
+    raw = await file.read()
+    content = raw[3:].decode("utf-8") if raw.startswith(b"\xef\xbb\xbf") else raw.decode("utf-8", errors="replace")
     reader = csv.reader(io.StringIO(content))
     hinzugefuegt = uebersprungen = 0
     for row in reader:
@@ -498,7 +498,8 @@ async def punkte_csv_import_vorschau(lid: int, request: Request, file: UploadFil
     las = sorted(leistung.leistung_aufgaben, key=lambda x: x.reihenfolge)
     la_by_nr = {la.aufgabennummer.lower(): la for la in las}
 
-    content = (await file.read()).decode("utf-8-sig")
+    raw = await file.read()
+    content = raw[3:].decode("utf-8") if raw.startswith(b"\xef\xbb\xbf") else raw.decode("utf-8", errors="replace")
     rows = list(csv.reader(io.StringIO(content)))
     if not rows:
         return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?err=Leere+CSV")
@@ -530,8 +531,8 @@ async def punkte_csv_import_vorschau(lid: int, request: Request, file: UploadFil
         else:
             nicht_gefunden.append(f"{nachname}, {vorname}")
 
-    return templates.TemplateResponse("punkte_import_vorschau.html", {
-        "request": request, "leistung": leistung, "aufgaben": las,
+    return templates.TemplateResponse(request, "punkte_import_vorschau.html", {
+        "leistung": leistung, "aufgaben": las,
         "gematchte": gematchte, "nicht_gefunden": nicht_gefunden,
     })
 
