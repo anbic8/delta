@@ -112,7 +112,7 @@ def test_diversitaet_max_pro_kapitel(client):
 def test_mehrere_schwach_schwaechste_zuerst(client):
     db = TestingSessionLocal()
     ids = _k_ids(db)
-    profil = {ids["K2"]: 55.0, ids["K5"]: 30.0}
+    profil = {ids["K2"]: 55.0, ids["K5"]: 45.0}
     ergebnis = empfehlungen(schueler_id=1, db=db, anzahl=5, profil_override=profil)
     db.close()
     # K5 ist schwächer (30%) → sollte zuerst erscheinen
