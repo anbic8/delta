@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}{{ klasse.name }} – {{ schuljahr.name }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schuljahre">← Schuljahre</a> / <a href="/ui/klassen?schuljahr_id={{ schuljahr.id }}">{{ schuljahr.name }}</a></p>
+<h2>{{ klasse.name }} · {{ schuljahr.name }}</h2>
+<p>
+  Fach: <strong>{{ klasse.fach }}</strong> ·
+  Notensystem: <strong>{% if klasse.notensystem == 'sechserskala' %}Sechserskala (1–6){% else %}Punkte (0–15){% endif %}</strong>
+</p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  <!-- Schüler -->
+  <section>
+    <h3>Schülerinnen und Schüler</h3>
+    {% if schueler %}
+    <table>
+      <thead><tr><th>Name</th><th>Pseudonym</th><th></th></tr></thead>
+      <tbody>
+        {% for s in schueler %}
+        <tr {% if s.geloescht_am %}style="opacity:.5;"{% endif %}>
+          <td>
+            {% if not s.geloescht_am %}
+            <a href="/ui/schueler/{{ s.id }}">{{ s.nachname }}, {{ s.vorname }}</a>
+            {% else %}
+            {{ s.nachname }}, {{ s.vorname }} <em>(entfernt)</em>
+            {% endif %}
+          </td>
+          <td><code>{{ s.pseudonym_id }}</code></td>
+          <td>
+            {% if not s.geloescht_am %}
+            <form method="post" action="/ui/schueler/{{ s.id }}/loeschen" style="display:inline;">
+              <button type="submit" class="outline contrast" style="padding:.25rem .5rem; font-size:.8rem;"
+                      onclick="return confirm('Schüler entfernen?')">✕</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine Schüler in dieser Klasse.</p>
+    {% endif %}
+
+    <details style="margin-top:1rem;">
+      <summary>Schüler hinzufügen</summary>
+      <form method="post" action="/ui/schueler" style="margin-top:.75rem;">
+        <input type="hidden" name="klasse_id" value="{{ klasse.id }}">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
+          <input type="text" name="vorname" placeholder="Vorname" required>
+          <input type="text" name="nachname" placeholder="Nachname" required>
+        </div>
+        <button type="submit" style="margin-top:.5rem;">Hinzufügen</button>
+      </form>
+    </details>
+  </section>
+
+  <!-- Schriftliche Leistungen -->
+  <section>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Schriftliche Leistungen</h3>
+      <a href="/ui/leistung-neu?klasse_id={{ klasse.id }}" role="button" class="outline" style="padding:.4rem .8rem;">+ Neu</a>
+    </div>
+
+    {% if leistungen %}
+    <table>
+      <thead><tr><th>Datum</th><th>Titel</th><th>Art</th><th></th></tr></thead>
+      <tbody>
+        {% for l in leistungen %}
+        <tr>
+          <td>{{ l.datum }}</td>
+          <td><a href="/ui/schriftliche-leistungen/{{ l.id }}">{{ l.titel }}</a></td>
+          <td>
+            {% if l.art == 'schulaufgabe' %}
+              <span class="badge badge-sa">SA</span>
+            {% else %}
+              <span class="badge badge-ln">Kl. LN</span>
+            {% endif %}
+            {% if not l.detailliert %}<span class="badge">pauschal</span>{% endif %}
+          </td>
+          <td><a href="/ui/schriftliche-leistungen/{{ l.id }}/auswertung">📊</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine schriftlichen Leistungen.</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

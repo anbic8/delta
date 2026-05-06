@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}{{ schueler.nachname }}, {{ schueler.vorname }}{% endblock %}
+{% block content %}
+<p><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+<h2>{{ schueler.nachname }}, {{ schueler.vorname }}</h2>
+<p>Klasse: <strong>{{ klasse.name }}</strong> · Pseudonym: <code>{{ schueler.pseudonym_id }}</code></p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  <!-- Schnitte -->
+  <section>
+    <h3>Notenschnitte</h3>
+    <table>
+      <tbody>
+        <tr>
+          <td>Große LN (Schulaufgaben)</td>
+          <td><strong>{% if schnitt.schnitt_grosse_ln %}{{ schnitt.schnitt_grosse_ln }}{% else %}–{% endif %}</strong></td>
+        </tr>
+        <tr>
+          <td>Kleine LN (mündl. + schriftl.)</td>
+          <td><strong>{% if schnitt.schnitt_kleine_ln %}{{ schnitt.schnitt_kleine_ln }}{% else %}–{% endif %}</strong></td>
+        </tr>
+        <tr style="border-top: 2px solid #dee2e6;">
+          <td><strong>Gesamtschnitt</strong></td>
+          <td><strong>{% if schnitt.gesamtschnitt %}{{ schnitt.gesamtschnitt }}{% else %}–{% endif %}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Mündliche Noten -->
+    <h4 style="margin-top:1.5rem;">Mündliche Noten</h4>
+    {% if muendliche_noten %}
+    <table>
+      <thead><tr><th>Datum</th><th>Note</th><th>Gew.</th><th>Beschreibung</th><th></th></tr></thead>
+      <tbody>
+        {% for n in muendliche_noten %}
+        <tr>
+          <td>{{ n.datum }}</td>
+          <td><strong>{{ n.note }}</strong></td>
+          <td>×{{ n.gewichtung }}</td>
+          <td>{{ n.beschreibung or '' }}</td>
+          <td>
+            <form method="post" action="/ui/muendliche-noten/{{ n.id }}/loeschen" style="display:inline;">
+              <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
+                      onclick="return confirm('Note löschen?')">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine mündlichen Noten.</p>
+    {% endif %}
+
+    <details style="margin-top:.75rem;">
+      <summary>Note eintragen</summary>
+      <form method="post" action="/ui/schueler/{{ schueler.id }}/muendliche-note" style="margin-top:.75rem;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
+          <label>Datum <input type="date" name="datum" required></label>
+          <label>Note <input type="number" name="note" step="0.5"
+            min="{% if klasse.notensystem == 'sechserskala' %}1{% else %}0{% endif %}"
+            max="{% if klasse.notensystem == 'sechserskala' %}6{% else %}15{% endif %}" required></label>
+          <label>Gewichtung
+            <select name="gewichtung">
+              <option value="0.5">½</option>
+              <option value="1.0" selected>1</option>
+              <option value="2.0">2</option>
+            </select>
+          </label>
+        </div>
+        <input type="text" name="beschreibung" placeholder="Beschreibung (optional)" style="margin-top:.5rem;">
+        <button type="submit" style="margin-top:.5rem;">Speichern</button>
+      </form>
+    </details>
+  </section>
+
+  <!-- Kompetenzprofil -->
+  <section>
+    <h3>Kompetenzprofil</h3>
+    {% if profil.scores %}
+    <p><small>Basiert auf {{ profil.leistungen_mit_daten }} von {{ profil.leistungen_gesamt }} detaillierten Leistungen</small></p>
+
+    <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style="width:100%; max-width:220px; display:block; margin:0 auto;">
+      <!-- Outer grid -->
+      <polygon points="{{ radar.grid }}" fill="none" stroke="#dee2e6" stroke-width="1.5"/>
+      <!-- Inner grid (50%) -->
+      <polygon points="{{ radar.grid_half }}" fill="none" stroke="#dee2e6" stroke-width="1" stroke-dasharray="3,3"/>
+      <!-- Axes -->
+      {% for ax in radar.axes %}
+      <line x1="{{ radar.cx }}" y1="{{ radar.cy }}" x2="{{ ax.x2 }}" y2="{{ ax.y2 }}" stroke="#dee2e6" stroke-width="1"/>
+      {% endfor %}
+      <!-- Data polygon -->
+      <polygon points="{{ radar.data }}" fill="rgba(59,130,246,0.25)" stroke="rgb(59,130,246)" stroke-width="2"/>
+      <!-- Labels -->
+      {% for lbl in radar.labels %}
+      <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="#495057">
+        {{ lbl.text }} {{ lbl.pct }}%
+      </text>
+      {% endfor %}
+    </svg>
+
+    <table style="margin-top:1rem;">
+      <tbody>
+        {% for s in profil.scores %}
+        <tr>
+          <td><strong>{{ s.kuerzel }}</strong></td>
+          <td>{{ s.bezeichnung }}</td>
+          <td>{{ s.prozent }}%</td>
+          <td style="width:8rem;">
+            <progress value="{{ s.prozent }}" max="100" style="width:100%;"></progress>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch kein Kompetenzprofil verfügbar (benötigt detaillierte schriftliche Leistungen mit Kompetenz-Zuordnung).</p>
+    {% endif %}
+  </section>
+
+</div>
+{% endblock %}

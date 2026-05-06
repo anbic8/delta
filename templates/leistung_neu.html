@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Neue schriftliche Leistung{% endblock %}
+{% block content %}
+<p><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+<h2>Neue schriftliche Leistung – {{ klasse.name }}</h2>
+
+<form method="post" action="/ui/schriftliche-leistungen" style="max-width:500px;">
+  <input type="hidden" name="klasse_id" value="{{ klasse.id }}">
+
+  <label>Titel <input type="text" name="titel" placeholder="z.B. 1. Schulaufgabe" required></label>
+  <label>Datum <input type="date" name="datum" required></label>
+
+  <label>Art
+    <select name="art" id="art-select" onchange="updateDetailliert()">
+      <option value="schulaufgabe">Schulaufgabe (SA)</option>
+      <option value="kleiner_ln">Kleiner schriftlicher LN</option>
+    </select>
+  </label>
+
+  <div id="detailliert-row">
+    <label>
+      <input type="checkbox" name="detailliert" value="true" id="detailliert-cb" checked>
+      Detailliert (Punkte pro Aufgabe)
+    </label>
+    <small class="hint" id="detailliert-hint">SA ist immer detailliert.</small>
+  </div>
+
+  <label>Gewichtung
+    <select name="gewichtung">
+      <option value="0.5">½</option>
+      <option value="1.0" selected>1</option>
+      <option value="2.0">2</option>
+    </select>
+  </label>
+
+  <button type="submit" style="margin-top:1rem;">Anlegen</button>
+</form>
+
+<script>
+function updateDetailliert() {
+  const art = document.getElementById('art-select').value;
+  const cb = document.getElementById('detailliert-cb');
+  const hint = document.getElementById('detailliert-hint');
+  if (art === 'schulaufgabe') {
+    cb.checked = true;
+    cb.disabled = true;
+    hint.textContent = 'SA ist immer detailliert.';
+  } else {
+    cb.disabled = false;
+    hint.textContent = 'Detailliert = Punkte pro Aufgabe. Pauschal = direkte Noteneingabe.';
+  }
+}
+updateDetailliert();
+</script>
+{% endblock %}

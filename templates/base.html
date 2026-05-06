@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Delta – {% block title %}Schülerleistungen{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <style>
+    nav a { text-decoration: none; }
+    .grenzfall { background-color: #fff3cd !important; }
+    .note-1 { color: #2d6a4f; font-weight: bold; }
+    .note-5, .note-6 { color: #c1121f; font-weight: bold; }
+    .punkte-input { width: 5rem; text-align: center; padding: 0.25rem; }
+    .badge { display: inline-block; padding: .2em .5em; border-radius: .3em; font-size: .8em; background: #e9ecef; }
+    .badge-sa { background: #cfe2ff; }
+    .badge-ln { background: #d1e7dd; }
+    fieldset { border: 1px solid #dee2e6; border-radius: .5rem; padding: 1rem; }
+    legend { padding: 0 .5rem; font-weight: bold; }
+    small.hint { color: #6c757d; display: block; margin-top: .25rem; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <header class="container-fluid" style="padding: .75rem 1.5rem; border-bottom: 1px solid #dee2e6;">
+    <nav>
+      <ul>
+        <li><strong><a href="/ui/schuljahre">⬡ Delta</a></strong></li>
+      </ul>
+      <ul>
+        <li><a href="/ui/schuljahre">Schuljahre</a></li>
+        <li><a href="/ui/aufgaben">Aufgabenpool</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="container" style="padding-top: 1.5rem;">
+    {% if msg %}
+    <div role="alert" style="margin-bottom:1rem; padding:.75rem 1rem; background:#d1e7dd; border-radius:.5rem;">
+      {{ msg }}
+    </div>
+    {% endif %}
+    {% if err %}
+    <div role="alert" style="margin-bottom:1rem; padding:.75rem 1rem; background:#f8d7da; border-radius:.5rem;">
+      {{ err }}
+    </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

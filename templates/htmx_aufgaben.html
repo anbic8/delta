@@ -1,0 +1,25 @@
+{% if aufgaben %}
+<table>
+  <thead>
+    <tr><th>Titel</th><th>Max. P.</th><th>AFB</th><th>Tags</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for a in aufgaben %}
+    <tr>
+      <td><a href="/ui/aufgaben/{{ a.id }}">{{ a.titel }}</a></td>
+      <td>{{ a.max_punkte }}</td>
+      <td><span class="badge">{{ a.afb_niveau }}</span></td>
+      <td><small>{{ a.tags or '–' }}</small></td>
+      <td>
+        <form method="post" action="/ui/aufgaben/{{ a.id }}/loeschen" style="display:inline;">
+          <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
+                  onclick="return confirm('Aufgabe löschen?')">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Keine Aufgaben gefunden.</p>
+{% endif %}

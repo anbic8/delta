@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Noten – {{ leistung.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
+<h2>Noten eintragen – {{ leistung.titel }}</h2>
+<p>Notensystem: <strong>{% if notensystem == 'sechserskala' %}Sechserskala (1–6){% else %}Punkte (0–15){% endif %}</strong></p>
+
+<form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/pauschal">
+  <table>
+    <thead><tr><th>Schüler</th><th>Note</th></tr></thead>
+    <tbody>
+      {% for s in schueler %}
+      <tr>
+        <td>{{ s.nachname }}, {{ s.vorname }}</td>
+        <td>
+          <input type="number"
+                 name="note_{{ s.id }}"
+                 class="punkte-input"
+                 step="{% if notensystem == 'sechserskala' %}1{% else %}1{% endif %}"
+                 min="{% if notensystem == 'sechserskala' %}1{% else %}0{% endif %}"
+                 max="{% if notensystem == 'sechserskala' %}6{% else %}15{% endif %}"
+                 value="{{ noten_map.get(s.id, '') }}">
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <div style="margin-top:1rem; display:flex; gap:1rem;">
+    <button type="submit">Speichern</button>
+    <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}

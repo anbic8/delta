@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Neue Aufgabe{% endblock %}
+{% block content %}
+<p><a href="/ui/aufgaben">← Aufgabenpool</a></p>
+<h2>Neue Aufgabe</h2>
+
+<form method="post" action="/ui/aufgaben" style="max-width:600px;">
+  <label>Titel <input type="text" name="titel" required></label>
+  <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="5" required></textarea></label>
+  <label>Lösung (optional) <textarea name="loesung" rows="3"></textarea></label>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
+    <label>Max. Punkte <input type="number" name="max_punkte" step="0.5" min="0.5" required></label>
+    <label>AFB-Niveau
+      <select name="afb_niveau">
+        <option value="AFB_I">AFB I</option>
+        <option value="AFB_II" selected>AFB II</option>
+        <option value="AFB_III">AFB III</option>
+      </select>
+    </label>
+  </div>
+  <label>Tags (kommagetrennt, z.B. "quadratische Funktion, Parabel")
+    <input type="text" name="tags" placeholder="optional">
+  </label>
+  <button type="submit" style="margin-top:1rem;">Anlegen</button>
+</form>
+{% endblock %}

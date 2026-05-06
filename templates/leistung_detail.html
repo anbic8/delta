@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ leistung.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/klassen/{{ leistung.klasse_id }}">← Klasse</a></p>
+<h2>{{ leistung.titel }}</h2>
+<p>
+  Datum: <strong>{{ leistung.datum }}</strong> ·
+  Art: <span class="badge {% if leistung.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}">
+    {% if leistung.art == 'schulaufgabe' %}Schulaufgabe{% else %}Kleiner LN{% endif %}
+  </span> ·
+  Modus: <strong>{% if leistung.detailliert %}Detailliert{% else %}Pauschal{% endif %}</strong>
+  {% if has_ergebnisse %}
+  <span class="badge" style="background:#f8d7da;" title="Modus kann nicht mehr geändert werden">🔒 gesperrt</span>
+  {% endif %}
+  · Gewichtung: ×{{ leistung.gewichtung }}
+</p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  {% if leistung.detailliert %}
+  <!-- Aufgaben -->
+  <section>
+    <h3>Aufgaben</h3>
+    {% if leistung_aufgaben %}
+    <table>
+      <thead><tr><th>Nr.</th><th>Titel</th><th>Max. Punkte</th><th>AFB</th><th></th></tr></thead>
+      <tbody>
+        {% for la in leistung_aufgaben %}
+        <tr>
+          <td>{{ la.aufgabennummer }}</td>
+          <td>{{ la.aufgabe.titel }}</td>
+          <td>{{ la.aufgabe.max_punkte }}</td>
+          <td>{{ la.aufgabe.afb_niveau }}</td>
+          <td>
+            <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/aufgaben/{{ la.id }}/entfernen" style="display:inline;">
+              <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr><td colspan="2"><strong>Gesamt</strong></td><td><strong>{{ max_punkte_gesamt }}</strong></td><td colspan="2"></td></tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <p>Noch keine Aufgaben zugeordnet.</p>
+    {% endif %}
+
+    <details style="margin-top:1rem;">
+      <summary>Aufgabe aus Pool hinzufügen</summary>
+      <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/aufgaben" style="margin-top:.75rem;">
+        <div style="display:grid; grid-template-columns:3fr 1fr 1fr; gap:.5rem;">
+          <label>Aufgabe
+            <select name="aufgabe_id" required>
+              <option value="">— wählen —</option>
+              {% for a in aufgaben_pool %}
+              <option value="{{ a.id }}">{{ a.titel }} ({{ a.max_punkte }} P.)</option>
+              {% endfor %}
+            </select>
+          </label>
+          <label>Nr. <input type="text" name="aufgabennummer" placeholder="1a" required></label>
+          <label>Reihenfolge <input type="number" name="reihenfolge" value="{{ leistung_aufgaben | length + 1 }}" min="1"></label>
+        </div>
+        <button type="submit" style="margin-top:.5rem;">Hinzufügen</button>
+      </form>
+    </details>
+  </section>
+  {% endif %}
+
+  <!-- Aktionen -->
+  <section>
+    <h3>Ergebnisse &amp; Auswertung</h3>
+    <div style="display:flex; flex-direction:column; gap:.5rem;">
+      {% if leistung.detailliert %}
+        {% if leistung_aufgaben %}
+        <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte" role="button">✏️ Punkte eintragen</a>
+        <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button" class="outline">📊 Klassenauswertung</a>
+        {% else %}
+        <p><em>Zuerst Aufgaben zuordnen.</em></p>
+        {% endif %}
+      {% else %}
+      <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/pauschal" role="button">✏️ Noten eintragen</a>
+      {% endif %}
+    </div>
+  </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Schuljahre{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+  <h2>Schuljahre</h2>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  <section>
+    {% if schuljahre %}
+    <table>
+      <thead><tr><th>Schuljahr</th><th>Klassen</th><th></th></tr></thead>
+      <tbody>
+        {% for sj in schuljahre %}
+        <tr>
+          <td><a href="/ui/klassen?schuljahr_id={{ sj.id }}">{{ sj.name }}</a></td>
+          <td>{{ sj.klassen | length }}</td>
+          <td>
+            <form method="post" action="/ui/schuljahre/{{ sj.id }}/loeschen" style="display:inline;">
+              <button type="submit" class="outline contrast" style="padding:.25rem .5rem; font-size:.8rem;"
+                      onclick="return confirm('Schuljahr löschen?')">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine Schuljahre angelegt.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <fieldset>
+      <legend>Neues Schuljahr</legend>
+      <form method="post" action="/ui/schuljahre">
+        <label>
+          Name (z.B. 2025/26)
+          <input type="text" name="name" placeholder="2025/26" required pattern="\d{4}/\d{2}">
+        </label>
+        <button type="submit">Anlegen</button>
+      </form>
+    </fieldset>
+  </section>
+
+</div>
+{% endblock %}

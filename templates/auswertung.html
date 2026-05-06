@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Auswertung – {{ auswertung.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ auswertung.leistung_id }}">← {{ auswertung.titel }}</a></p>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2>Auswertung – {{ auswertung.titel }}</h2>
+  <a href="/schriftliche-leistungen/{{ auswertung.leistung_id }}/auswertung.pdf"
+     role="button" class="outline secondary" title="Verfügbar ab Phase 8">📄 PDF</a>
+</div>
+
+<p>Max. Punkte gesamt: <strong>{{ auswertung.max_punkte_gesamt }}</strong>
+   · Klassendurchschnitt: <strong>{% if auswertung.klassendurchschnitt %}{{ auswertung.klassendurchschnitt }}{% else %}–{% endif %}</strong></p>
+<p><small>🟡 = Grenzfall (≤ 0,5 BE von der nächstbesseren Note)</small></p>
+
+<!-- Schüler-Matrix -->
+<div style="overflow-x:auto; margin-bottom:2rem;">
+<table>
+  <thead>
+    <tr>
+      <th>Schüler</th>
+      {% for a in auswertung.aufgaben %}
+      <th>{{ a.aufgabennummer }}<br><small>{{ a.max_punkte }}</small></th>
+      {% endfor %}
+      <th>Summe</th>
+      <th>%</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for z in auswertung.schueler %}
+    <tr {% if z.grenzfall %}class="grenzfall"{% endif %}>
+      <td>
+        {{ z.name }}
+        {% if z.grenzfall %}<span title="Grenzfall">🟡</span>{% endif %}
+      </td>
+      {% for a in auswertung.aufgaben %}
+      <td style="text-align:center;">
+        {{ z.punkte_pro_aufgabe.get(a.aufgabennummer, '–') }}
+      </td>
+      {% endfor %}
+      <td><strong>{{ z.summe if z.summe is not none else '–' }}</strong></td>
+      <td>{{ z.prozent if z.prozent is not none else '–' }}</td>
+      <td>
+        {% if z.note %}
+        <strong class="{% if z.note == 1 %}note-1{% elif z.note >= 5 %}note-5{% endif %}">{{ z.note }}</strong>
+        {% else %}–{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<!-- Notenverteilung -->
+<h3>Notenverteilung</h3>
+<table style="max-width:400px;">
+  <thead><tr><th>Note</th><th>Anzahl</th><th>Anteil</th><th></th></tr></thead>
+  <tbody>
+    {% for note_str, stats in auswertung.notenverteilung.items() %}
+    {% if stats.anzahl > 0 %}
+    <tr>
+      <td><strong class="{% if note_str == '1' %}note-1{% elif note_str in ['5','6'] %}note-5{% endif %}">{{ note_str }}</strong></td>
+      <td>{{ stats.anzahl }}</td>
+      <td>{{ stats.prozent }}%</td>
+      <td><progress value="{{ stats.prozent }}" max="100" style="width:6rem;"></progress></td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

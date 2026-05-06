@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Punkte – {{ leistung.titel }}{% endblock %}
+{% block extra_head %}
+<style>
+  .punkte-input { width: 5rem; text-align: center; }
+  .saved-indicator { color: #2d6a4f; font-size: .8rem; display: none; }
+  .punkte-input.just-saved { border-color: #2d6a4f; }
+</style>
+{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
+<h2>Punkte eintragen – {{ leistung.titel }}</h2>
+<p>Notensystem: <strong>{% if notensystem == 'sechserskala' %}Sechserskala{% else %}Punkte{% endif %}</strong>
+   · Max. Punkte gesamt: <strong>{{ max_punkte_gesamt }}</strong></p>
+
+<p><small>Änderungen werden automatisch gespeichert (pro Zelle). Tab-Taste zum Navigieren.</small></p>
+
+<div style="overflow-x: auto;">
+<table>
+  <thead>
+    <tr>
+      <th>Schüler</th>
+      {% for la in leistung_aufgaben %}
+      <th>{{ la.aufgabennummer }}<br><small>max {{ la.aufgabe.max_punkte }}</small></th>
+      {% endfor %}
+      <th>Summe</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in schueler %}
+    <tr id="row-{{ s.id }}">
+      <td>{{ s.nachname }}, {{ s.vorname }}</td>
+      {% set ns = namespace(summe=0, vollstaendig=true) %}
+      {% for la in leistung_aufgaben %}
+        {% set val = punkte_map.get(s.id, {}).get(la.id) %}
+        {% if val is not none %}{% set ns.summe = ns.summe + val %}{% else %}{% set ns.vollstaendig = false %}{% endif %}
+        <td>
+          <input type="number"
+                 class="punkte-input"
+                 step="0.5" min="0" max="{{ la.aufgabe.max_punkte }}"
+                 value="{{ val if val is not none else '' }}"
+                 hx-post="/ui/schriftliche-leistungen/{{ leistung.id }}/zelle"
+                 hx-trigger="change"
+                 hx-swap="none"
+                 hx-vals='{"schueler_id": {{ s.id }}, "la_id": {{ la.id }}}'
+                 hx-on::after-request="this.classList.add('just-saved'); setTimeout(()=>this.classList.remove('just-saved'),1200)">
+        </td>
+      {% endfor %}
+      <td id="summe-{{ s.id }}">
+        {% if ns.vollstaendig %}{{ ns.summe }}{% else %}–{% endif %}
+      </td>
+      <td id="note-{{ s.id }}">
+        {% if ns.vollstaendig %}{{ noten_map.get(s.id, '–') }}{% else %}–{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<div style="margin-top:1.5rem; display:flex; gap:1rem;">
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button">📊 Auswertung anzeigen</a>
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline">← Zurück</a>
+</div>
+{% endblock %}

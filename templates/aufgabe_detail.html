@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}{{ aufgabe.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/aufgaben">← Aufgabenpool</a></p>
+<h2>{{ aufgabe.titel }}</h2>
+<p>
+  Max. Punkte: <strong>{{ aufgabe.max_punkte }}</strong> ·
+  AFB: <span class="badge">{{ aufgabe.afb_niveau }}</span> ·
+  Angelegt: {{ aufgabe.erstellt_am.strftime('%d.%m.%Y') if aufgabe.erstellt_am else '' }}
+</p>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  <section>
+    <h3>Aufgabenstellung</h3>
+    <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; white-space:pre-wrap;">{{ aufgabe.aufgabenstellung }}</div>
+
+    {% if aufgabe.loesung %}
+    <details style="margin-top:1rem;">
+      <summary>Lösung anzeigen</summary>
+      <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; margin-top:.5rem; white-space:pre-wrap;">{{ aufgabe.loesung }}</div>
+    </details>
+    {% endif %}
+
+    {% if aufgabe.tags %}
+    <p style="margin-top:1rem;">Tags: <small>{{ aufgabe.tags }}</small></p>
+    {% endif %}
+
+    <details style="margin-top:1.5rem;">
+      <summary>Aufgabe bearbeiten</summary>
+      <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/bearbeiten" style="margin-top:.75rem;">
+        <label>Titel <input type="text" name="titel" value="{{ aufgabe.titel }}" required></label>
+        <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="4">{{ aufgabe.aufgabenstellung }}</textarea></label>
+        <label>Lösung <textarea name="loesung" rows="3">{{ aufgabe.loesung or '' }}</textarea></label>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
+          <label>Max. Punkte <input type="number" name="max_punkte" step="0.5" value="{{ aufgabe.max_punkte }}" required></label>
+          <label>AFB
+            <select name="afb_niveau">
+              <option value="AFB_I" {% if aufgabe.afb_niveau == 'AFB_I' %}selected{% endif %}>AFB I</option>
+              <option value="AFB_II" {% if aufgabe.afb_niveau == 'AFB_II' %}selected{% endif %}>AFB II</option>
+              <option value="AFB_III" {% if aufgabe.afb_niveau == 'AFB_III' %}selected{% endif %}>AFB III</option>
+            </select>
+          </label>
+        </div>
+        <label>Tags (kommagetrennt) <input type="text" name="tags" value="{{ aufgabe.tags or '' }}"></label>
+        <button type="submit" style="margin-top:.5rem;">Speichern</button>
+      </form>
+    </details>
+  </section>
+
+  <!-- Kompetenzen -->
+  <section>
+    <h3>Kompetenzen</h3>
+    {% if kompetenzen_aktuell %}
+    <table>
+      <thead><tr><th>Kompetenz</th><th>Gewichtung</th></tr></thead>
+      <tbody>
+        {% for ak in kompetenzen_aktuell %}
+        <tr>
+          <td><strong>{{ ak.kompetenz.kuerzel }}</strong> {{ ak.kompetenz.bezeichnung }}</td>
+          <td>{{ ak.gewichtung }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine Kompetenzen zugeordnet.</p>
+    {% endif %}
+
+    <details style="margin-top:1rem;">
+      <summary>Kompetenzen zuweisen (ersetzt bestehende)</summary>
+      <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/kompetenzen" style="margin-top:.75rem;">
+        <p><small>Gewichtungen müssen zusammen 1.0 ergeben.</small></p>
+        {% for k in alle_kompetenzen %}
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:.5rem; align-items:center; margin-bottom:.25rem;">
+          <label style="margin:0;">{{ k.kuerzel }} – {{ k.bezeichnung }}</label>
+          <input type="number" name="gew_{{ k.id }}" step="0.05" min="0" max="1"
+                 placeholder="0"
+                 value="{{ kompetenzen_map.get(k.id, '') }}">
+        </div>
+        {% endfor %}
+        <button type="submit" style="margin-top:.75rem;">Speichern</button>
+      </form>
+    </details>
+  </section>
+
+</div>
+{% endblock %}

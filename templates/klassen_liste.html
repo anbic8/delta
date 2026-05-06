@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Klassen – {{ schuljahr.name }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schuljahre">← Schuljahre</a></p>
+<h2>{{ schuljahr.name }} – Klassen</h2>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+
+  <section>
+    {% if klassen %}
+    <table>
+      <thead><tr><th>Klasse</th><th>Notensystem</th><th>Schüler</th><th></th></tr></thead>
+      <tbody>
+        {% for kl in klassen %}
+        <tr>
+          <td><a href="/ui/klassen/{{ kl.id }}">{{ kl.name }}</a></td>
+          <td>
+            {% if kl.notensystem == 'sechserskala' %}
+              <span class="badge">1–6</span>
+            {% else %}
+              <span class="badge">0–15 Pkt.</span>
+            {% endif %}
+          </td>
+          <td>{{ kl.schueler | selectattr('geloescht_am', 'none') | list | length }}</td>
+          <td>
+            <form method="post" action="/ui/klassen/{{ kl.id }}/loeschen" style="display:inline;">
+              <button type="submit" class="outline contrast" style="padding:.25rem .5rem; font-size:.8rem;"
+                      onclick="return confirm('Klasse löschen?')">✕</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Noch keine Klassen in diesem Schuljahr.</p>
+    {% endif %}
+  </section>
+
+  <section>
+    <fieldset>
+      <legend>Neue Klasse</legend>
+      <form method="post" action="/ui/klassen">
+        <input type="hidden" name="schuljahr_id" value="{{ schuljahr.id }}">
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:.5rem;">
+          <label>
+            Jahrgangsstufe
+            <input type="number" name="jahrgangsstufe" min="5" max="13" required>
+          </label>
+          <label>
+            Buchstabe
+            <input type="text" name="buchstabe" maxlength="1" placeholder="a" required>
+          </label>
+        </div>
+        <small class="hint">Notensystem wird automatisch gesetzt: 5–11 → Sechserskala, 12–13 → Punkte</small>
+        <button type="submit" style="margin-top:.5rem;">Anlegen</button>
+      </form>
+    </fieldset>
+  </section>
+
+</div>
+{% endblock %}
