@@ -8,7 +8,8 @@ from app.models.kompetenz import Kompetenz
 
 
 @pytest.fixture(autouse=True)
-def seed_kompetenzen():
+def seed_kompetenzen(client):
+    # client muss zuerst laufen (erstellt Tabellen via Base.metadata.create_all)
     db = TestingSessionLocal()
     for k, b in [("K1", "Argumentieren"), ("K2", "Problemlösen"), ("K3", "Modellieren")]:
         db.add(Kompetenz(kuerzel=k, bezeichnung=b))
