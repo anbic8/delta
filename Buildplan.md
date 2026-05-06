@@ -306,23 +306,32 @@
 
 **Ziel:** Empfehlungs-Begründungen und Analyse-Texte durch LLM verbessern.
 
+**Modell:** `qwen2.5:7b` (passt mit ~4,5 GB in RTX-2080-VRAM, bestes Deutsch + strukturierter JSON-Output)
+
 **Umfang:**
 - HTTP-Client für Ollama (Netzwerk-Adresse aus `.env`)
 - Service `LLMEnhancer`: nimmt regelbasierte Begründung + Schülerprofil, gibt verbesserten Text zurück
-- Klare Trennung: Daten kommen immer aus DB, LLM formuliert nur (kein Halluzinieren von Noten)
+- **Service `AufgabenAnalyse`** – analysiert eine Aufgabe und gibt Vorschläge zurück:
+  - Kompetenz-Vorschläge (K1–K6 mit Gewichtungen, Summe = 1.0)
+  - Grundwissen-Vorschläge: welche Kapitel/Themen aus einer konfigurierten Themenliste sind Voraussetzung
+  - Prompt erhält: Aufgabenstellung, Lösung, AFB-Niveau + vollständige Themenliste aus `.env` oder Settings
+  - Endpoint: `POST /aufgaben/{id}/analysieren` → gibt Vorschläge zurück, übernimmt nichts automatisch
+  - Lehrer bestätigt oder korrigiert Vorschläge im nächsten Schritt (UI Phase 5-Erweiterung)
+- Klare Trennung: Daten kommen immer aus DB, LLM schlägt nur vor (kein Halluzinieren)
 - Prompts versioniert in `prompts/` als Textdateien
-- Fallback: Wenn Ollama nicht erreichbar → regelbasierter Text wird verwendet, Logging
+- Fallback: Wenn Ollama nicht erreichbar → Fehler mit klarer Meldung, kein Absturz der App
 - Toggle pro Export (LLM ja/nein)
 - Tests mit gemocktem Ollama-Endpoint
 
 **Akzeptanzkriterien:**
 - Bei Ollama-Ausfall (Netzwerk down) bleibt App voll funktionsfähig
+- Kompetenz-Vorschläge summieren auf 1.0 (±0.01) – wird von App validiert, nicht blind übernommen
 - Generierte Texte enthalten keine erfundenen Zahlen (Test mit Regex/Vergleich gegen Inputdaten)
 - Latenz-Limit: max. 30s pro Request, danach Timeout + Fallback
 
 **Deliverable:** Service + Tests + Beispiel-Prompts.
 
-**Nicht enthalten:** MCP, Streaming.
+**Nicht enthalten:** MCP, Streaming, automatisches Übernehmen von Vorschlägen.
 
 ---
 
