@@ -48,7 +48,7 @@ def metadaten(schueler_id: int, db: Session) -> dict[str, int]:
         .join(LeistungAufgabe, SchriftlicheLeistung.id == LeistungAufgabe.leistung_id)
         .join(SchuelerErgebnis, SchuelerErgebnis.leistung_aufgabe_id == LeistungAufgabe.id)
         .filter(SchuelerErgebnis.schueler_id == schueler_id)
-        .distinct(SchriftlicheLeistung.id)
+        .distinct()
         .count()
     )
     return {"leistungen_mit_daten": mit_daten, "leistungen_gesamt": gesamt}
