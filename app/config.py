@@ -15,6 +15,10 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
+    empfehlung_schwelle_schwach: float = 60.0
+    empfehlung_schwelle_sehr_schwach: float = 40.0
+    empfehlung_max_pro_kapitel: int = 2
+
     model_config = {"env_file": ".env"}
 
 

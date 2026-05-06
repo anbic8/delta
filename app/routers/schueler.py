@@ -10,8 +10,10 @@ from app.schemas.schueler import SchuelerCreate, SchuelerRead, SchuelerUpdate
 from app.models.kompetenz import Kompetenz
 from app.schemas.schnitt import SchuelerSchnittRead
 from app.schemas.schueler_ergebnis import KompetenzprofilRead, KompetenzScore
+from app.schemas.empfehlung import EmpfehlungRead
 from app.services import kompetenzprofil as kp_service
 from app.services import notenschnitt
+from app.services import empfehlung as emp_service
 
 router = APIRouter(prefix="/schueler", tags=["Schüler"])
 
@@ -26,6 +28,13 @@ def get_schnitt(schueler_id: int, db: Session = Depends(get_db)):
         schnitt_grosse_ln=notenschnitt.schnitt_grosse_ln(schueler_id, db),
         gesamtschnitt=notenschnitt.gesamtschnitt(schueler_id, db),
     )
+
+
+@router.get("/{schueler_id}/empfehlung", response_model=list[EmpfehlungRead])
+def get_empfehlung(schueler_id: int, anzahl: int = 5, db: Session = Depends(get_db)):
+    if not db.get(Schueler, schueler_id):
+        raise HTTPException(status_code=404, detail="Schüler nicht gefunden")
+    return emp_service.empfehlungen(schueler_id, db, anzahl=anzahl)
 
 
 @router.get("/{schueler_id}/kompetenzprofil", response_model=KompetenzprofilRead)

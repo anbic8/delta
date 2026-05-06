@@ -19,6 +19,7 @@ from app.models.schriftliche_leistung import LeistungAufgabe, LeistungArt, Schri
 from app.models.schuljahr import Schuljahr
 from app.services import notenberechnung, notenschnitt
 from app.services import kompetenzprofil as kp_service
+from app.services import empfehlung as emp_service
 from app.templates_config import templates
 
 router = APIRouter(prefix="/ui", include_in_schema=False)
@@ -189,6 +190,22 @@ def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db
         "muendliche_noten": noten, "schnitt": schnitt_data,
         "profil": profil, "radar": _radar(scores_by_kuerzel),
         "msg": request.query_params.get("msg"),
+    })
+
+
+@router.get("/schueler/{s_id}/empfehlung")
+def schueler_empfehlung(s_id: int, request: Request, anzahl: int = 5, db: Session = Depends(get_db)):
+    from app.config import settings
+    s = db.get(Schueler, s_id)
+    kl = db.get(Klasse, s.klasse_id)
+    empfs = emp_service.empfehlungen(s_id, db, anzahl=anzahl)
+    profil = kp_service.berechne_profil(s_id, db)
+    return templates.TemplateResponse(request, "empfehlung.html", {
+        "schueler": s, "klasse": kl,
+        "empfehlungen": empfs,
+        "anzahl": anzahl,
+        "schwelle_schwach": settings.empfehlung_schwelle_schwach,
+        "hat_daten": bool(profil),
     })
 
 

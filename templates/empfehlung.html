@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Empfehlungen – {{ schueler.vorname }} {{ schueler.nachname }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <div>
+    <a href="/ui/schueler/{{ schueler.id }}" style="font-size:.9rem;">&larr; Zurück zum Dashboard</a>
+    <h2 style="margin:.25rem 0 0;">Aufgabenempfehlungen</h2>
+    <p style="margin:0; color:#6c757d;">{{ schueler.vorname }} {{ schueler.nachname }} &middot; {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}</p>
+  </div>
+  <form method="get" style="display:flex; gap:.5rem; align-items:end;">
+    <label style="margin:0;">Anzahl
+      <input type="number" name="anzahl" value="{{ anzahl }}" min="1" max="20" style="width:4rem; display:inline-block;">
+    </label>
+    <button type="submit" class="outline" style="margin:0;">Neu berechnen</button>
+  </form>
+</div>
+
+{% if empfehlungen %}
+<table>
+  <thead>
+    <tr>
+      <th>Buch</th>
+      <th>Kapitel</th>
+      <th>Nr.</th>
+      <th>S.</th>
+      <th>Beschreibung</th>
+      <th>AFB</th>
+      <th>Wicht.</th>
+      <th>Kompetenz</th>
+      <th>Begründung</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in empfehlungen %}
+    <tr>
+      <td><small>{{ e.buch }}</small></td>
+      <td><small>{{ e.kapitel }}</small></td>
+      <td>{{ e.aufgabennummer }}</td>
+      <td>{{ e.seite or '–' }}</td>
+      <td>{{ e.beschreibung or '–' }}</td>
+      <td><span class="badge">{{ e.afb_niveau.value }}</span></td>
+      <td style="text-align:center;">
+        {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
+      </td>
+      <td>
+        <span class="badge" style="background:#f8d7da;">{{ e.kompetenz_kuerzel }}</span>
+        <small style="color:#6c757d;">{{ e.kompetenz_score | round(0) | int }}%</small>
+      </td>
+      <td><small>{{ e.begruendung }}</small></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><small>{{ empfehlungen | length }} Empfehlung(en) basierend auf schwachen Kompetenzen</small></p>
+{% else %}
+<div role="alert" style="padding:.75rem 1rem; background:#d1e7dd; border-radius:.5rem;">
+  Keine schwachen Kompetenzen gefunden – alle Werte liegen bei {{ schwelle_schwach | int }}% oder höher.
+  {% if not hat_daten %}
+  <br><small>Hinweis: Es liegen noch keine Leistungsdaten vor, um ein Profil zu berechnen.</small>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
