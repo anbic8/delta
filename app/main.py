@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.routers import aufgabe, klasse, kompetenz, muendliche_note, schueler, schuljahr, schriftliche_leistung, ui
+from app.routers import aufgabe, buchaufgabe, klasse, kompetenz, muendliche_note, schueler, schuljahr, schriftliche_leistung, ui
 
 app = FastAPI(title="Delta – Schülerleistungen")
 
@@ -14,6 +14,7 @@ app.include_router(schueler.router)
 app.include_router(muendliche_note.router)
 app.include_router(kompetenz.router)
 app.include_router(aufgabe.router)
+app.include_router(buchaufgabe.router)
 app.include_router(schriftliche_leistung.router)
 app.include_router(ui.router)
 

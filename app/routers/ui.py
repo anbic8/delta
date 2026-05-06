@@ -562,3 +562,75 @@ async def punkte_import_bestaetigen(lid: int, request: Request, db: Session = De
         count += 1
     db.commit()
     return REDIRECT(f"/ui/schriftliche-leistungen/{lid}/auswertung?msg={count}+Einträge+importiert")
+
+
+# ── Buchaufgaben ──────────────────────────────────────────────
+
+@router.get("/buchaufgaben")
+def buchaufgaben_liste(
+    request: Request,
+    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "",
+    db: Session = Depends(get_db),
+):
+    from app.models.buchaufgabe import Buchaufgabe
+    import sqlalchemy as sa_mod
+    buecher = [r[0] for r in db.query(Buchaufgabe.buch).distinct().order_by(Buchaufgabe.buch).all()]
+    gesamt = db.query(Buchaufgabe).count()
+    return templates.TemplateResponse(request, "buchaufgaben.html", {
+        "buecher": buecher, "kompetenzen": db.query(Kompetenz).order_by(Kompetenz.kuerzel).all(),
+        "gesamt": gesamt,
+        "filter_buch": buch, "filter_kompetenz_id": kompetenz_id,
+        "filter_afb": afb, "filter_suche": suche,
+        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db),
+        "msg": request.query_params.get("msg"),
+    })
+
+
+@router.get("/buchaufgaben/suche")
+def buchaufgaben_suche(
+    request: Request,
+    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "",
+    db: Session = Depends(get_db),
+):
+    return templates.TemplateResponse(request, "htmx_buchaufgaben.html", {
+        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db),
+    })
+
+
+def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db):
+    from app.models.buchaufgabe import Buchaufgabe, BuchaufgabeKompetenz
+    import sqlalchemy as sa_mod
+    q = db.query(Buchaufgabe)
+    if buch:
+        q = q.filter(Buchaufgabe.buch == buch)
+    if afb:
+        q = q.filter(Buchaufgabe.afb_niveau == afb)
+    if suche:
+        term = f"%{suche}%"
+        q = q.filter(sa_mod.or_(Buchaufgabe.beschreibung.ilike(term), Buchaufgabe.buch.ilike(term), Buchaufgabe.kapitel.ilike(term)))
+    if kompetenz_id:
+        try:
+            q = q.join(BuchaufgabeKompetenz).filter(BuchaufgabeKompetenz.kompetenz_id == int(kompetenz_id))
+        except ValueError:
+            pass
+    return q.order_by(Buchaufgabe.buch, Buchaufgabe.kapitel, Buchaufgabe.aufgabennummer).all()
+
+
+@router.post("/buchaufgaben/import")
+async def buchaufgaben_import_ui(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    from app.routers.buchaufgabe import import_csv
+    ergebnis = await import_csv(file, db)
+    msg = f"{ergebnis.importiert}+neu,+{ergebnis.aktualisiert}+aktualisiert"
+    if ergebnis.fehler:
+        msg += f",+{ergebnis.fehler}+Fehler"
+    return REDIRECT(f"/ui/buchaufgaben?msg={msg}")
+
+
+@router.post("/buchaufgaben/{ba_id}/loeschen")
+def buchaufgabe_loeschen(ba_id: int, db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    obj = db.get(Buchaufgabe, ba_id)
+    if obj:
+        db.delete(obj)
+        db.commit()
+    return REDIRECT("/ui/buchaufgaben?msg=Aufgabe+gelöscht")

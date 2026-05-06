@@ -1,0 +1,46 @@
+{% if buchaufgaben %}
+<table>
+  <thead>
+    <tr>
+      <th>Buch</th>
+      <th>Kapitel</th>
+      <th>Nr.</th>
+      <th>S.</th>
+      <th>Beschreibung</th>
+      <th>AFB</th>
+      <th>Wicht.</th>
+      <th>Kompetenz</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ba in buchaufgaben %}
+    <tr>
+      <td><small>{{ ba.buch }}</small></td>
+      <td><small>{{ ba.kapitel }}</small></td>
+      <td>{{ ba.aufgabennummer }}</td>
+      <td>{{ ba.seite or '–' }}</td>
+      <td>{{ ba.beschreibung or '–' }}</td>
+      <td><span class="badge">{{ ba.afb_niveau }}</span></td>
+      <td style="text-align:center;">
+        {% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}
+      </td>
+      <td>
+        {% for ak in ba.kompetenzen %}
+        <span class="badge">{{ ak.kompetenz.kuerzel }}</span>
+        {% endfor %}
+      </td>
+      <td>
+        <form method="post" action="/ui/buchaufgaben/{{ ba.id }}/loeschen" style="display:inline;">
+          <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
+                  onclick="return confirm('Buchaufgabe löschen?')">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p><small>{{ buchaufgaben | length }} Ergebnis(se)</small></p>
+{% else %}
+<p>Keine Buchaufgaben gefunden.</p>
+{% endif %}

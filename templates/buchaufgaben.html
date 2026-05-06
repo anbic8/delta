@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Buchaufgaben-Katalog{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2>Buchaufgaben-Katalog</h2>
+  <span class="badge" style="font-size:.9rem;">{{ gesamt }} Aufgaben</span>
+</div>
+
+<!-- Filter -->
+<form hx-get="/ui/buchaufgaben/suche"
+      hx-target="#buchaufgaben-liste"
+      hx-trigger="change, input changed delay:400ms from:[name='suche']"
+      style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:.5rem; margin-bottom:1rem; align-items:end;">
+  <label>Suche
+    <input type="search" name="suche" placeholder="Stichwort…" value="{{ filter_suche }}">
+  </label>
+  <label>Buch
+    <select name="buch">
+      <option value="">Alle Bücher</option>
+      {% for b in buecher %}
+      <option value="{{ b }}" {% if b == filter_buch %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Kompetenz
+    <select name="kompetenz_id">
+      <option value="">Alle</option>
+      {% for k in kompetenzen %}
+      <option value="{{ k.id }}" {% if k.id|string == filter_kompetenz_id %}selected{% endif %}>{{ k.kuerzel }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>AFB
+    <select name="afb">
+      <option value="">Alle</option>
+      <option value="AFB_I" {% if filter_afb == 'AFB_I' %}selected{% endif %}>AFB I</option>
+      <option value="AFB_II" {% if filter_afb == 'AFB_II' %}selected{% endif %}>AFB II</option>
+      <option value="AFB_III" {% if filter_afb == 'AFB_III' %}selected{% endif %}>AFB III</option>
+    </select>
+  </label>
+</form>
+
+<!-- Import -->
+<details style="margin-bottom:1.5rem;">
+  <summary>📥 CSV importieren</summary>
+  <form method="post" action="/ui/buchaufgaben/import" enctype="multipart/form-data" style="margin-top:.75rem;">
+    <label>CSV-Datei
+      <input type="file" name="file" accept=".csv" required>
+    </label>
+    <small class="hint">Format: Buch,Kapitel,Seite,Aufgabennummer,Beschreibung,AFB,Wichtigkeit,Kompetenz
+    · <a href="/buchaufgaben/beispiel-csv" download>Beispiel herunterladen</a></small>
+    <button type="submit" style="margin-top:.5rem;">Importieren</button>
+  </form>
+</details>
+
+<!-- Ergebnisliste -->
+<div id="buchaufgaben-liste">
+  {% include "htmx_buchaufgaben.html" %}
+</div>
+{% endblock %}

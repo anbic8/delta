@@ -1,0 +1,51 @@
+Buch,Kapitel,Seite,Aufgabennummer,Beschreibung,AFB,Wichtigkeit,Kompetenz
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,14,1,Potenzen mit natürlichen Exponenten berechnen,AFB_I,2,K5
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,14,3,Potenzen mit ganzzahligen Exponenten,AFB_I,2,K5
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,16,5,Wurzeln vereinfachen und berechnen,AFB_I,2,K5
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,18,8,Potenzen und Wurzeln verknüpfen,AFB_II,3,K5
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,20,12,Terme mit Wurzeln umformen,AFB_II,2,K5
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,22,15,Gleichungen mit Potenzen lösen,AFB_II,3,K2
+Lambacher Schweizer 9 Bayern,1 - Potenzen und Wurzeln,24,18,Potenzgesetze anwenden und begründen,AFB_III,2,K1
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,32,2,Lineare Gleichungen umformen,AFB_I,2,K5
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,34,5,Gleichungssysteme mit zwei Variablen,AFB_I,3,K2
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,36,8,Gleichungssysteme grafisch lösen,AFB_I,2,K4
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,38,11,Gleichungssysteme algebraisch lösen,AFB_II,3,K2
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,40,14,Textaufgaben mit Gleichungssystemen,AFB_II,3,K3
+Lambacher Schweizer 9 Bayern,2 - Terme und Gleichungen,42,17,Gleichungssysteme mit drei Variablen,AFB_III,1,K2
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,52,1,Quadratische Gleichungen durch Ausklammern,AFB_I,3,K2
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,54,4,Quadratische Ergänzung,AFB_I,3,K5
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,56,7,Lösungsformel anwenden,AFB_I,3,K5
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,58,10,Diskriminante und Lösungsanzahl,AFB_II,3,K2
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,60,13,Quadratische Gleichungen mit Parametern,AFB_II,2,K2
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,62,16,Textaufgaben mit quadratischen Gleichungen,AFB_II,3,K3
+Lambacher Schweizer 9 Bayern,3 - Quadratische Gleichungen,64,19,Bruchgleichungen auf quadratische Gleichungen zurückführen,AFB_III,2,K2
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,72,2,Parabel zeichnen und beschreiben,AFB_I,2,K4
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,74,5,Scheitelpunktform bestimmen,AFB_I,3,K5
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,76,8,Normalparabel verschieben und strecken,AFB_I,2,K4
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,78,11,Funktionsterm aus Parabel ablesen,AFB_II,3,K4
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,80,14,Nullstellen grafisch und rechnerisch,AFB_II,3,K2
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,82,17,Parabel und Gerade – Schnittpunkte,AFB_II,2,K2
+Lambacher Schweizer 9 Bayern,4 - Quadratische Funktionen,84,20,Extremwertaufgaben mit Parabel,AFB_III,3,K3
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,94,1,Sinus und Kosinus am rechtwinkligen Dreieck,AFB_I,3,K5
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,96,4,Tangens berechnen,AFB_I,2,K5
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,98,7,Winkel mithilfe von Umkehrfunktionen berechnen,AFB_II,3,K2
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,100,10,Dreiecke mit Sinussatz,AFB_II,2,K3
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,102,13,Dreiecke mit Kosinussatz,AFB_II,2,K3
+Lambacher Schweizer 9 Bayern,5 - Trigonometrie,104,16,Anwendungsaufgaben Trigonometrie,AFB_III,3,K3
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,12,1,Exponentialfunktionen zeichnen und beschreiben,AFB_I,3,K4
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,14,4,Wachstum und Zerfall modellieren,AFB_I,3,K3
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,16,7,Verdopplungszeit und Halbwertszeit,AFB_II,3,K3
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,18,10,Logarithmus als Umkehrfunktion,AFB_II,2,K5
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,20,13,Gleichungen mit Exponentialfunktionen lösen,AFB_II,3,K2
+Lambacher Schweizer 10 Bayern,1 - Exponentialfunktionen,22,16,Logistisches Wachstum,AFB_III,2,K3
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,32,2,Laplace-Wahrscheinlichkeit berechnen,AFB_I,3,K5
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,34,5,Mehrstufige Zufallsversuche – Baumdiagramm,AFB_I,3,K4
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,36,8,Bedingte Wahrscheinlichkeit,AFB_II,3,K5
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,38,11,Binomialverteilung berechnen,AFB_II,3,K5
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,40,14,Erwartungswert und Standardabweichung,AFB_II,2,K5
+Lambacher Schweizer 10 Bayern,2 - Wahrscheinlichkeit,42,17,Hypothesentests,AFB_III,2,K2
+Lambacher Schweizer 10 Bayern,3 - Statistik,52,1,Häufigkeiten und Diagramme,AFB_I,2,K4
+Lambacher Schweizer 10 Bayern,3 - Statistik,54,4,Mittelwert Median Modus,AFB_I,3,K5
+Lambacher Schweizer 10 Bayern,3 - Statistik,56,7,Streumaße berechnen und interpretieren,AFB_II,2,K6
+Lambacher Schweizer 10 Bayern,3 - Statistik,58,10,Statistische Erhebungen auswerten,AFB_II,3,K6
+Lambacher Schweizer 10 Bayern,3 - Statistik,60,13,Korrelation und Regression,AFB_III,1,K3
