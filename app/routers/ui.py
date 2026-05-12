@@ -361,6 +361,15 @@ def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data})
 
 
+@router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung")
+def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Session = Depends(get_db)):
+    from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
+    schueler, leistung, bloecke = empfehlungen_fuer_schulaufgabe(s_id, lid, db)
+    return templates.TemplateResponse(request, "schulaufgabe_empfehlung.html", {
+        "schueler": schueler, "leistung": leistung, "bloecke": bloecke,
+    })
+
+
 # ── Aufgabenpool ──────────────────────────────────────────────
 
 @router.get("/aufgaben")

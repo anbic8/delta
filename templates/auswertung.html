@@ -32,6 +32,8 @@
       <td>
         {{ z.name }}
         {% if z.grenzfall %}<span title="Grenzfall">🟡</span>{% endif %}
+        <br><a href="/ui/schueler/{{ z.schueler_id }}/schulaufgabe/{{ auswertung.leistung_id }}/empfehlung"
+               style="font-size:.75rem;">📚 Übung</a>
       </td>
       {% for a in auswertung.aufgaben %}
       <td style="text-align:center;">

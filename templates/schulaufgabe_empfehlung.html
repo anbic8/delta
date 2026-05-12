@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Übungsempfehlung – {{ schueler.nachname }}, {{ schueler.vorname }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung">&larr; Auswertung {{ leistung.titel }}</a></p>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <div>
+    <h2>Übungsempfehlung</h2>
+    <p style="margin:0; color:#6c757d;">
+      {{ schueler.nachname }}, {{ schueler.vorname }} &middot; {{ leistung.titel }}
+    </p>
+  </div>
+</div>
+
+{% set hat_empfehlungen = bloecke | selectattr("empfehlungen") | list %}
+{% set hat_keine_daten = bloecke | selectattr("erreicht", "none") | list %}
+
+{% if not bloecke %}
+<p>Keine Aufgaben in dieser Schulaufgabe.</p>
+{% elif not hat_empfehlungen %}
+<div role="alert" style="padding:.75rem 1rem; background:#d1e7dd; border-radius:.5rem;">
+  {% if hat_keine_daten %}
+  Noch keine Punkte eingetragen – bitte zuerst die Punkte-Matrix ausfüllen.
+  {% else %}
+  Sehr gut! Für alle Aufgaben wurde volle Punktzahl erreicht – keine Übungen nötig.
+  {% endif %}
+</div>
+{% else %}
+
+{% for block in bloecke %}
+<div style="margin-bottom:1.5rem; border:1px solid #dee2e6; border-radius:.5rem; overflow:hidden;">
+  <!-- Aufgaben-Header -->
+  <div style="display:flex; justify-content:space-between; align-items:center;
+              padding:.6rem 1rem;
+              background:{% if block.voll %}#d1e7dd{% elif block.erreicht is none %}#f8f9fa{% else %}#fff3cd{% endif %};">
+    <div>
+      <strong>Aufgabe {{ block.la_nr }}</strong>
+      <span style="color:#6c757d; margin-left:.5rem; font-size:.9rem;">{{ block.titel }}</span>
+    </div>
+    <div style="text-align:right;">
+      {% if block.erreicht is none %}
+        <span class="badge">nicht eingetragen</span>
+      {% elif block.voll %}
+        <span class="badge" style="background:#d1e7dd;">{{ block.erreicht }}/{{ block.max_punkte }} ✓ voll</span>
+      {% else %}
+        <strong>{{ block.erreicht }}/{{ block.max_punkte }}</strong>
+        <span style="color:#6c757d; margin-left:.3rem;">({{ block.prozent }}%)</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if block.voll %}
+  <p style="padding:.5rem 1rem; margin:0; color:#2d6a4f; font-size:.9rem;">Volle Punktzahl – keine Übung nötig.</p>
+  {% elif block.empfehlungen %}
+  <table style="margin:0; border-radius:0;">
+    <thead>
+      <tr>
+        <th>Buch</th>
+        <th>Kapitel</th>
+        <th>Unterkapitel</th>
+        <th>Nr.</th>
+        <th>Beschreibung</th>
+        <th>AFB</th>
+        <th>Wicht.</th>
+        <th>Treffergrund</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in block.empfehlungen %}
+      <tr>
+        <td><small>{{ e.buch }}</small></td>
+        <td><small>{{ e.kapitel }}</small></td>
+        <td><small>{{ e.unterkapitel or '–' }}</small></td>
+        <td>{{ e.aufgabennummer }}</td>
+        <td>{{ e.beschreibung or '–' }}</td>
+        <td><span class="badge">{{ e.afb_niveau }}</span></td>
+        <td style="text-align:center;">
+          {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
+        </td>
+        <td><small style="color:#6c757d;">{{ e.match_grund }}</small></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="padding:.5rem 1rem; margin:0; color:#6c757d; font-size:.9rem;">
+    Keine passenden Buchaufgaben gefunden.
+    {% if not block.titel %}Tipp: Kapitel/Unterkapitel bei der Aufgabe im Pool eintragen.{% endif %}
+  </p>
+  {% endif %}
+</div>
+{% endfor %}
+
+{% endif %}
+{% endblock %}
