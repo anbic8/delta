@@ -23,6 +23,8 @@ class Aufgabe(Base):
     max_punkte: Mapped[float] = mapped_column(Float)
     afb_niveau: Mapped[AfbNiveau] = mapped_column(sa.Enum(AfbNiveau, native_enum=False, length=10))
     tags: Mapped[str | None] = mapped_column(Text, nullable=True)
+    kapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    unterkapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
     erstellt_am: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     kompetenzen: Mapped[list["AufgabeKompetenz"]] = relationship(

@@ -26,6 +26,15 @@
     <p style="margin-top:1rem;">Tags: <small>{{ aufgabe.tags }}</small></p>
     {% endif %}
 
+    {% if aufgabe.kapitel %}
+    <p style="margin-top:1rem;">
+      <small>
+        📖 <strong>{{ aufgabe.kapitel }}</strong>
+        {% if aufgabe.unterkapitel %} › {{ aufgabe.unterkapitel }}{% endif %}
+      </small>
+    </p>
+    {% endif %}
+
     <details style="margin-top:1.5rem;">
       <summary>Aufgabe bearbeiten</summary>
       <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/bearbeiten" style="margin-top:.75rem;">
@@ -43,6 +52,34 @@
           </label>
         </div>
         <label>Tags (kommagetrennt) <input type="text" name="tags" value="{{ aufgabe.tags or '' }}"></label>
+
+        <fieldset style="margin-top:.75rem;">
+          <legend>Buchkapitel-Zuordnung</legend>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-top:.25rem;">
+            <label>Kapitel
+              <select name="kapitel"
+                      hx-get="/ui/aufgaben/meta/unterkapitel"
+                      hx-target="#uk-select-{{ aufgabe.id }}"
+                      hx-swap="innerHTML"
+                      hx-trigger="change"
+                      hx-include="this">
+                <option value="">– keine –</option>
+                {% for k in kapitel_liste %}
+                <option value="{{ k }}" {% if aufgabe.kapitel == k %}selected{% endif %}>{{ k }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Unterkapitel
+              <select name="unterkapitel" id="uk-select-{{ aufgabe.id }}">
+                <option value="">– keine –</option>
+                {% for uk in unterkapitel_liste %}
+                <option value="{{ uk }}" {% if aufgabe.unterkapitel == uk %}selected{% endif %}>{{ uk }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+        </fieldset>
+
         <button type="submit" style="margin-top:.5rem;">Speichern</button>
       </form>
     </details>

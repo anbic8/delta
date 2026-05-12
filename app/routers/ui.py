@@ -386,19 +386,61 @@ def aufgaben_suche(request: Request, q: str = "", afb: str = "", db: Session = D
     })
 
 
+@router.get("/aufgaben/meta/unterkapitel")
+def aufgaben_meta_unterkapitel(kapitel: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    q = db.query(Buchaufgabe.unterkapitel).filter(Buchaufgabe.unterkapitel != "")
+    if kapitel:
+        q = q.filter(Buchaufgabe.kapitel == kapitel)
+    werte = sorted(set(r[0] for r in q.distinct().all()))
+    opts = '<option value="">– keine –</option>' + "".join(
+        f'<option value="{v}">{v}</option>' for v in werte
+    )
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(opts)
+
+
+@router.get("/aufgaben/meta/beschreibungen")
+def aufgaben_meta_beschreibungen(kapitel: str = "", unterkapitel: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    q = db.query(Buchaufgabe.beschreibung).filter(
+        Buchaufgabe.beschreibung.isnot(None),
+        Buchaufgabe.beschreibung != "",
+    )
+    if kapitel:
+        q = q.filter(Buchaufgabe.kapitel == kapitel)
+    if unterkapitel:
+        q = q.filter(Buchaufgabe.unterkapitel == unterkapitel)
+    werte = sorted(set(r[0] for r in q.distinct().all()))
+    opts = '<option value="">– alle –</option>' + "".join(
+        f'<option value="{v}">{v}</option>' for v in werte
+    )
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(opts)
+
+
+def _kapitel_liste(db):
+    from app.models.buchaufgabe import Buchaufgabe
+    return sorted(set(r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()))
+
+
 @router.get("/aufgaben/neu")
-def aufgabe_neu_form(request: Request):
-    return templates.TemplateResponse(request, "aufgabe_neu.html")
+def aufgabe_neu_form(request: Request, db: Session = Depends(get_db)):
+    return templates.TemplateResponse(request, "aufgabe_neu.html", {
+        "kapitel_liste": _kapitel_liste(db),
+    })
 
 
 @router.post("/aufgaben")
 def aufgabe_erstellen(
     titel: str = Form(...), aufgabenstellung: str = Form(...), loesung: str = Form(""),
     max_punkte: float = Form(...), afb_niveau: str = Form(...), tags: str = Form(""),
+    kapitel: str = Form(""), unterkapitel: str = Form(""),
     db: Session = Depends(get_db),
 ):
     a = Aufgabe(titel=titel, aufgabenstellung=aufgabenstellung, loesung=loesung or None,
-                max_punkte=max_punkte, afb_niveau=AfbNiveau(afb_niveau), tags=tags or None)
+                max_punkte=max_punkte, afb_niveau=AfbNiveau(afb_niveau), tags=tags or None,
+                kapitel=kapitel or None, unterkapitel=unterkapitel or None)
     db.add(a)
     db.commit()
     db.refresh(a)
@@ -416,14 +458,20 @@ def aufgabe_loeschen(a_id: int, db: Session = Depends(get_db)):
 
 @router.get("/aufgaben/{a_id}")
 def aufgabe_detail(a_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
     a = db.get(Aufgabe, a_id)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     aks = db.query(AufgabeKompetenz).filter(AufgabeKompetenz.aufgabe_id == a_id).all()
     kompetenzen_map = {ak.kompetenz_id: ak.gewichtung for ak in aks}
+    kap_liste = _kapitel_liste(db)
+    uk_liste = sorted(set(r[0] for r in db.query(Buchaufgabe.unterkapitel)
+                          .filter(Buchaufgabe.kapitel == a.kapitel, Buchaufgabe.unterkapitel != "")
+                          .distinct().all())) if a.kapitel else []
     return templates.TemplateResponse(request, "aufgabe_detail.html", {
         "aufgabe": a,
         "kompetenzen_aktuell": aks, "alle_kompetenzen": alle_k,
         "kompetenzen_map": kompetenzen_map,
+        "kapitel_liste": kap_liste, "unterkapitel_liste": uk_liste,
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
     })
@@ -433,12 +481,15 @@ def aufgabe_detail(a_id: int, request: Request, db: Session = Depends(get_db)):
 def aufgabe_bearbeiten(
     a_id: int, titel: str = Form(...), aufgabenstellung: str = Form(...),
     loesung: str = Form(""), max_punkte: float = Form(...),
-    afb_niveau: str = Form(...), tags: str = Form(""), db: Session = Depends(get_db),
+    afb_niveau: str = Form(...), tags: str = Form(""),
+    kapitel: str = Form(""), unterkapitel: str = Form(""),
+    db: Session = Depends(get_db),
 ):
     a = db.get(Aufgabe, a_id)
     a.titel = titel; a.aufgabenstellung = aufgabenstellung
     a.loesung = loesung or None; a.max_punkte = max_punkte
     a.afb_niveau = AfbNiveau(afb_niveau); a.tags = tags or None
+    a.kapitel = kapitel or None; a.unterkapitel = unterkapitel or None
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a_id}?msg=Gespeichert")
 

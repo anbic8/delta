@@ -4,7 +4,7 @@
 <p><a href="/ui/aufgaben">← Aufgabenpool</a></p>
 <h2>Neue Aufgabe</h2>
 
-<form method="post" action="/ui/aufgaben" style="max-width:600px;">
+<form method="post" action="/ui/aufgaben" style="max-width:640px;">
   <label>Titel <input type="text" name="titel" required></label>
   <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="5" required></textarea></label>
   <label>Lösung (optional) <textarea name="loesung" rows="3"></textarea></label>
@@ -18,9 +18,35 @@
       </select>
     </label>
   </div>
-  <label>Tags (kommagetrennt, z.B. "quadratische Funktion, Parabel")
+  <label>Tags (kommagetrennt)
     <input type="text" name="tags" placeholder="optional">
   </label>
+
+  <fieldset style="margin-top:1rem;">
+    <legend>Buchkapitel-Zuordnung</legend>
+    <small class="hint">Hilft später bei der Aufgaben-Empfehlung nach Schulaufgaben.</small>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-top:.5rem;">
+      <label>Kapitel
+        <select name="kapitel"
+                hx-get="/ui/aufgaben/meta/unterkapitel"
+                hx-target="#uk-select-neu"
+                hx-swap="innerHTML"
+                hx-trigger="change"
+                hx-include="this">
+          <option value="">– keine –</option>
+          {% for k in kapitel_liste %}
+          <option value="{{ k }}">{{ k }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>Unterkapitel
+        <select name="unterkapitel" id="uk-select-neu">
+          <option value="">– keine –</option>
+        </select>
+      </label>
+    </div>
+  </fieldset>
+
   <button type="submit" style="margin-top:1rem;">Anlegen</button>
 </form>
 {% endblock %}

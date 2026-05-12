@@ -39,6 +39,8 @@ class AufgabeRead(BaseModel):
     max_punkte: float
     afb_niveau: AfbNiveau
     tags: str | None
+    kapitel: str | None
+    unterkapitel: str | None
     erstellt_am: datetime
 
     model_config = {"from_attributes": True}
@@ -51,3 +53,5 @@ class AufgabeUpdate(BaseModel):
     max_punkte: float | None = None
     afb_niveau: AfbNiveau | None = None
     tags: str | None = None
+    kapitel: str | None = None
+    unterkapitel: str | None = None
