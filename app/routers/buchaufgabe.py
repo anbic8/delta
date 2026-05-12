@@ -129,10 +129,14 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
                 db.flush()
                 importiert += 1
 
-            # Kompetenz zuweisen
-            if kompetenz_kuerzel and kompetenz_kuerzel in k_map:
+            # Kompetenzen zuweisen (Leerzeichen- oder Semikolon-getrennte Liste, z.B. "K1 K5")
+            import re as _re
+            kuerzel_liste = [k for k in _re.split(r'[\s;,]+', row.get("Kompetenz", "").strip().upper()) if k in k_map]
+            if kuerzel_liste:
                 db.query(BuchaufgabeKompetenz).filter(BuchaufgabeKompetenz.buchaufgabe_id == ba.id).delete()
-                db.add(BuchaufgabeKompetenz(buchaufgabe_id=ba.id, kompetenz_id=k_map[kompetenz_kuerzel], gewichtung=1.0))
+                gewichtung = round(1.0 / len(kuerzel_liste), 4)
+                for kuerzel in kuerzel_liste:
+                    db.add(BuchaufgabeKompetenz(buchaufgabe_id=ba.id, kompetenz_id=k_map[kuerzel], gewichtung=gewichtung))
 
         except Exception as e:
             fehler += 1
