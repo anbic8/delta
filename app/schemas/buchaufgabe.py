@@ -6,11 +6,13 @@ class BuchaufgabeRead(BaseModel):
     id: int
     buch: str
     kapitel: str
+    unterkapitel: str | None
     seite: int | None
     aufgabennummer: str
     beschreibung: str | None
     afb_niveau: AfbNiveau
     wichtigkeit: int
+    minimalfahrplan: bool
 
     model_config = {"from_attributes": True}
 

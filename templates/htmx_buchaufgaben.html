@@ -4,11 +4,12 @@
     <tr>
       <th>Buch</th>
       <th>Kapitel</th>
+      <th>Unterkapitel</th>
       <th>Nr.</th>
       <th>S.</th>
       <th>Beschreibung</th>
       <th>AFB</th>
-      <th>Wicht.</th>
+      <th>Min.</th>
       <th>Kompetenz</th>
       <th></th>
     </tr>
@@ -18,13 +19,12 @@
     <tr>
       <td><small>{{ ba.buch }}</small></td>
       <td><small>{{ ba.kapitel }}</small></td>
+      <td><small>{{ ba.unterkapitel or '–' }}</small></td>
       <td>{{ ba.aufgabennummer }}</td>
       <td>{{ ba.seite or '–' }}</td>
       <td>{{ ba.beschreibung or '–' }}</td>
       <td><span class="badge">{{ ba.afb_niveau }}</span></td>
-      <td style="text-align:center;">
-        {% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}
-      </td>
+      <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
       <td>
         {% for ak in ba.kompetenzen %}
         <span class="badge">{{ ak.kompetenz.kuerzel }}</span>

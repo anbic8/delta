@@ -77,11 +77,17 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
 
     for i, row in enumerate(rows, 2):
         try:
+            # Buch: entweder direktes "Buch"-Feld oder aus "Jahrgangsstufe" ableiten
             buch = row.get("Buch", "").strip()
+            if not buch:
+                js = row.get("Jahrgangsstufe", "").strip()
+                if js.isdigit():
+                    buch = f"Lambacher Schweizer {js} Bayern"
             kapitel = row.get("Kapitel", "").strip()
-            aufgnr = row.get("Aufgabennummer", "").strip()
+            # "Aufgabe" und "Aufgabennummer" beide akzeptieren
+            aufgnr = (row.get("Aufgabennummer") or row.get("Aufgabe") or "").strip()
             if not buch or not kapitel or not aufgnr:
-                raise ValueError("Buch, Kapitel und Aufgabennummer sind Pflichtfelder")
+                raise ValueError("Buch/Jahrgangsstufe, Kapitel und Aufgabe sind Pflichtfelder")
 
             afb_raw = row.get("AFB", "AFB_II").strip().upper().replace("-", "_")
             if not afb_raw.startswith("AFB_"):
@@ -92,7 +98,10 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
             seite_raw = row.get("Seite", "").strip()
             seite = int(seite_raw) if seite_raw.isdigit() else None
             beschreibung = row.get("Beschreibung", "").strip() or None
+            unterkapitel = row.get("Unterkapitel", "").strip() or None
             kompetenz_kuerzel = row.get("Kompetenz", "").strip().upper() or None
+            mfp_raw = row.get("Minimalfahrplan", "").strip().lower()
+            minimalfahrplan = mfp_raw in ("ja", "true", "1", "x", "yes")
 
             existing = db.query(Buchaufgabe).filter(
                 Buchaufgabe.buch == buch,
@@ -105,13 +114,16 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
                 existing.beschreibung = beschreibung
                 existing.afb_niveau = afb
                 existing.wichtigkeit = wichtigkeit
+                existing.unterkapitel = unterkapitel
+                existing.minimalfahrplan = minimalfahrplan
                 ba = existing
                 aktualisiert += 1
             else:
                 ba = Buchaufgabe(
-                    buch=buch, kapitel=kapitel, seite=seite,
-                    aufgabennummer=aufgnr, beschreibung=beschreibung,
+                    buch=buch, kapitel=kapitel, unterkapitel=unterkapitel,
+                    seite=seite, aufgabennummer=aufgnr, beschreibung=beschreibung,
                     afb_niveau=afb, wichtigkeit=wichtigkeit,
+                    minimalfahrplan=minimalfahrplan,
                 )
                 db.add(ba)
                 db.flush()

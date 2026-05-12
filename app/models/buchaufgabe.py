@@ -15,11 +15,13 @@ class Buchaufgabe(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     buch: Mapped[str] = mapped_column(String(200))
     kapitel: Mapped[str] = mapped_column(String(100))
+    unterkapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
     seite: Mapped[int | None] = mapped_column(Integer, nullable=True)
     aufgabennummer: Mapped[str] = mapped_column(String(20))
     beschreibung: Mapped[str | None] = mapped_column(Text, nullable=True)
     afb_niveau: Mapped[AfbNiveau] = mapped_column(sa.Enum(AfbNiveau, native_enum=False, length=10))
     wichtigkeit: Mapped[int] = mapped_column(Integer, default=2)
+    minimalfahrplan: Mapped[bool] = mapped_column(sa.Boolean, default=False)
 
     kompetenzen: Mapped[list["BuchaufgabeKompetenz"]] = relationship(
         back_populates="buchaufgabe", cascade="all, delete-orphan"

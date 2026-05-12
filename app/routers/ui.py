@@ -586,19 +586,18 @@ async def punkte_import_bestaetigen(lid: int, request: Request, db: Session = De
 @router.get("/buchaufgaben")
 def buchaufgaben_liste(
     request: Request,
-    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "",
+    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "", minimalfahrplan: str = "",
     db: Session = Depends(get_db),
 ):
     from app.models.buchaufgabe import Buchaufgabe
-    import sqlalchemy as sa_mod
     buecher = [r[0] for r in db.query(Buchaufgabe.buch).distinct().order_by(Buchaufgabe.buch).all()]
     gesamt = db.query(Buchaufgabe).count()
     return templates.TemplateResponse(request, "buchaufgaben.html", {
         "buecher": buecher, "kompetenzen": db.query(Kompetenz).order_by(Kompetenz.kuerzel).all(),
         "gesamt": gesamt,
         "filter_buch": buch, "filter_kompetenz_id": kompetenz_id,
-        "filter_afb": afb, "filter_suche": suche,
-        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db),
+        "filter_afb": afb, "filter_suche": suche, "filter_minimalfahrplan": minimalfahrplan,
+        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db),
         "msg": request.query_params.get("msg"),
     })
 
@@ -606,15 +605,15 @@ def buchaufgaben_liste(
 @router.get("/buchaufgaben/suche")
 def buchaufgaben_suche(
     request: Request,
-    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "",
+    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "", minimalfahrplan: str = "",
     db: Session = Depends(get_db),
 ):
     return templates.TemplateResponse(request, "htmx_buchaufgaben.html", {
-        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db),
+        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db),
     })
 
 
-def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db):
+def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db):
     from app.models.buchaufgabe import Buchaufgabe, BuchaufgabeKompetenz
     import sqlalchemy as sa_mod
     q = db.query(Buchaufgabe)
@@ -622,6 +621,8 @@ def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, db):
         q = q.filter(Buchaufgabe.buch == buch)
     if afb:
         q = q.filter(Buchaufgabe.afb_niveau == afb)
+    if minimalfahrplan:
+        q = q.filter(Buchaufgabe.minimalfahrplan.is_(True))
     if suche:
         term = f"%{suche}%"
         q = q.filter(sa_mod.or_(Buchaufgabe.beschreibung.ilike(term), Buchaufgabe.buch.ilike(term), Buchaufgabe.kapitel.ilike(term)))
