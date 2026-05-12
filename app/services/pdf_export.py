@@ -7,6 +7,13 @@ def _jinja_env() -> Environment:
     return Environment(loader=FileSystemLoader("templates"), autoescape=True)
 
 
+def kapitel_empfehlung_pdf(context: dict) -> bytes:
+    """PDF für die Klassen-Kapitel-Empfehlung."""
+    import weasyprint
+    html = _jinja_env().get_template("pdf_kapitel_empfehlung.html").render(**context)
+    return weasyprint.HTML(string=html, base_url=".").write_pdf()
+
+
 def empfehlung_pdf(items: list[dict]) -> bytes:
     """
     items: list of {"schueler": ..., "klasse": ..., "leistung": ..., "bloecke": ...}

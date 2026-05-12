@@ -679,6 +679,96 @@ async def punkte_import_bestaetigen(lid: int, request: Request, db: Session = De
     return REDIRECT(f"/ui/schriftliche-leistungen/{lid}/auswertung?msg={count}+Einträge+importiert")
 
 
+# ── Kapitel-Empfehlung (Klasse) ───────────────────────────────
+
+def _kapitel_empfehlung_kontext(kl_id: int, kapitel: str, uk_anzahl: dict, db):
+    from app.services.kapitel_empfehlung import empfehlungen_fuer_kapitel
+    from app.models.kompetenz import Kompetenz
+    ergebnis, komps, afb_profil, ziel = empfehlungen_fuer_kapitel(kl_id, kapitel, uk_anzahl, db)
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
+    schwach_ids = {k_id for k_id, score in komps.items() if score < 60}
+    komp_map = {k.id: k.kuerzel for k in alle_k}
+    return ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map
+
+
+@router.get("/klassen/{kl_id}/kapitelempfehlung")
+def kapitel_empfehlung_form(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    kl = db.get(Klasse, kl_id)
+    return templates.TemplateResponse(request, "kapitel_empfehlung.html", {
+        "klasse": kl, "kapitel_liste": _kapitel_liste(db),
+    })
+
+
+@router.get("/klassen/{kl_id}/kapitelempfehlung/uk-liste")
+def kapitel_empfehlung_uk_liste(kl_id: int, kapitel: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    from fastapi.responses import HTMLResponse
+    if not kapitel:
+        return HTMLResponse("")
+    uk_counts = (
+        db.query(Buchaufgabe.unterkapitel, db.query(Buchaufgabe).filter(
+            Buchaufgabe.kapitel == kapitel,
+            Buchaufgabe.unterkapitel == Buchaufgabe.unterkapitel
+        ).count)
+    )
+    import sqlalchemy as sa_mod
+    rows = (
+        db.query(Buchaufgabe.unterkapitel, sa_mod.func.count(Buchaufgabe.id))
+        .filter(Buchaufgabe.kapitel == kapitel, Buchaufgabe.unterkapitel != "")
+        .group_by(Buchaufgabe.unterkapitel)
+        .order_by(Buchaufgabe.unterkapitel)
+        .all()
+    )
+    from jinja2 import Environment, FileSystemLoader
+    env = Environment(loader=FileSystemLoader("templates"), autoescape=True)
+    html = env.get_template("htmx_kapitel_uk_liste.html").render(
+        unterkapitel_liste=[(uk, cnt) for uk, cnt in rows]
+    )
+    return HTMLResponse(html)
+
+
+@router.post("/klassen/{kl_id}/kapitelempfehlung")
+async def kapitel_empfehlung_post(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    form = await request.form()
+    kapitel = form.get("kapitel", "")
+    uk_namen = form.getlist("uk")
+    anz_werte = form.getlist("anz")
+    uk_anzahl = {uk: int(anz or 0) for uk, anz in zip(uk_namen, anz_werte)}
+    kl = db.get(Klasse, kl_id)
+    ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map = \
+        _kapitel_empfehlung_kontext(kl_id, kapitel, uk_anzahl, db)
+    return templates.TemplateResponse(request, "kapitel_empfehlung.html", {
+        "klasse": kl, "kapitel_liste": _kapitel_liste(db),
+        "gewaehltes_kapitel": kapitel,
+        "ergebnis": ergebnis, "komps": komps, "afb_profil": afb_profil,
+        "ziel": ziel, "alle_kompetenzen": alle_k,
+        "schwach_ids": schwach_ids, "komp_map": komp_map,
+        "unterkapitel_liste": [(uk, len(v)) for uk, v in ergebnis.items()],
+    })
+
+
+@router.post("/klassen/{kl_id}/kapitelempfehlung/pdf")
+async def kapitel_empfehlung_pdf_route(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.services.pdf_export import kapitel_empfehlung_pdf
+    from fastapi.responses import Response
+    form = await request.form()
+    kapitel = form.get("kapitel", "")
+    uk_namen = form.getlist("uk")
+    anz_werte = form.getlist("anz")
+    uk_anzahl = {uk: int(anz or 0) for uk, anz in zip(uk_namen, anz_werte)}
+    kl = db.get(Klasse, kl_id)
+    ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map = \
+        _kapitel_empfehlung_kontext(kl_id, kapitel, uk_anzahl, db)
+    pdf_bytes = kapitel_empfehlung_pdf({
+        "klasse": kl, "kapitel": kapitel,
+        "ergebnis": ergebnis, "komps": komps, "afb_profil": afb_profil,
+        "ziel": ziel, "schwach_ids": schwach_ids, "komp_map": komp_map,
+    })
+    dateiname = f"Kapitel_Empfehlung_{kl.name}_{kapitel[:30]}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
 # ── Buchaufgaben ──────────────────────────────────────────────
 
 @router.get("/buchaufgaben")

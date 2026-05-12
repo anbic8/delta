@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Kapitel-Empfehlung – {{ klasse.name }}{% endblock %}
+{% block content %}
+<p><a href="/ui/klassen/{{ klasse.id }}">&larr; {{ klasse.name }}</a></p>
+<h2>Kapitel-Empfehlung – {{ klasse.name }}</h2>
+<p style="color:#6c757d;">Basiert auf den Kompetenz- und AFB-Profilen aller bisherigen Tests der Klasse.</p>
+
+<form method="post" action="/ui/klassen/{{ klasse.id }}/kapitelempfehlung">
+  <label style="max-width:500px;">Kapitel auswählen
+    <select name="kapitel" required
+            hx-get="/ui/klassen/{{ klasse.id }}/kapitelempfehlung/uk-liste"
+            hx-target="#uk-section"
+            hx-swap="innerHTML"
+            hx-trigger="change"
+            hx-include="this">
+      <option value="">– bitte wählen –</option>
+      {% for k in kapitel_liste %}
+      <option value="{{ k }}" {% if k == gewaehltes_kapitel %}selected{% endif %}>{{ k }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <div id="uk-section" style="margin-top:.75rem;">
+    {% if gewaehltes_kapitel %}
+    {% include "htmx_kapitel_uk_liste.html" %}
+    {% endif %}
+  </div>
+</form>
+
+{% if ergebnis is defined %}
+<hr style="margin:2rem 0;">
+
+<!-- Klassenprofil -->
+<details {% if not komps %}open{% endif %} style="margin-bottom:1.5rem;">
+  <summary><strong>Klassen-Profil (Grundlage der Empfehlung)</strong></summary>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-top:1rem;">
+
+    <div>
+      <h4 style="margin:0 0 .5rem;">Kompetenzen (Ø Klasse)</h4>
+      {% if komps %}
+      <table style="font-size:.9rem;">
+        <tbody>
+          {% for k in alle_kompetenzen %}
+          {% if k.id in komps %}
+          <tr>
+            <td><strong>{{ k.kuerzel }}</strong></td>
+            <td>
+              <progress value="{{ komps[k.id] }}" max="100" style="width:6rem;"></progress>
+            </td>
+            <td style="padding-left:.5rem;">
+              {{ komps[k.id] }}%
+              {% if komps[k.id] < 60 %}
+              <span style="color:#c1121f; font-size:.8rem;">schwach</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <p style="color:#6c757d; font-size:.9rem;">Noch keine Daten (keine detaillierten Tests).</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <h4 style="margin:0 0 .5rem;">AFB-Performance (Ø Klasse)</h4>
+      {% if afb_profil %}
+      <table style="font-size:.9rem;">
+        <tbody>
+          {% for afb, score in afb_profil.items() %}
+          <tr>
+            <td><span class="badge">{{ afb }}</span></td>
+            <td>
+              <progress value="{{ score }}" max="100" style="width:6rem;"></progress>
+            </td>
+            <td style="padding-left:.5rem;">{{ score }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p style="font-size:.85rem; margin-top:.5rem;">
+        Ziel-AFB:
+        {% for a in ziel %}<span class="badge">{{ a.value }}</span> {% endfor %}
+      </p>
+      {% else %}
+      <p style="color:#6c757d; font-size:.9rem;">Noch keine Daten (keine detaillierten Tests).</p>
+      {% endif %}
+    </div>
+  </div>
+</details>
+
+<!-- Ergebnisse -->
+<h3>Empfohlene Aufgaben – {{ gewaehltes_kapitel }}</h3>
+
+{% if ergebnis %}
+{% for uk, aufgaben in ergebnis.items() %}
+<h4 style="margin:1.5rem 0 .5rem;">{{ uk }}</h4>
+{% if aufgaben %}
+<table>
+  <thead>
+    <tr>
+      <th>Nr.</th>
+      <th>S.</th>
+      <th>Beschreibung</th>
+      <th>AFB</th>
+      <th>Wicht.</th>
+      <th>Min.</th>
+      <th>Kompetenzen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ba in aufgaben %}
+    <tr>
+      <td><strong>{{ ba.aufgabennummer }}</strong></td>
+      <td>{{ ba.seite or '–' }}</td>
+      <td>{{ ba.beschreibung or '–' }}</td>
+      <td><span class="badge">{{ ba.afb_niveau.value }}</span></td>
+      <td>{% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}</td>
+      <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
+      <td>
+        {% for bak in ba.kompetenzen %}
+        <span class="badge {% if bak.kompetenz_id in schwach_ids %}style='background:#f8d7da;'{% endif %}">
+          {{ bak.kompetenz.kuerzel }}
+        </span>
+        {% endfor %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:#6c757d; font-size:.9rem;">Keine Aufgaben verfügbar.</p>
+{% endif %}
+{% endfor %}
+
+<!-- PDF-Download -->
+<form method="post" action="/ui/klassen/{{ klasse.id }}/kapitelempfehlung/pdf"
+      style="margin-top:1.5rem;">
+  <input type="hidden" name="kapitel" value="{{ gewaehltes_kapitel }}">
+  {% for uk, aufgaben in ergebnis.items() %}
+  <input type="hidden" name="uk" value="{{ uk }}">
+  <input type="hidden" name="anz" value="{{ aufgaben | length }}">
+  {% endfor %}
+  <button type="submit" class="outline secondary">📄 PDF herunterladen</button>
+</form>
+
+{% else %}
+<p style="color:#6c757d;">Für das gewählte Kapitel wurden keine Aufgaben gefunden.</p>
+{% endif %}
+
+{% endif %}
+{% endblock %}

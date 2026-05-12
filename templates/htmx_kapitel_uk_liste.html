@@ -1,0 +1,29 @@
+{% if unterkapitel_liste %}
+<table style="margin:.5rem 0 0;">
+  <thead>
+    <tr>
+      <th>Unterkapitel</th>
+      <th style="width:10rem;">Anzahl Aufgaben</th>
+      <th style="width:8rem; color:#6c757d;">verfügbar</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for uk, verfuegbar in unterkapitel_liste %}
+    <tr>
+      <td>
+        <input type="hidden" name="uk" value="{{ uk }}">
+        {{ uk }}
+      </td>
+      <td>
+        <input type="number" name="anz" value="3" min="0" max="{{ verfuegbar }}"
+               style="width:4rem; text-align:center; padding:.25rem;">
+      </td>
+      <td><small style="color:#6c757d;">{{ verfuegbar }}</small></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<button type="submit" style="margin-top:.75rem;">Empfehlung berechnen</button>
+{% else %}
+<p style="color:#6c757d; margin-top:.5rem;">Keine Buchaufgaben für dieses Kapitel vorhanden.</p>
+{% endif %}

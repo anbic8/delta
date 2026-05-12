@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm 1.8cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
+  h1 { font-size: 15pt; margin: 0 0 3pt; }
+  h2 { font-size: 11pt; margin: 12pt 0 3pt; border-bottom: 1px solid #bbb; padding-bottom: 2pt; }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
+  table { width: 100%; border-collapse: collapse; margin: 3pt 0 8pt; font-size: 9pt; }
+  th { background: #e9ecef; text-align: left; padding: 3pt 5pt; border: 1px solid #ccc; }
+  td { padding: 3pt 5pt; border: 1px solid #ddd; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+  .badge { border: 1px solid #ccc; padding: 1pt 4pt; border-radius: 3pt; font-size: 8pt; }
+  .schwach { background: #f8d7da; }
+  .stern { color: #f90; }
+</style>
+</head>
+<body>
+
+<h1>Kapitel-Empfehlung</h1>
+<div class="meta">
+  <strong>{{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}</strong>
+  &nbsp;·&nbsp; {{ kapitel }}
+</div>
+
+{% if komps %}
+<h2>Klassen-Profil</h2>
+<table style="max-width:400px;">
+  <thead><tr><th>Kompetenz</th><th>Ø Score</th><th>Ziel-AFB</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>{% for k_id, score in komps.items() %}{{ komp_map.get(k_id, '?') }} {{ score }}%&nbsp; {% endfor %}</td>
+      <td></td>
+      <td>{% for a in ziel %}<span class="badge">{{ a.value }}</span> {% endfor %}</td>
+    </tr>
+  </tbody>
+</table>
+{% endif %}
+
+{% for uk, aufgaben in ergebnis.items() %}
+<h2>{{ uk }}</h2>
+{% if aufgaben %}
+<table>
+  <thead>
+    <tr>
+      <th style="width:6%">Nr.</th>
+      <th style="width:6%">S.</th>
+      <th>Beschreibung</th>
+      <th style="width:9%">AFB</th>
+      <th style="width:8%">Wicht.</th>
+      <th style="width:6%">Min.</th>
+      <th style="width:20%">Kompetenzen</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ba in aufgaben %}
+    <tr>
+      <td><strong>{{ ba.aufgabennummer }}</strong></td>
+      <td>{{ ba.seite or '–' }}</td>
+      <td>{{ ba.beschreibung or '–' }}</td>
+      <td><span class="badge">{{ ba.afb_niveau.value }}</span></td>
+      <td class="stern">{% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}</td>
+      <td>{% if ba.minimalfahrplan %}✓{% endif %}</td>
+      <td>{% for bak in ba.kompetenzen %}<span class="badge {% if bak.kompetenz_id in schwach_ids %}schwach{% endif %}">{{ bak.kompetenz.kuerzel }}</span> {% endfor %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color:#888; font-size:9pt;">Keine Aufgaben.</p>
+{% endif %}
+{% endfor %}
+
+</body>
+</html>
