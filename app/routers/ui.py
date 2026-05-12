@@ -703,15 +703,10 @@ def kapitel_empfehlung_form(kl_id: int, request: Request, db: Session = Depends(
 def kapitel_empfehlung_uk_liste(kl_id: int, kapitel: str = "", db: Session = Depends(get_db)):
     from app.models.buchaufgabe import Buchaufgabe
     from fastapi.responses import HTMLResponse
+    import sqlalchemy as sa_mod
+    from jinja2 import Environment, FileSystemLoader
     if not kapitel:
         return HTMLResponse("")
-    uk_counts = (
-        db.query(Buchaufgabe.unterkapitel, db.query(Buchaufgabe).filter(
-            Buchaufgabe.kapitel == kapitel,
-            Buchaufgabe.unterkapitel == Buchaufgabe.unterkapitel
-        ).count)
-    )
-    import sqlalchemy as sa_mod
     rows = (
         db.query(Buchaufgabe.unterkapitel, sa_mod.func.count(Buchaufgabe.id))
         .filter(Buchaufgabe.kapitel == kapitel, Buchaufgabe.unterkapitel != "")
@@ -719,7 +714,6 @@ def kapitel_empfehlung_uk_liste(kl_id: int, kapitel: str = "", db: Session = Dep
         .order_by(Buchaufgabe.unterkapitel)
         .all()
     )
-    from jinja2 import Environment, FileSystemLoader
     env = Environment(loader=FileSystemLoader("templates"), autoescape=True)
     html = env.get_template("htmx_kapitel_uk_liste.html").render(
         unterkapitel_liste=[(uk, cnt) for uk, cnt in rows]
