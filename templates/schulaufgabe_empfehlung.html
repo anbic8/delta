@@ -10,6 +10,8 @@
       {{ schueler.nachname }}, {{ schueler.vorname }} &middot; {{ leistung.titel }}
     </p>
   </div>
+  <a href="/ui/schueler/{{ schueler.id }}/schulaufgabe/{{ leistung.id }}/empfehlung.pdf"
+     role="button" class="outline secondary" style="white-space:nowrap;">📄 PDF herunterladen</a>
 </div>
 
 {% set hat_empfehlungen = bloecke | selectattr("empfehlungen") | list %}

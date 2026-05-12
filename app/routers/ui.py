@@ -370,6 +370,44 @@ def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Sess
     })
 
 
+@router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung.pdf")
+def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depends(get_db)):
+    from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
+    from app.services.pdf_export import empfehlung_pdf
+    from fastapi.responses import Response
+    schueler, leistung, bloecke = empfehlungen_fuer_schulaufgabe(s_id, lid, db)
+    klasse = db.get(Klasse, schueler.klasse_id)
+    items = [{"schueler": schueler, "klasse": klasse, "leistung": leistung, "bloecke": bloecke}]
+    pdf_bytes = empfehlung_pdf(items)
+    dateiname = f"Uebung_{schueler.nachname}_{leistung.titel}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
+@router.get("/schriftliche-leistungen/{lid}/empfehlung-alle.pdf")
+def schulaufgabe_empfehlung_pdf_alle(lid: int, db: Session = Depends(get_db)):
+    from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
+    from app.services.pdf_export import empfehlung_pdf
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    from fastapi.responses import Response
+    leistung = db.get(SchriftlicheLeistung, lid)
+    schueler_liste = (
+        db.query(Schueler)
+        .filter(Schueler.klasse_id == leistung.klasse_id, Schueler.geloescht_am.is_(None))
+        .order_by(Schueler.nachname, Schueler.vorname)
+        .all()
+    )
+    klasse = db.get(Klasse, leistung.klasse_id)
+    items = []
+    for s in schueler_liste:
+        _, _, bloecke = empfehlungen_fuer_schulaufgabe(s.id, lid, db)
+        items.append({"schueler": s, "klasse": klasse, "leistung": leistung, "bloecke": bloecke})
+    pdf_bytes = empfehlung_pdf(items)
+    dateiname = f"Uebung_Klasse_{leistung.titel}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
 # ── Aufgabenpool ──────────────────────────────────────────────
 
 @router.get("/aufgaben")

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm 1.8cm; }
+
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
+
+  .seite { page-break-after: always; }
+  .seite:last-child { page-break-after: avoid; }
+
+  h1 { font-size: 15pt; margin: 0 0 2pt; }
+  h2 { font-size: 11pt; margin: 10pt 0 3pt; border-bottom: 1px solid #ccc; padding-bottom: 2pt; }
+
+  .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
+
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9pt; }
+  th { background: #e9ecef; text-align: left; padding: 3pt 5pt; border: 1px solid #ccc; }
+  td { padding: 3pt 5pt; border: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+
+  .aufg-header { background: #fff3cd; padding: 4pt 6pt; margin: 8pt 0 0;
+                 border-left: 3px solid #ffc107; font-weight: bold; font-size: 10pt; }
+  .aufg-header.voll { background: #d1e7dd; border-left-color: #198754; }
+  .aufg-header.kein { background: #f8f9fa; border-left-color: #adb5bd; }
+
+  .kein-empfehlung { color: #888; font-size: 9pt; padding: 2pt 6pt 6pt; }
+  .match-grund { color: #666; font-size: 8pt; }
+
+  .badge { display: inline-block; padding: 1pt 4pt; border: 1px solid #ccc;
+           border-radius: 3pt; font-size: 8pt; }
+  .stern { color: #f90; }
+</style>
+</head>
+<body>
+
+{% for item in items %}
+<div class="seite">
+  <h1>Übungsempfehlung</h1>
+  <div class="meta">
+    <strong>{{ item.schueler.nachname }}, {{ item.schueler.vorname }}</strong>
+    &nbsp;·&nbsp; Klasse {{ item.klasse.jahrgangsstufe }}{{ item.klasse.buchstabe }}
+    &nbsp;·&nbsp; {{ item.leistung.titel }}
+    {% if item.leistung.datum %}
+      &nbsp;·&nbsp; {{ item.leistung.datum.strftime('%d.%m.%Y') }}
+    {% endif %}
+  </div>
+
+  {% set hat_daten = item.bloecke | selectattr("erreicht") | list %}
+
+  {% if not hat_daten %}
+  <p style="color:#888;">Noch keine Punkte eingetragen.</p>
+  {% else %}
+
+  {% for block in item.bloecke %}
+  <div class="aufg-header {% if block.voll %}voll{% elif block.erreicht is none %}kein{% endif %}">
+    Aufgabe {{ block.la_nr }} &ndash; {{ block.titel }}
+    &emsp;
+    {% if block.erreicht is none %}
+      <span style="color:#888; font-weight:normal;">nicht eingetragen</span>
+    {% elif block.voll %}
+      {{ block.erreicht }}/{{ block.max_punkte }} &nbsp;✓ volle Punktzahl
+    {% else %}
+      {{ block.erreicht }}/{{ block.max_punkte }} &nbsp;({{ block.prozent }}%)
+    {% endif %}
+  </div>
+
+  {% if block.voll %}
+  <div class="kein-empfehlung">Keine Übung nötig.</div>
+  {% elif block.empfehlungen %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:22%">Kapitel</th>
+        <th style="width:22%">Unterkapitel</th>
+        <th style="width:5%">Nr.</th>
+        <th>Beschreibung</th>
+        <th style="width:8%">AFB</th>
+        <th style="width:8%">Wicht.</th>
+        <th style="width:18%">Treffer</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in block.empfehlungen %}
+      <tr>
+        <td>{{ e.kapitel }}</td>
+        <td>{{ e.unterkapitel or '–' }}</td>
+        <td>{{ e.aufgabennummer }}</td>
+        <td>{{ e.beschreibung or '–' }}</td>
+        <td><span class="badge">{{ e.afb_niveau }}</span></td>
+        <td class="stern">
+          {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
+        </td>
+        <td class="match-grund">{{ e.match_grund }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="kein-empfehlung">Keine passenden Buchaufgaben gefunden.</div>
+  {% endif %}
+
+  {% endfor %}
+  {% endif %}
+</div>
+{% endfor %}
+
+</body>
+</html>
