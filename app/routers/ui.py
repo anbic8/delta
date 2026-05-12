@@ -691,6 +691,57 @@ def _kapitel_empfehlung_kontext(kl_id: int, kapitel: str, uk_anzahl: dict, db):
     return ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map
 
 
+def _parse_uk_anzahl(form) -> dict[str, int]:
+    uk_namen = form.getlist("uk")
+    anz_werte = form.getlist("anz")
+    return {uk: int(anz or 0) for uk, anz in zip(uk_namen, anz_werte)}
+
+
+@router.get("/klassen/{kl_id}/schueler-kapitelempfehlung")
+def schueler_kapitel_empfehlung_form(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    kl = db.get(Klasse, kl_id)
+    return templates.TemplateResponse(request, "schueler_kapitel_empfehlung.html", {
+        "klasse": kl, "kapitel_liste": _kapitel_liste(db),
+    })
+
+
+@router.post("/klassen/{kl_id}/schueler-kapitelempfehlung")
+async def schueler_kapitel_empfehlung_post(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.services.kapitel_empfehlung import empfehlungen_pro_schueler
+    form = await request.form()
+    kapitel = form.get("kapitel", "")
+    uk_anzahl = _parse_uk_anzahl(form)
+    kl = db.get(Klasse, kl_id)
+    ergebnisse = empfehlungen_pro_schueler(kl_id, kapitel, uk_anzahl, db)
+    return templates.TemplateResponse(request, "schueler_kapitel_empfehlung.html", {
+        "klasse": kl, "kapitel_liste": _kapitel_liste(db),
+        "gewaehltes_kapitel": kapitel,
+        "ergebnisse": ergebnisse,
+        "uk_anzahl_hidden": uk_anzahl,
+        "unterkapitel_liste": [(uk, uk_anzahl[uk]) for uk in uk_anzahl],
+    })
+
+
+@router.post("/klassen/{kl_id}/schueler-kapitelempfehlung/pdf")
+async def schueler_kapitel_empfehlung_pdf(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.services.kapitel_empfehlung import empfehlungen_pro_schueler
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    form = await request.form()
+    kapitel = form.get("kapitel", "")
+    uk_anzahl = _parse_uk_anzahl(form)
+    kl = db.get(Klasse, kl_id)
+    ergebnisse = empfehlungen_pro_schueler(kl_id, kapitel, uk_anzahl, db)
+    html = _jinja_env().get_template("pdf_schueler_kapitel_empfehlung.html").render(
+        klasse=kl, kapitel=kapitel, ergebnisse=ergebnisse,
+    )
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    dateiname = f"Individuelle_Empfehlung_{kl.name}_{kapitel[:25]}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
 @router.get("/klassen/{kl_id}/kapitelempfehlung")
 def kapitel_empfehlung_form(kl_id: int, request: Request, db: Session = Depends(get_db)):
     kl = db.get(Klasse, kl_id)
@@ -725,9 +776,7 @@ def kapitel_empfehlung_uk_liste(kl_id: int, kapitel: str = "", db: Session = Dep
 async def kapitel_empfehlung_post(kl_id: int, request: Request, db: Session = Depends(get_db)):
     form = await request.form()
     kapitel = form.get("kapitel", "")
-    uk_namen = form.getlist("uk")
-    anz_werte = form.getlist("anz")
-    uk_anzahl = {uk: int(anz or 0) for uk, anz in zip(uk_namen, anz_werte)}
+    uk_anzahl = _parse_uk_anzahl(form)
     kl = db.get(Klasse, kl_id)
     ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map = \
         _kapitel_empfehlung_kontext(kl_id, kapitel, uk_anzahl, db)
@@ -747,9 +796,7 @@ async def kapitel_empfehlung_pdf_route(kl_id: int, request: Request, db: Session
     from fastapi.responses import Response
     form = await request.form()
     kapitel = form.get("kapitel", "")
-    uk_namen = form.getlist("uk")
-    anz_werte = form.getlist("anz")
-    uk_anzahl = {uk: int(anz or 0) for uk, anz in zip(uk_namen, anz_werte)}
+    uk_anzahl = _parse_uk_anzahl(form)
     kl = db.get(Klasse, kl_id)
     ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map = \
         _kapitel_empfehlung_kontext(kl_id, kapitel, uk_anzahl, db)

@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Individuelle Kapitel-Empfehlung – {{ klasse.name }}{% endblock %}
+{% block content %}
+<p><a href="/ui/klassen/{{ klasse.id }}">&larr; {{ klasse.name }}</a></p>
+<h2>Individuelle Kapitel-Empfehlung – {{ klasse.name }}</h2>
+<p style="color:#6c757d;">Jeder Schüler erhält eine auf sein persönliches Kompetenz- und AFB-Profil abgestimmte Aufgabenauswahl.</p>
+
+<form method="post" action="/ui/klassen/{{ klasse.id }}/schueler-kapitelempfehlung">
+  <label style="max-width:500px;">Kapitel auswählen
+    <select name="kapitel" required
+            hx-get="/ui/klassen/{{ klasse.id }}/kapitelempfehlung/uk-liste"
+            hx-target="#uk-section"
+            hx-swap="innerHTML"
+            hx-trigger="change"
+            hx-include="this">
+      <option value="">– bitte wählen –</option>
+      {% for k in kapitel_liste %}
+      <option value="{{ k }}" {% if k == gewaehltes_kapitel %}selected{% endif %}>{{ k }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <div id="uk-section" style="margin-top:.75rem;">
+    {% if gewaehltes_kapitel %}{% include "htmx_kapitel_uk_liste.html" %}{% endif %}
+  </div>
+</form>
+
+{% if ergebnisse is defined %}
+<hr style="margin:2rem 0;">
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h3 style="margin:0;">Empfehlungen – {{ gewaehltes_kapitel }}</h3>
+  <form method="post" action="/ui/klassen/{{ klasse.id }}/schueler-kapitelempfehlung/pdf">
+    <input type="hidden" name="kapitel" value="{{ gewaehltes_kapitel }}">
+    {% for uk, n in uk_anzahl_hidden.items() %}
+    <input type="hidden" name="uk" value="{{ uk }}">
+    <input type="hidden" name="anz" value="{{ n }}">
+    {% endfor %}
+    <button type="submit" class="outline secondary">📄 Alle als PDF</button>
+  </form>
+</div>
+
+{% for item in ergebnisse %}
+<details style="margin-bottom:.75rem; border:1px solid #dee2e6; border-radius:.5rem;">
+  <summary style="padding:.6rem 1rem; cursor:pointer; font-weight:bold;">
+    {{ item.schueler.nachname }}, {{ item.schueler.vorname }}
+    {% if item.ziel %}
+    &nbsp;·&nbsp;
+    <small style="font-weight:normal; color:#6c757d;">
+      Ziel-AFB:
+      {% for a in item.ziel %}<span class="badge" style="font-size:.75rem;">{{ a.value }}</span> {% endfor %}
+      · {{ item.komps | length }} Kompetenzen mit Daten
+    </small>
+    {% else %}
+    <small style="font-weight:normal; color:#adb5bd;">&nbsp;(noch keine Testergebnisse)</small>
+    {% endif %}
+  </summary>
+  <div style="padding:.75rem 1rem;">
+    {% for uk, aufgaben in item.uk_ergebnis.items() %}
+    <h4 style="margin:.5rem 0 .25rem; font-size:.95rem;">{{ uk }}</h4>
+    {% if aufgaben %}
+    <table style="font-size:.9rem; margin-bottom:.5rem;">
+      <thead>
+        <tr>
+          <th>Nr.</th><th>S.</th><th>Beschreibung</th>
+          <th>AFB</th><th>Wicht.</th><th>Min.</th><th>Kompetenzen</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ba in aufgaben %}
+        <tr>
+          <td><strong>{{ ba.aufgabennummer }}</strong></td>
+          <td>{{ ba.seite or '–' }}</td>
+          <td>{{ ba.beschreibung or '–' }}</td>
+          <td><span class="badge">{{ ba.afb_niveau.value }}</span></td>
+          <td>{% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}</td>
+          <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
+          <td>{% for bak in ba.kompetenzen %}<span class="badge">{{ bak.kompetenz.kuerzel }}</span> {% endfor %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#6c757d; font-size:.85rem;">Keine Aufgaben gefunden.</p>
+    {% endif %}
+    {% endfor %}
+  </div>
+</details>
+{% endfor %}
+{% endif %}
+{% endblock %}

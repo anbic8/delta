@@ -107,3 +107,94 @@ def empfehlungen_fuer_kapitel(
         ergebnis[uk] = [ba for _, _, ba in scored[:anzahl]]
 
     return ergebnis, komps, afb_profil, ziel
+
+
+def schueler_afb_profil(schueler_id: int, db: Session) -> dict[AfbNiveau, float]:
+    """Persönlicher AFB-Score eines Schülers aus allen seinen Testergebnissen."""
+    from app.models.schueler_ergebnis import SchuelerErgebnis
+
+    ergebnisse = (
+        db.query(SchuelerErgebnis)
+        .filter(
+            SchuelerErgebnis.schueler_id == schueler_id,
+            SchuelerErgebnis.leistung_aufgabe_id.isnot(None),
+            SchuelerErgebnis.erreichte_punkte.isnot(None),
+        ).all()
+    )
+    sammel: dict[AfbNiveau, list[float]] = defaultdict(list)
+    for e in ergebnisse:
+        la = e.leistung_aufgabe
+        if la and la.aufgabe.max_punkte > 0:
+            sammel[la.aufgabe.afb_niveau].append(
+                e.erreichte_punkte / la.aufgabe.max_punkte * 100
+            )
+    return {afb: round(sum(v) / len(v), 1) for afb, v in sammel.items()}
+
+
+def _score_kandidaten(kandidaten, schwach_k_ids, ziel, anzahl):
+    scored = []
+    for ba in kandidaten:
+        ba_k_ids = {bak.kompetenz_id for bak in ba.kompetenzen}
+        score = (
+            ba.wichtigkeit * 10
+            + len(ba_k_ids & schwach_k_ids) * 6
+            + (1 if ba.afb_niveau in ziel else 0) * 3
+            + (1 if ba.minimalfahrplan else 0)
+        )
+        scored.append((score, ba.id, ba))
+    scored.sort(key=lambda x: -x[0])
+    return [ba for _, _, ba in scored[:anzahl]]
+
+
+def empfehlungen_pro_schueler(
+    klasse_id: int,
+    kapitel: str,
+    uk_anzahl: dict[str, int],
+    db: Session,
+    schwelle_schwach: float = 60.0,
+) -> list[dict]:
+    """
+    Individuelle Aufgabenempfehlung pro Schüler.
+    Gibt zurück: list von {schueler, uk_ergebnis, komps, afb_profil, ziel}
+    """
+    from app.models.schueler import Schueler
+    from app.models.buchaufgabe import Buchaufgabe
+    from app.services.kompetenzprofil import berechne_profil
+
+    schueler_liste = (
+        db.query(Schueler)
+        .filter(Schueler.klasse_id == klasse_id, Schueler.geloescht_am.is_(None))
+        .order_by(Schueler.nachname, Schueler.vorname)
+        .all()
+    )
+
+    # Buchaufgaben pro UK vorausladen (einmalige DB-Abfragen)
+    uk_kandidaten: dict[str, list] = {}
+    for uk in uk_anzahl:
+        if uk_anzahl[uk] > 0:
+            uk_kandidaten[uk] = (
+                db.query(Buchaufgabe)
+                .filter(Buchaufgabe.kapitel == kapitel, Buchaufgabe.unterkapitel == uk)
+                .all()
+            )
+
+    results = []
+    for s in schueler_liste:
+        komps = berechne_profil(s.id, db)
+        afb_prof = schueler_afb_profil(s.id, db)
+        ziel = ziel_afb(afb_prof)
+        schwach_k = {k_id for k_id, score in komps.items() if score < schwelle_schwach}
+
+        uk_ergebnis = {
+            uk: _score_kandidaten(uk_kandidaten[uk], schwach_k, ziel, anzahl)
+            for uk, anzahl in uk_anzahl.items()
+            if anzahl > 0 and uk in uk_kandidaten
+        }
+        results.append({
+            "schueler": s,
+            "uk_ergebnis": uk_ergebnis,
+            "komps": komps,
+            "afb_profil": afb_prof,
+            "ziel": ziel,
+        })
+    return results
