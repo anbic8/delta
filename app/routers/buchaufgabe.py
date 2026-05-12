@@ -106,6 +106,7 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
             existing = db.query(Buchaufgabe).filter(
                 Buchaufgabe.buch == buch,
                 Buchaufgabe.kapitel == kapitel,
+                Buchaufgabe.unterkapitel == unterkapitel,
                 Buchaufgabe.aufgabennummer == aufgnr,
             ).first()
 
