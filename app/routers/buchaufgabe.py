@@ -98,7 +98,7 @@ async def import_csv(file: UploadFile = File(...), db: Session = Depends(get_db)
             seite_raw = row.get("Seite", "").strip()
             seite = int(seite_raw) if seite_raw.isdigit() else None
             beschreibung = row.get("Beschreibung", "").strip() or None
-            unterkapitel = row.get("Unterkapitel", "").strip() or None
+            unterkapitel = row.get("Unterkapitel", "").strip()
             kompetenz_kuerzel = row.get("Kompetenz", "").strip().upper() or None
             mfp_raw = row.get("Minimalfahrplan", "").strip().lower()
             minimalfahrplan = mfp_raw in ("ja", "true", "1", "x", "yes")

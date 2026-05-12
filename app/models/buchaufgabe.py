@@ -9,13 +9,13 @@ from app.models.aufgabe import AfbNiveau
 class Buchaufgabe(Base):
     __tablename__ = "buchaufgaben"
     __table_args__ = (
-        sa.UniqueConstraint("buch", "kapitel", "aufgabennummer", name="uq_buchaufgabe"),
+        sa.UniqueConstraint("buch", "kapitel", "unterkapitel", "aufgabennummer", name="uq_buchaufgabe"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     buch: Mapped[str] = mapped_column(String(200))
     kapitel: Mapped[str] = mapped_column(String(100))
-    unterkapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    unterkapitel: Mapped[str] = mapped_column(String(100), default="", server_default="")
     seite: Mapped[int | None] = mapped_column(Integer, nullable=True)
     aufgabennummer: Mapped[str] = mapped_column(String(20))
     beschreibung: Mapped[str | None] = mapped_column(Text, nullable=True)
