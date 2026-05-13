@@ -1,0 +1,17 @@
+{% if radar %}
+<svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg"
+     style="width:100%; max-width:{{ size or 200 }}px; display:block; margin:0 auto;">
+  <polygon points="{{ radar.grid }}" fill="none" stroke="#dee2e6" stroke-width="1.5"/>
+  <polygon points="{{ radar.grid_half }}" fill="none" stroke="#dee2e6" stroke-width="1" stroke-dasharray="3,3"/>
+  {% for ax in radar.axes %}
+  <line x1="{{ radar.cx }}" y1="{{ radar.cy }}" x2="{{ ax.x2 }}" y2="{{ ax.y2 }}" stroke="#dee2e6" stroke-width="1"/>
+  {% endfor %}
+  <polygon points="{{ radar.data }}" fill="rgba(59,130,246,0.2)" stroke="rgb(59,130,246)" stroke-width="2"/>
+  {% for lbl in radar.labels %}
+  <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle"
+        font-size="11" fill="{% if lbl.pct < 60 %}#c1121f{% else %}#495057{% endif %}">
+    {{ lbl.text }} {{ lbl.pct }}%
+  </text>
+  {% endfor %}
+</svg>
+{% endif %}

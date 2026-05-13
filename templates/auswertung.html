@@ -59,19 +59,31 @@
 
 <!-- Notenverteilung -->
 <h3>Notenverteilung</h3>
-<table style="max-width:400px;">
-  <thead><tr><th>Note</th><th>Anzahl</th><th>Anteil</th><th></th></tr></thead>
-  <tbody>
-    {% for note_str, stats in auswertung.notenverteilung.items() %}
-    {% if stats.anzahl > 0 %}
-    <tr>
-      <td><strong class="{% if note_str == '1' %}note-1{% elif note_str in ['5','6'] %}note-5{% endif %}">{{ note_str }}</strong></td>
-      <td>{{ stats.anzahl }}</td>
-      <td>{{ stats.prozent }}%</td>
-      <td><progress value="{{ stats.prozent }}" max="100" style="width:6rem;"></progress></td>
-    </tr>
-    {% endif %}
-    {% endfor %}
-  </tbody>
-</table>
+<div style="max-width:420px; margin-bottom:1rem;">
+  {% for note_str, stats in auswertung.notenverteilung.items() %}
+  {% if stats.anzahl > 0 %}
+  <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.45rem;">
+    <strong style="width:1.4rem; text-align:center; font-size:1rem;
+      color:{% if note_str == '1' %}#2d6a4f{% elif note_str in ['5','6'] %}#c1121f{% else %}#333{% endif %}">
+      {{ note_str }}
+    </strong>
+    <div style="flex:1; background:#e9ecef; border-radius:.3rem; height:1.6rem; overflow:hidden;">
+      <div style="
+        width:{{ stats.prozent }}%;
+        height:100%;
+        border-radius:.3rem;
+        background:{% if note_str == '1' %}#2d6a4f{% elif note_str == '2' %}#52b788{% elif note_str == '3' %}#99d98c{% elif note_str == '4' %}#f4a261{% elif note_str == '5' %}#e76f51{% else %}#c1121f{% endif %};
+        display:flex; align-items:center; padding-left:.5rem;
+        color:{% if note_str in ['1','5','6'] %}#fff{% else %}#333{% endif %};
+        font-size:.8rem; font-weight:bold; min-width:{% if stats.anzahl > 0 %}1.5rem{% else %}0{% endif %};">
+        {% if stats.prozent > 10 %}{{ stats.anzahl }}×{% endif %}
+      </div>
+    </div>
+    <span style="min-width:5rem; font-size:.85rem; color:#555;">
+      {{ stats.anzahl }}× &nbsp;{{ stats.prozent }}%
+    </span>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
 {% endblock %}

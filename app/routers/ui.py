@@ -200,12 +200,15 @@ def schueler_empfehlung(s_id: int, request: Request, anzahl: int = 5, db: Sessio
     kl = db.get(Klasse, s.klasse_id)
     empfs = emp_service.empfehlungen(s_id, db, anzahl=anzahl)
     profil = kp_service.berechne_profil(s_id, db)
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
+    scores_by_kuerzel = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
     return templates.TemplateResponse(request, "empfehlung.html", {
         "schueler": s, "klasse": kl,
         "empfehlungen": empfs,
         "anzahl": anzahl,
         "schwelle_schwach": settings.empfehlung_schwelle_schwach,
         "hat_daten": bool(profil),
+        "radar": _radar(scores_by_kuerzel) if profil else None,
     })
 
 
@@ -533,8 +536,12 @@ def zeugnis_pdf(kl_id: int, db: Session = Depends(get_db)):
 def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
     schueler, leistung, bloecke = empfehlungen_fuer_schulaufgabe(s_id, lid, db)
+    profil = kp_service.berechne_profil(s_id, db)
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
+    scores_by_kuerzel = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
     return templates.TemplateResponse(request, "schulaufgabe_empfehlung.html", {
         "schueler": schueler, "leistung": leistung, "bloecke": bloecke,
+        "radar": _radar(scores_by_kuerzel) if profil else None,
     })
 
 

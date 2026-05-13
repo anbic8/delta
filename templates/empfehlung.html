@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Empfehlungen – {{ schueler.vorname }} {{ schueler.nachname }}{% endblock %}
 {% block content %}
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
   <div>
     <a href="/ui/schueler/{{ schueler.id }}" style="font-size:.9rem;">&larr; Zurück zum Dashboard</a>
     <h2 style="margin:.25rem 0 0;">Aufgabenempfehlungen</h2>
@@ -15,19 +15,46 @@
   </form>
 </div>
 
+<!-- Kompetenzprofil -->
+{% if radar %}
+<div style="background:#f8f9fa; border-radius:.5rem; padding:1rem; margin-bottom:1.25rem;">
+  <div class="r-grid-2" style="gap:1rem; align-items:center;">
+    <div>
+      {% set size = 180 %}
+      {% include "radar_widget.html" %}
+    </div>
+    <div>
+      <h4 style="margin:0 0 .5rem;">Kompetenzprofil</h4>
+      {% for lbl in radar.labels %}
+      <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.2rem;">
+        <span style="width:2rem; font-weight:bold; font-size:.85rem;
+                     color:{% if lbl.pct < 60 %}#c1121f{% else %}#2d6a4f{% endif %}">{{ lbl.text }}</span>
+        <progress value="{{ lbl.pct }}" max="100" style="flex:1; height:.6rem;"></progress>
+        <span style="font-size:.8rem; color:#6c757d; min-width:2.5rem;">{{ lbl.pct }}%</span>
+      </div>
+      {% endfor %}
+      <p style="margin:.5rem 0 0; font-size:.8rem; color:#6c757d;">
+        Rot = unter {{ schwelle_schwach | int }}% (schwach)
+      </p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 {% if empfehlungen %}
+<div class="r-scroll">
 <table>
   <thead>
     <tr>
       <th>Buch</th>
       <th>Kapitel</th>
       <th>Nr.</th>
-      <th>S.</th>
-      <th>Beschreibung</th>
+      <th class="hide-xs">S.</th>
+      <th class="hide-xs">Beschreibung</th>
       <th>AFB</th>
-      <th>Wicht.</th>
+      <th class="hide-xs">Wicht.</th>
       <th>Kompetenz</th>
-      <th>Begründung</th>
+      <th class="hide-xs">Begründung</th>
     </tr>
   </thead>
   <tbody>
@@ -36,21 +63,22 @@
       <td><small>{{ e.buch }}</small></td>
       <td><small>{{ e.kapitel }}</small></td>
       <td>{{ e.aufgabennummer }}</td>
-      <td>{{ e.seite or '–' }}</td>
-      <td>{{ e.beschreibung or '–' }}</td>
+      <td class="hide-xs">{{ e.seite or '–' }}</td>
+      <td class="hide-xs">{{ e.beschreibung or '–' }}</td>
       <td><span class="badge">{{ e.afb_niveau.value }}</span></td>
-      <td style="text-align:center;">
+      <td class="hide-xs" style="text-align:center;">
         {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
       </td>
       <td>
         <span class="badge" style="background:#f8d7da;">{{ e.kompetenz_kuerzel }}</span>
         <small style="color:#6c757d;">{{ e.kompetenz_score | round(0) | int }}%</small>
       </td>
-      <td><small>{{ e.begruendung }}</small></td>
+      <td class="hide-xs"><small>{{ e.begruendung }}</small></td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+</div>
 <p><small>{{ empfehlungen | length }} Empfehlung(en) basierend auf schwachen Kompetenzen</small></p>
 {% else %}
 <div role="alert" style="padding:.75rem 1rem; background:#d1e7dd; border-radius:.5rem;">

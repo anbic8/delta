@@ -3,9 +3,9 @@
 {% block content %}
 <p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung">&larr; Auswertung {{ leistung.titel }}</a></p>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.75rem; margin-bottom:1rem;">
   <div>
-    <h2>Übungsempfehlung</h2>
+    <h2 style="margin:.25rem 0 0;">Übungsempfehlung</h2>
     <p style="margin:0; color:#6c757d;">
       {{ schueler.nachname }}, {{ schueler.vorname }} &middot; {{ leistung.titel }}
     </p>
@@ -13,6 +13,28 @@
   <a href="/ui/schueler/{{ schueler.id }}/schulaufgabe/{{ leistung.id }}/empfehlung.pdf"
      role="button" class="outline secondary" style="white-space:nowrap;">📄 PDF herunterladen</a>
 </div>
+
+{% if radar %}
+<div style="background:#f8f9fa; border-radius:.5rem; padding:.75rem 1rem; margin-bottom:1.25rem;">
+  <div class="r-grid-2" style="gap:1rem; align-items:center;">
+    <div>
+      {% set size = 170 %}
+      {% include "radar_widget.html" %}
+    </div>
+    <div>
+      <p style="margin:0 0 .4rem; font-weight:bold; font-size:.9rem;">Kompetenzprofil</p>
+      {% for lbl in radar.labels %}
+      <div style="display:flex; align-items:center; gap:.4rem; margin-bottom:.15rem;">
+        <span style="width:2rem; font-size:.8rem; font-weight:bold;
+                     color:{% if lbl.pct < 60 %}#c1121f{% else %}#2d6a4f{% endif %}">{{ lbl.text }}</span>
+        <progress value="{{ lbl.pct }}" max="100" style="flex:1; height:.5rem;"></progress>
+        <span style="font-size:.75rem; color:#6c757d; min-width:2.5rem;">{{ lbl.pct }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
 
 {% set hat_empfehlungen = bloecke | selectattr("empfehlungen") | list %}
 {% set hat_keine_daten = bloecke | selectattr("erreicht", "none") | list %}
