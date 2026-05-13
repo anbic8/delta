@@ -69,8 +69,8 @@
         <polygon points="{{ item.radar.data }}" fill="rgba(59,130,246,0.2)" stroke="rgb(59,130,246)" stroke-width="2"/>
         {% for lbl in item.radar.labels %}
         <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle"
-              font-size="10" fill="{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% elif lbl.pct == 0 %}#adb5bd{% else %}#333{% endif %}">
-          {{ lbl.text }} {{ lbl.pct }}%
+              font-size="10" fill="{{ {'kein_test':'#adb5bd','kritisch':'#6b0000','schwach':'#c1121f','ok':'#2d6a4f'}[lbl.status] }}">
+          {{ lbl.text }} {{ lbl.pct }}%{% if lbl.status == 'kritisch' %} ⚠{% endif %}
         </text>
         {% endfor %}
         {% if not item.profil_vorhanden %}
@@ -82,12 +82,16 @@
     <div class="komp-col">
       <p style="margin:0 0 5pt; font-size:9pt; font-weight:bold;">Kompetenzprofil</p>
       {% for lbl in item.radar.labels %}
+      {% set fc = {'kein_test':'#adb5bd','kritisch':'#6b0000','schwach':'#c1121f','ok':'#2d6a4f'}[lbl.status] %}
       <div class="komp-bar">
-        <span class="komp-label" style="color:{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% else %}#333{% endif %}">{{ lbl.text }}</span>
+        <span class="komp-label" style="color:{{ fc }};">{{ lbl.text }}</span>
         <div class="komp-track">
-          <div class="komp-fill {% if lbl.pct < 60 and lbl.pct > 0 %}schwach{% endif %}" style="width:{{ lbl.pct }}%;"></div>
+          <div class="komp-fill" style="width:{{ lbl.pct }}%; background:{{ fc }};"></div>
         </div>
-        <span class="komp-pct">{{ lbl.pct }}%</span>
+        <span class="komp-pct" style="color:{{ fc }};">
+          {{ lbl.pct }}%{% if lbl.status == 'kritisch' %} ⚠{% endif %}
+          {% if lbl.status == 'kein_test' %}(n/a){% endif %}
+        </span>
       </div>
       {% endfor %}
     </div>

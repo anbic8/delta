@@ -25,11 +25,14 @@
     <div>
       <h4 style="margin:0 0 .5rem;">Kompetenzprofil</h4>
       {% for lbl in radar.labels %}
+      {% set farbe = {'kein_test':'#adb5bd','kritisch':'#6b0000','schwach':'#c1121f','ok':'#2d6a4f'}[lbl.status] %}
       <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.2rem;">
-        <span style="width:2rem; font-weight:bold; font-size:.85rem;
-                     color:{% if lbl.pct < 60 %}#c1121f{% else %}#2d6a4f{% endif %}">{{ lbl.text }}</span>
-        <progress value="{{ lbl.pct }}" max="100" style="flex:1; height:.6rem;"></progress>
-        <span style="font-size:.8rem; color:#6c757d; min-width:2.5rem;">{{ lbl.pct }}%</span>
+        <span style="width:2rem; font-weight:bold; font-size:.85rem; color:{{ farbe }};">{{ lbl.text }}</span>
+        <progress value="{{ lbl.pct }}" max="100" style="flex:1; height:.6rem; accent-color:{{ farbe }};"></progress>
+        <span style="font-size:.8rem; color:{{ farbe }}; min-width:4rem;">
+          {{ lbl.pct }}%{% if lbl.status == 'kritisch' %} ⚠{% endif %}
+          {% if lbl.status == 'kein_test' %}<em style="font-size:.75rem; color:#adb5bd;">n/a</em>{% endif %}
+        </span>
       </div>
       {% endfor %}
       <p style="margin:.5rem 0 0; font-size:.8rem; color:#6c757d;">

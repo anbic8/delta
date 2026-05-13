@@ -7,8 +7,8 @@
   {% endfor %}
   <polygon points="{{ radar.data }}" fill="rgba(59,130,246,0.2)" stroke="rgb(59,130,246)" stroke-width="2"/>
   {% for lbl in radar.labels %}
-  <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle"
-        font-size="11" fill="{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% elif lbl.pct == 0 %}#adb5bd{% else %}#495057{% endif %}">
+  <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle" font-size="11"
+        fill="{{ {'kein_test':'#adb5bd','kritisch':'#6b0000','schwach':'#c1121f','ok':'#2d6a4f'}[lbl.status] }}">
     {{ lbl.text }} {{ lbl.pct }}%
   </text>
   {% endfor %}

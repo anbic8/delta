@@ -27,7 +27,9 @@ router = APIRouter(prefix="/ui", include_in_schema=False)
 REDIRECT = lambda url: RedirectResponse(url=url, status_code=303)
 
 
-def _radar(scores_by_kuerzel: dict, size: int = 220) -> dict:
+def _radar(scores_by_kuerzel: dict, size: int = 220, getestete: set | None = None) -> dict:
+    """getestete: set of Kuerzel (z.B. {'K1','K3'}) die tatsächlich bewertet wurden.
+    None = alle als getestet betrachten (Rückwärtskompatibilität)."""
     cx = cy = size / 2
     r = size / 2 - 35
     labels = ["K1", "K2", "K3", "K4", "K5", "K6"]
@@ -44,17 +46,33 @@ def _radar(scores_by_kuerzel: dict, size: int = 220) -> dict:
         dx, dy = cx + r * pct * math.cos(a), cy + r * pct * math.sin(a)
         data.append(f"{dx:.1f},{dy:.1f}")
         la = 1.3
+        ist_getestet = (getestete is None) or (lbl in getestete)
+        pct_val = scores_by_kuerzel.get(lbl, 0)
         label_pos.append({
             "x": f"{cx + r * la * math.cos(a):.1f}",
             "y": f"{cy + r * la * math.sin(a):.1f}",
             "text": lbl,
-            "pct": scores_by_kuerzel.get(lbl, 0),
+            "pct": pct_val,
+            "getestet": ist_getestet,
+            # Farbklasse: kein_test | kritisch | schwach | ok
+            "status": ("kein_test" if not ist_getestet
+                       else "kritisch" if pct_val == 0
+                       else "schwach" if pct_val < 60
+                       else "ok"),
         })
     return {
         "size": size, "cx": cx, "cy": cy,
         "grid": " ".join(grid), "grid_half": " ".join(grid_half),
         "data": " ".join(data), "axes": axes, "labels": label_pos,
     }
+
+
+_STATUS_FARBE = {
+    "kein_test": "#adb5bd",
+    "kritisch":  "#6b0000",
+    "schwach":   "#c1121f",
+    "ok":        "#2d6a4f",
+}
 
 
 # ── Schuljahre ────────────────────────────────────────────────
@@ -173,11 +191,17 @@ def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     scores_by_kuerzel = {}
     profil_scores = []
+    getestete_kuerzels = set()
     for k in alle_k:
         pct = profil_data.get(k.id, 0)
         scores_by_kuerzel[k.kuerzel] = pct
         if k.id in profil_data:
-            profil_scores.append(type("Sc", (), {"kompetenz_id": k.id, "kuerzel": k.kuerzel, "bezeichnung": k.bezeichnung, "prozent": pct})())
+            getestete_kuerzels.add(k.kuerzel)
+            profil_scores.append(type("Sc", (), {
+                "kompetenz_id": k.id, "kuerzel": k.kuerzel,
+                "bezeichnung": k.bezeichnung, "prozent": pct,
+                "status": ("kritisch" if pct == 0 else "schwach" if pct < 60 else "ok"),
+            })())
 
     profil = type("P", (), {
         "scores": profil_scores,
@@ -188,7 +212,7 @@ def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db
     return templates.TemplateResponse(request, "schueler_dashboard.html", {
         "schueler": s, "klasse": kl,
         "muendliche_noten": noten, "schnitt": schnitt_data,
-        "profil": profil, "radar": _radar(scores_by_kuerzel),
+        "profil": profil, "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
         "msg": request.query_params.get("msg"),
     })
 
@@ -202,13 +226,14 @@ def schueler_empfehlung(s_id: int, request: Request, anzahl: int = 5, db: Sessio
     profil = kp_service.berechne_profil(s_id, db)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     scores_by_kuerzel = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
+    getestete_kuerzels = {k.kuerzel for k in alle_k if k.id in profil}
     return templates.TemplateResponse(request, "empfehlung.html", {
         "schueler": s, "klasse": kl,
         "empfehlungen": empfs,
         "anzahl": anzahl,
         "schwelle_schwach": settings.empfehlung_schwelle_schwach,
         "hat_daten": bool(profil),
-        "radar": _radar(scores_by_kuerzel),
+        "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
         "profil_vorhanden": bool(profil),
     })
 
@@ -540,9 +565,10 @@ def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Sess
     profil = kp_service.berechne_profil(s_id, db)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     scores_by_kuerzel = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
+    getestete_kuerzels = {k.kuerzel for k in alle_k if k.id in profil}
     return templates.TemplateResponse(request, "schulaufgabe_empfehlung.html", {
         "schueler": schueler, "leistung": leistung, "bloecke": bloecke,
-        "radar": _radar(scores_by_kuerzel),
+        "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
         "profil_vorhanden": bool(profil),
     })
 
@@ -551,7 +577,8 @@ def _radar_fuer_schueler(s_id: int, db) -> tuple[dict, bool]:
     profil = kp_service.berechne_profil(s_id, db)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     scores = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
-    return _radar(scores), bool(profil)
+    getestete = {k.kuerzel for k in alle_k if k.id in profil}
+    return _radar(scores, getestete=getestete), bool(profil)
 
 
 @router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung.pdf")
