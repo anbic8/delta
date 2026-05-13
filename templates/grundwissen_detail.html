@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}{{ eintrag.aufgabe | truncate(40) }}{% endblock %}
+{% block content %}
+<p><a href="/ui/grundwissen">← Grundwissen</a></p>
+<h2>Grundwissen-Eintrag</h2>
+<p>
+  <span class="badge">Klasse {{ eintrag.jahrgangsstufe }}</span>
+  <span class="badge">{{ eintrag.kapitel }}</span>
+  {% if eintrag.unterkapitel %}<span class="badge">{{ eintrag.unterkapitel }}</span>{% endif %}
+</p>
+
+<div class="r-grid-2">
+  <section>
+    <h3>Aufgabe / Satz</h3>
+    <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; white-space:pre-wrap;">{{ eintrag.aufgabe }}</div>
+
+    {% if eintrag.loesung %}
+    <details style="margin-top:1rem;">
+      <summary>Lösung anzeigen</summary>
+      <div style="background:#f0fff4; padding:1rem; border-radius:.5rem; margin-top:.5rem; white-space:pre-wrap;">{{ eintrag.loesung | punkte_marker | safe }}</div>
+    </details>
+    {% endif %}
+
+    {% if eintrag.theorielink %}
+    <p style="margin-top:1rem;"><a href="{{ eintrag.theorielink }}" target="_blank" rel="noopener">🔗 Theorie-Link öffnen</a></p>
+    {% endif %}
+
+    <details style="margin-top:1.5rem;">
+      <summary>Bearbeiten</summary>
+      <div style="display:flex; gap:1rem; align-items:flex-start; margin-top:.75rem;">
+      <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/bearbeiten" style="flex:1; min-width:0;">
+        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
+          <label>Jahrgangsstufe
+            <input type="number" name="jahrgangsstufe" min="5" max="13" value="{{ eintrag.jahrgangsstufe }}" required>
+          </label>
+          <label>Kapitel
+            <input type="text" name="kapitel" value="{{ eintrag.kapitel }}" required>
+          </label>
+          <label>Unterkapitel
+            <input type="text" name="unterkapitel" value="{{ eintrag.unterkapitel or '' }}">
+          </label>
+        </div>
+        <label style="margin-top:.5rem;">Aufgabe / Satz
+          <textarea name="aufgabe" rows="4" required>{{ eintrag.aufgabe }}</textarea>
+        </label>
+        <label>Lösung
+          <textarea name="loesung" rows="3">{{ eintrag.loesung or '' }}</textarea>
+        </label>
+        <label>Theorielink
+          <input type="url" name="theorielink" value="{{ eintrag.theorielink or '' }}">
+        </label>
+        <button type="submit" style="margin-top:.5rem;">Speichern</button>
+      </form>
+      {% include "latex_spicker.html" %}
+      </div>
+    </details>
+  </section>
+
+  <section>
+    <h3>Zugeordnete Aufgaben (Pool)</h3>
+    {% if verwendungen %}
+    <ul style="padding-left:1.25rem;">
+      {% for ag in verwendungen %}
+      <li><a href="/ui/aufgaben/{{ ag.aufgabe_id }}">{{ ag.aufgabe.titel }}</a></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p><small>Noch keiner Aufgabe zugeordnet.</small></p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

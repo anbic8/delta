@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Neues Grundwissen{% endblock %}
+{% block content %}
+<p><a href="/ui/grundwissen">← Grundwissen</a></p>
+<h2>Neuer Grundwissen-Eintrag</h2>
+
+<div style="display:flex; gap:1.5rem; align-items:flex-start;">
+  <form method="post" action="/ui/grundwissen" style="flex:1; min-width:0;">
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
+      <label>Jahrgangsstufe
+        <input type="number" name="jahrgangsstufe" min="5" max="13" required placeholder="5–13">
+      </label>
+      <label>Kapitel
+        <select name="kapitel" id="gw-kapitel-neu"
+                hx-get="/ui/aufgaben/meta/unterkapitel"
+                hx-target="#gw-uk-neu"
+                hx-swap="innerHTML"
+                hx-trigger="change"
+                hx-include="this">
+          <option value="">– frei eingeben –</option>
+          {% for k in kapitel_liste %}
+          <option value="{{ k }}">{{ k }}</option>
+          {% endfor %}
+        </select>
+        <input type="text" name="kapitel_frei" id="gw-kapitel-frei" placeholder="oder freier Text" style="margin-top:.25rem;">
+      </label>
+      <label>Unterkapitel
+        <select name="unterkapitel_sel" id="gw-uk-neu">
+          <option value="">– keine –</option>
+        </select>
+        <input type="text" name="unterkapitel_frei" placeholder="oder freier Text" style="margin-top:.25rem;">
+      </label>
+    </div>
+
+    <label style="margin-top:.75rem;">Aufgabe / Satz / Definition
+      <textarea name="aufgabe" rows="4" required placeholder="z.B. Berechne den Flächeninhalt… oder: Pythagoras: a² + b² = c²"></textarea>
+    </label>
+    <label>Lösung (optional)
+      <textarea name="loesung" rows="3" placeholder="Musterlösung, Formel, Erklärung…"></textarea>
+    </label>
+    <label>Theorielink (optional)
+      <input type="url" name="theorielink" placeholder="https://…">
+    </label>
+
+    <button type="submit" style="margin-top:1rem;">Anlegen</button>
+  </form>
+
+  {% include "latex_spicker.html" %}
+</div>
+{% endblock %}

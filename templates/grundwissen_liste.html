@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Grundwissen{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+  <h2>Grundwissen</h2>
+  <a href="/ui/grundwissen/neu" role="button">+ Neuer Eintrag</a>
+</div>
+
+<div style="display:flex; gap:.75rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap;">
+  <input type="search"
+         placeholder="Suche (Aufgabe, Kapitel, Tags)…"
+         hx-get="/ui/grundwissen/suche"
+         hx-target="#gw-liste"
+         hx-trigger="input changed delay:300ms"
+         hx-include="[name='js'],[name='kap']"
+         name="q"
+         style="flex:1; min-width:12rem;">
+  <select name="js"
+          hx-get="/ui/grundwissen/suche"
+          hx-target="#gw-liste"
+          hx-trigger="change"
+          hx-include="[name='q'],[name='kap']"
+          style="width:auto;">
+    <option value="">Alle Klassen</option>
+    {% for j in range(5, 14) %}
+    <option value="{{ j }}" {% if js_filter == j|string %}selected{% endif %}>Klasse {{ j }}</option>
+    {% endfor %}
+  </select>
+  <select name="kap"
+          hx-get="/ui/grundwissen/suche"
+          hx-target="#gw-liste"
+          hx-trigger="change"
+          hx-include="[name='q'],[name='js']"
+          style="width:auto;">
+    <option value="">Alle Kapitel</option>
+    {% for k in kapitel_liste %}
+    <option value="{{ k }}" {% if kap_filter == k %}selected{% endif %}>{{ k }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div id="gw-liste">
+  {% include "htmx_grundwissen.html" %}
+</div>
+{% endblock %}

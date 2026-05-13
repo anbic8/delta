@@ -140,4 +140,29 @@
   </section>
 
 </div>
+
+<!-- Voraussetzungen / Grundwissen -->
+<section style="margin-top:2rem;">
+  <h3>Voraussetzungen (Grundwissen)</h3>
+  <small class="hint">Welches Grundwissen brauchen Schüler, um diese Aufgabe zu lösen?</small>
+
+  <div id="gw-zugeordnet" style="margin-top:.75rem;">
+    {% set aufgabe_id = aufgabe.id %}
+    {% include "htmx_gw_zugeordnet.html" %}
+  </div>
+
+  <details style="margin-top:1rem;">
+    <summary>Grundwissen suchen &amp; zuordnen</summary>
+    <div style="margin-top:.75rem;">
+      <input type="search"
+             placeholder="Suche nach Aufgabe, Kapitel, Satz…"
+             hx-get="/ui/aufgaben/{{ aufgabe.id }}/grundwissen/suche"
+             hx-target="#gw-suchergebnis"
+             hx-trigger="input changed delay:300ms"
+             name="q"
+             style="max-width:30rem;">
+      <div id="gw-suchergebnis"></div>
+    </div>
+  </details>
+</section>
 {% endblock %}

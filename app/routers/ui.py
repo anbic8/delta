@@ -772,11 +772,14 @@ def aufgabe_detail(a_id: int, request: Request, db: Session = Depends(get_db)):
     uk_liste = sorted(set(r[0] for r in db.query(Buchaufgabe.unterkapitel)
                           .filter(Buchaufgabe.kapitel == a.kapitel, Buchaufgabe.unterkapitel != "")
                           .distinct().all())) if a.kapitel else []
+    from app.models.grundwissen import AufgabeGrundwissen
+    gw_eintraege = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.aufgabe_id == a_id).all()
     return templates.TemplateResponse(request, "aufgabe_detail.html", {
         "aufgabe": a,
         "kompetenzen_aktuell": aks, "alle_kompetenzen": alle_k,
         "kompetenzen_map": kompetenzen_map,
         "kapitel_liste": kap_liste, "unterkapitel_liste": uk_liste,
+        "grundwissen_aktuell": gw_eintraege,
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
     })
@@ -1067,6 +1070,163 @@ async def kapitel_empfehlung_pdf_route(kl_id: int, request: Request, db: Session
     dateiname = f"Kapitel_Empfehlung_{kl.name}_{kapitel[:30]}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
+# ── Grundwissen ───────────────────────────────────────────────
+
+def _gw_kapitel_liste(db):
+    from app.models.grundwissen import Grundwissen as GW
+    from app.models.buchaufgabe import Buchaufgabe
+    buch_kap = sorted(set(r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()))
+    gw_kap = sorted(set(r[0] for r in db.query(GW.kapitel).distinct().all()))
+    return sorted(set(buch_kap + gw_kap))
+
+
+
+@router.get("/grundwissen")
+def grundwissen_liste(request: Request, js: str = "", kap: str = "", db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW
+    query = db.query(GW)
+    if js and js.isdigit():
+        query = query.filter(GW.jahrgangsstufe == int(js))
+    if kap:
+        query = query.filter(GW.kapitel == kap)
+    eintraege = query.order_by(GW.jahrgangsstufe, GW.kapitel, GW.unterkapitel).all()
+    return templates.TemplateResponse(request, "grundwissen_liste.html", {
+        "eintraege": eintraege,
+        "kapitel_liste": _gw_kapitel_liste(db),
+        "js_filter": js,
+        "kap_filter": kap,
+    })
+
+
+@router.get("/grundwissen/suche")
+def grundwissen_suche(request: Request, q: str = "", js: str = "", kap: str = "", db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW
+    import sqlalchemy as sa
+    query = db.query(GW)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            sa.or_(GW.aufgabe.ilike(like), GW.kapitel.ilike(like), GW.unterkapitel.ilike(like))
+        )
+    if js and js.isdigit():
+        query = query.filter(GW.jahrgangsstufe == int(js))
+    if kap:
+        query = query.filter(GW.kapitel == kap)
+    eintraege = query.order_by(GW.jahrgangsstufe, GW.kapitel).all()
+    return templates.TemplateResponse(request, "htmx_grundwissen.html", {"eintraege": eintraege})
+
+
+@router.get("/grundwissen/neu")
+def grundwissen_neu_form(request: Request, db: Session = Depends(get_db)):
+    return templates.TemplateResponse(request, "grundwissen_neu.html", {
+        "kapitel_liste": _kapitel_liste(db),
+    })
+
+
+@router.post("/grundwissen")
+def grundwissen_erstellen(
+    jahrgangsstufe: int = Form(...),
+    kapitel: str = Form(""), kapitel_frei: str = Form(""),
+    unterkapitel_sel: str = Form(""), unterkapitel_frei: str = Form(""),
+    aufgabe: str = Form(...), loesung: str = Form(""), theorielink: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    from app.models.grundwissen import Grundwissen as GW
+    kap = kapitel_frei.strip() or kapitel.strip() or "–"
+    uk = unterkapitel_frei.strip() or unterkapitel_sel.strip() or None
+    g = GW(jahrgangsstufe=jahrgangsstufe, kapitel=kap, unterkapitel=uk,
+            aufgabe=aufgabe, loesung=loesung or None, theorielink=theorielink or None)
+    db.add(g)
+    db.commit()
+    db.refresh(g)
+    return REDIRECT(f"/ui/grundwissen/{g.id}?msg=Angelegt")
+
+
+@router.get("/grundwissen/{gid}")
+def grundwissen_detail(gid: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW, AufgabeGrundwissen
+    g = db.get(GW, gid)
+    verwendungen = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.grundwissen_id == gid).all()
+    return templates.TemplateResponse(request, "grundwissen_detail.html", {
+        "eintrag": g, "verwendungen": verwendungen,
+        "msg": request.query_params.get("msg"),
+    })
+
+
+@router.post("/grundwissen/{gid}/bearbeiten")
+def grundwissen_bearbeiten(
+    gid: int,
+    jahrgangsstufe: int = Form(...), kapitel: str = Form(...), unterkapitel: str = Form(""),
+    aufgabe: str = Form(...), loesung: str = Form(""), theorielink: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    from app.models.grundwissen import Grundwissen as GW
+    g = db.get(GW, gid)
+    g.jahrgangsstufe = jahrgangsstufe
+    g.kapitel = kapitel
+    g.unterkapitel = unterkapitel or None
+    g.aufgabe = aufgabe
+    g.loesung = loesung or None
+    g.theorielink = theorielink or None
+    db.commit()
+    return REDIRECT(f"/ui/grundwissen/{gid}?msg=Gespeichert")
+
+
+@router.post("/grundwissen/{gid}/loeschen")
+def grundwissen_loeschen(gid: int, db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW
+    g = db.get(GW, gid)
+    if g:
+        db.delete(g)
+        db.commit()
+    return REDIRECT("/ui/grundwissen?msg=Gelöscht")
+
+
+@router.get("/aufgaben/{aid}/grundwissen/suche")
+def aufgabe_gw_suche(aid: int, request: Request, q: str = "", db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW, AufgabeGrundwissen
+    import sqlalchemy as sa
+    bereits = {ag.grundwissen_id for ag in db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.aufgabe_id == aid).all()}
+    query = db.query(GW)
+    if q:
+        like = f"%{q}%"
+        query = query.filter(
+            sa.or_(GW.aufgabe.ilike(like), GW.kapitel.ilike(like), GW.unterkapitel.ilike(like))
+        )
+    treffer = [g for g in query.order_by(GW.jahrgangsstufe, GW.kapitel).limit(20).all() if g.id not in bereits]
+    return templates.TemplateResponse(request, "htmx_gw_suche.html", {"treffer": treffer, "q": q, "aufgabe_id": aid})
+
+
+@router.post("/aufgaben/{aid}/grundwissen/{gid}/zuordnen")
+def aufgabe_gw_zuordnen(aid: int, gid: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.grundwissen import AufgabeGrundwissen
+    existing = db.query(AufgabeGrundwissen).filter(
+        AufgabeGrundwissen.aufgabe_id == aid, AufgabeGrundwissen.grundwissen_id == gid
+    ).first()
+    if not existing:
+        db.add(AufgabeGrundwissen(aufgabe_id=aid, grundwissen_id=gid))
+        db.commit()
+    eintraege = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.aufgabe_id == aid).all()
+    return templates.TemplateResponse(request, "htmx_gw_zugeordnet.html", {
+        "grundwissen_aktuell": eintraege, "aufgabe_id": aid,
+    })
+
+
+@router.post("/aufgaben/{aid}/grundwissen/{gid}/entfernen")
+def aufgabe_gw_entfernen(aid: int, gid: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.grundwissen import AufgabeGrundwissen
+    obj = db.query(AufgabeGrundwissen).filter(
+        AufgabeGrundwissen.aufgabe_id == aid, AufgabeGrundwissen.grundwissen_id == gid
+    ).first()
+    if obj:
+        db.delete(obj)
+        db.commit()
+    eintraege = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.aufgabe_id == aid).all()
+    return templates.TemplateResponse(request, "htmx_gw_zugeordnet.html", {
+        "grundwissen_aktuell": eintraege, "aufgabe_id": aid,
+    })
 
 
 # ── Buchaufgaben ──────────────────────────────────────────────

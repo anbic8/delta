@@ -1,0 +1,24 @@
+{% if grundwissen_aktuell %}
+<ul style="list-style:none; padding:0;">
+  {% for ag in grundwissen_aktuell %}
+  <li style="display:flex; justify-content:space-between; align-items:center;
+              padding:.35rem .5rem; border-radius:.3rem; background:#f0fff4; margin-bottom:.25rem;">
+    <span>
+      <span class="badge">Kl.{{ ag.grundwissen.jahrgangsstufe }}</span>
+      <span class="badge">{{ ag.grundwissen.kapitel }}</span>
+      {% if ag.grundwissen.unterkapitel %}<span class="badge">{{ ag.grundwissen.unterkapitel }}</span>{% endif %}
+      <a href="/ui/grundwissen/{{ ag.grundwissen_id }}">{{ ag.grundwissen.aufgabe | truncate(70) }}</a>
+    </span>
+    <form method="post" action="/ui/aufgaben/{{ aufgabe_id }}/grundwissen/{{ ag.grundwissen_id }}/entfernen"
+          hx-post="/ui/aufgaben/{{ aufgabe_id }}/grundwissen/{{ ag.grundwissen_id }}/entfernen"
+          hx-target="#gw-zugeordnet"
+          hx-swap="innerHTML"
+          style="margin:0;">
+      <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;">✕</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p><small>Noch kein Grundwissen zugeordnet.</small></p>
+{% endif %}

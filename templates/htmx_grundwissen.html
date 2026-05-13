@@ -1,0 +1,34 @@
+{% if eintraege %}
+<table>
+  <thead>
+    <tr>
+      <th>Klasse</th>
+      <th>Kapitel</th>
+      <th>Unterkapitel</th>
+      <th>Aufgabe / Satz</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for g in eintraege %}
+    <tr>
+      <td>{{ g.jahrgangsstufe }}</td>
+      <td><small>{{ g.kapitel }}</small></td>
+      <td><small>{{ g.unterkapitel or '–' }}</small></td>
+      <td>
+        <a href="/ui/grundwissen/{{ g.id }}">{{ g.aufgabe | truncate(60) }}</a>
+        {% if g.theorielink %}<small> <a href="{{ g.theorielink }}" target="_blank" rel="noopener">🔗</a></small>{% endif %}
+      </td>
+      <td>
+        <form method="post" action="/ui/grundwissen/{{ g.id }}/loeschen" style="display:inline;">
+          <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
+                  onclick="return confirm('Eintrag löschen?')">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Keine Einträge gefunden.</p>
+{% endif %}

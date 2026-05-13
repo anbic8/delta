@@ -1,0 +1,23 @@
+{% if treffer %}
+<ul style="list-style:none; padding:0; margin:.5rem 0 0;">
+  {% for g in treffer %}
+  <li style="display:flex; justify-content:space-between; align-items:center;
+              padding:.35rem .5rem; border-radius:.3rem; background:#f8f9fa; margin-bottom:.25rem;">
+    <span style="font-size:.9rem;">
+      <strong>Kl.{{ g.jahrgangsstufe }}</strong>
+      · {{ g.kapitel }}{% if g.unterkapitel %} › {{ g.unterkapitel }}{% endif %}
+      · {{ g.aufgabe | truncate(55) }}
+    </span>
+    <form method="post" action="/ui/aufgaben/{{ aufgabe_id }}/grundwissen/{{ g.id }}/zuordnen"
+          style="margin:0;"
+          hx-post="/ui/aufgaben/{{ aufgabe_id }}/grundwissen/{{ g.id }}/zuordnen"
+          hx-target="#gw-zugeordnet"
+          hx-swap="innerHTML">
+      <button type="submit" style="padding:.2rem .6rem; font-size:.8rem;">+ Zuordnen</button>
+    </form>
+  </li>
+  {% endfor %}
+</ul>
+{% elif q %}
+<p><small>Keine Treffer für „{{ q }}".</small></p>
+{% endif %}

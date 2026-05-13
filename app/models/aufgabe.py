@@ -32,6 +32,9 @@ class Aufgabe(Base):
         back_populates="aufgabe", cascade="all, delete-orphan"
     )
     leistung_aufgaben: Mapped[list["LeistungAufgabe"]] = relationship(back_populates="aufgabe")
+    grundwissen_eintraege: Mapped[list["AufgabeGrundwissen"]] = relationship(
+        back_populates="aufgabe", cascade="all, delete-orphan"
+    )
 
 
 class AufgabeKompetenz(Base):
