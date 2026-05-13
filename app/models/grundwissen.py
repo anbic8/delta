@@ -31,3 +31,16 @@ class AufgabeGrundwissen(Base):
 
     aufgabe: Mapped["Aufgabe"] = relationship(back_populates="grundwissen_eintraege")
     grundwissen: Mapped["Grundwissen"] = relationship(back_populates="aufgabe_grundwissen")
+
+
+class SchuelerGrundwissenFehler(Base):
+    """Markiert welches Grundwissen ein Schüler bei einer bestimmten Aufgabe nicht beherrscht hat."""
+    __tablename__ = "schueler_grundwissen_fehler"
+    __table_args__ = (UniqueConstraint("schueler_id", "leistung_aufgabe_id", "grundwissen_id"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    schueler_id: Mapped[int] = mapped_column(ForeignKey("schueler.id"))
+    leistung_aufgabe_id: Mapped[int] = mapped_column(ForeignKey("leistung_aufgaben.id"))
+    grundwissen_id: Mapped[int] = mapped_column(ForeignKey("grundwissen.id"))
+
+    grundwissen: Mapped["Grundwissen"] = relationship()

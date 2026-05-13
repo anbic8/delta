@@ -116,4 +116,30 @@
 {% endfor %}
 
 {% endif %}
+
+{% if gw_fehler %}
+<section style="margin-top:2rem; border-top:2px solid #dee2e6; padding-top:1rem;">
+  <h3>🧠 Grundwissen zum Üben</h3>
+  <p><small>Diese Grundkenntnisse wurden beim Test als fehlerhaft markiert.</small></p>
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:.75rem; margin-top:.75rem;">
+    {% for gw in gw_fehler %}
+    <div style="border:1px solid #dee2e6; border-radius:.5rem; padding:.75rem 1rem; background:#f8f9fa;">
+      <div style="font-size:.8rem; color:#6c757d; margin-bottom:.25rem;">
+        Kl.{{ gw.jahrgangsstufe }} · {{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %}
+      </div>
+      <div style="font-weight:bold; margin-bottom:.35rem;">{{ gw.aufgabe }}</div>
+      {% if gw.loesung %}
+      <details>
+        <summary style="font-size:.85rem; cursor:pointer;">Lösung anzeigen</summary>
+        <div style="margin-top:.35rem; font-size:.85rem; white-space:pre-wrap; background:#fff; padding:.5rem; border-radius:.3rem; border:1px solid #e9ecef;">{{ gw.loesung | punkte_marker | safe }}</div>
+      </details>
+      {% endif %}
+      {% if gw.theorielink %}
+      <p style="margin:.35rem 0 0; font-size:.8rem;"><a href="{{ gw.theorielink }}" target="_blank" rel="noopener">🔗 Theorie</a></p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
 {% endblock %}

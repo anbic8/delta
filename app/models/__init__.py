@@ -7,7 +7,7 @@ from app.models.aufgabe import Aufgabe, AufgabeKompetenz, AfbNiveau
 from app.models.schriftliche_leistung import SchriftlicheLeistung, LeistungAufgabe, LeistungArt
 from app.models.schueler_ergebnis import SchuelerErgebnis
 from app.models.buchaufgabe import Buchaufgabe, BuchaufgabeKompetenz
-from app.models.grundwissen import Grundwissen, AufgabeGrundwissen
+from app.models.grundwissen import Grundwissen, AufgabeGrundwissen, SchuelerGrundwissenFehler
 
 __all__ = [
     "Schuljahr", "Klasse", "Notensystem", "Schueler", "MuendlicheNote",
@@ -15,5 +15,5 @@ __all__ = [
     "SchriftlicheLeistung", "LeistungAufgabe", "LeistungArt",
     "SchuelerErgebnis",
     "Buchaufgabe", "BuchaufgabeKompetenz",
-    "Grundwissen", "AufgabeGrundwissen",
+    "Grundwissen", "AufgabeGrundwissen", "SchuelerGrundwissenFehler",
 ]

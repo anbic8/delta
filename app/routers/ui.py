@@ -338,10 +338,26 @@ def punkte_matrix_form(lid: int, request: Request, db: Session = Depends(get_db)
         summe = sum(v for v in punkte_map[s.id].values() if v is not None)
         if all(v is not None for v in punkte_map[s.id].values()) and las:
             noten_map[s.id] = notenberechnung.punkte_zu_note(summe, max_p)
+    from app.models.grundwissen import SchuelerGrundwissenFehler
+    # Grundwissen per LeistungAufgabe (nur LAs mit zugeordnetem GW)
+    gw_per_la = {}
+    for la in las:
+        gws = [ag.grundwissen for ag in la.aufgabe.grundwissen_eintraege]
+        if gws:
+            gw_per_la[la.id] = gws
+    # Aktuell gesetzte Fehler-Markierungen
+    la_ids_mit_gw = list(gw_per_la.keys())
+    fehler_set: set = set()
+    if la_ids_mit_gw:
+        fehler = db.query(SchuelerGrundwissenFehler).filter(
+            SchuelerGrundwissenFehler.leistung_aufgabe_id.in_(la_ids_mit_gw)
+        ).all()
+        fehler_set = {(f.schueler_id, f.leistung_aufgabe_id, f.grundwissen_id) for f in fehler}
     return templates.TemplateResponse(request, "punkte_matrix.html", {
         "leistung": l, "leistung_aufgaben": las,
         "schueler": schueler, "punkte_map": punkte_map, "noten_map": noten_map,
         "max_punkte_gesamt": max_p, "notensystem": l.klasse.notensystem,
+        "gw_per_la": gw_per_la, "fehler_set": fehler_set,
     })
 
 
@@ -354,6 +370,29 @@ def punkte_zelle_speichern(lid: int, schueler_id: int = Form(...), la_id: int = 
         db.add(SchuelerErgebnis(schueler_id=schueler_id, leistung_aufgabe_id=la_id, erreichte_punkte=punkte))
     db.commit()
     return ""  # HTMX hx-swap="none"
+
+
+@router.post("/schriftliche-leistungen/{lid}/gw-fehler")
+def gw_fehler_toggle(
+    lid: int,
+    schueler_id: int = Form(...), la_id: int = Form(...),
+    grundwissen_id: int = Form(...), checked: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    from app.models.grundwissen import SchuelerGrundwissenFehler
+    from fastapi.responses import Response as FResponse
+    existing = db.query(SchuelerGrundwissenFehler).filter(
+        SchuelerGrundwissenFehler.schueler_id == schueler_id,
+        SchuelerGrundwissenFehler.leistung_aufgabe_id == la_id,
+        SchuelerGrundwissenFehler.grundwissen_id == grundwissen_id,
+    ).first()
+    if checked and not existing:
+        db.add(SchuelerGrundwissenFehler(schueler_id=schueler_id, leistung_aufgabe_id=la_id, grundwissen_id=grundwissen_id))
+        db.commit()
+    elif not checked and existing:
+        db.delete(existing)
+        db.commit()
+    return FResponse(status_code=204)
 
 
 @router.get("/schriftliche-leistungen/{lid}/pauschal")
@@ -667,6 +706,25 @@ def zeugnis_pdf(kl_id: int, db: Session = Depends(get_db)):
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
+def _gw_fehler_fuer_schueler(s_id: int, lid: int, db) -> list:
+    """Gibt deduplizierte Grundwissen-Einträge zurück, die der Schüler in dieser Leistung falsch hatte."""
+    from app.models.grundwissen import SchuelerGrundwissenFehler
+    la_ids = [la.id for la in db.query(LeistungAufgabe).filter(LeistungAufgabe.leistung_id == lid).all()]
+    if not la_ids:
+        return []
+    fehler = db.query(SchuelerGrundwissenFehler).filter(
+        SchuelerGrundwissenFehler.schueler_id == s_id,
+        SchuelerGrundwissenFehler.leistung_aufgabe_id.in_(la_ids),
+    ).all()
+    seen: set = set()
+    result = []
+    for f in fehler:
+        if f.grundwissen_id not in seen:
+            seen.add(f.grundwissen_id)
+            result.append(f.grundwissen)
+    return result
+
+
 @router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung")
 def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
@@ -679,6 +737,7 @@ def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Sess
         "schueler": schueler, "leistung": leistung, "bloecke": bloecke,
         "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
         "profil_vorhanden": bool(profil),
+        "gw_fehler": _gw_fehler_fuer_schueler(s_id, lid, db),
     })
 
 
@@ -699,7 +758,8 @@ def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depen
     klasse = db.get(Klasse, schueler.klasse_id)
     radar, profil_vorhanden = _radar_fuer_schueler(s_id, db)
     items = [{"schueler": schueler, "klasse": klasse, "leistung": leistung,
-              "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden}]
+              "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden,
+              "gw_fehler": _gw_fehler_fuer_schueler(s_id, lid, db)}]
     pdf_bytes = empfehlung_pdf(items)
     dateiname = f"Uebung_{schueler.nachname}_{leistung.titel}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
@@ -725,7 +785,8 @@ def schulaufgabe_empfehlung_pdf_alle(lid: int, db: Session = Depends(get_db)):
         _, _, bloecke = empfehlungen_fuer_schulaufgabe(s.id, lid, db)
         radar, profil_vorhanden = _radar_fuer_schueler(s.id, db)
         items.append({"schueler": s, "klasse": klasse, "leistung": leistung,
-                      "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden})
+                      "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden,
+                      "gw_fehler": _gw_fehler_fuer_schueler(s.id, lid, db)})
     pdf_bytes = empfehlung_pdf(items)
     dateiname = f"Uebung_Klasse_{leistung.titel}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
