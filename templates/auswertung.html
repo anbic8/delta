@@ -59,6 +59,10 @@
 
 <!-- Notenverteilung -->
 <h3>Notenverteilung</h3>
+{% set hat_noten = auswertung.notenverteilung.values() | selectattr("anzahl", "gt", 0) | list %}
+{% if not hat_noten %}
+<p style="color:#6c757d; font-size:.9rem;">Noch keine vollständigen Ergebnisse – Noten werden erst berechnet wenn alle Punkte eingetragen sind.</p>
+{% endif %}
 <div style="max-width:420px; margin-bottom:1rem;">
   {% for note_str, stats in auswertung.notenverteilung.items() %}
   {% if stats.anzahl > 0 %}

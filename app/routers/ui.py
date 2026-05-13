@@ -208,7 +208,8 @@ def schueler_empfehlung(s_id: int, request: Request, anzahl: int = 5, db: Sessio
         "anzahl": anzahl,
         "schwelle_schwach": settings.empfehlung_schwelle_schwach,
         "hat_daten": bool(profil),
-        "radar": _radar(scores_by_kuerzel) if profil else None,
+        "radar": _radar(scores_by_kuerzel),
+        "profil_vorhanden": bool(profil),
     })
 
 
@@ -541,7 +542,8 @@ def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Sess
     scores_by_kuerzel = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
     return templates.TemplateResponse(request, "schulaufgabe_empfehlung.html", {
         "schueler": schueler, "leistung": leistung, "bloecke": bloecke,
-        "radar": _radar(scores_by_kuerzel) if profil else None,
+        "radar": _radar(scores_by_kuerzel),
+        "profil_vorhanden": bool(profil),
     })
 
 

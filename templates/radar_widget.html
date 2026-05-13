@@ -1,4 +1,3 @@
-{% if radar %}
 <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg"
      style="width:100%; max-width:{{ size or 200 }}px; display:block; margin:0 auto;">
   <polygon points="{{ radar.grid }}" fill="none" stroke="#dee2e6" stroke-width="1.5"/>
@@ -9,9 +8,12 @@
   <polygon points="{{ radar.data }}" fill="rgba(59,130,246,0.2)" stroke="rgb(59,130,246)" stroke-width="2"/>
   {% for lbl in radar.labels %}
   <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle"
-        font-size="11" fill="{% if lbl.pct < 60 %}#c1121f{% else %}#495057{% endif %}">
+        font-size="11" fill="{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% elif lbl.pct == 0 %}#adb5bd{% else %}#495057{% endif %}">
     {{ lbl.text }} {{ lbl.pct }}%
   </text>
   {% endfor %}
+  {% if not profil_vorhanden %}
+  <text x="{{ radar.cx }}" y="{{ radar.cy }}" text-anchor="middle" dominant-baseline="middle"
+        font-size="10" fill="#adb5bd">noch keine Daten</text>
+  {% endif %}
 </svg>
-{% endif %}
