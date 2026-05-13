@@ -5,8 +5,8 @@
 <h2>{{ leistung.titel }}</h2>
 <p>
   Datum: <strong>{{ leistung.datum }}</strong> ·
-  Art: <span class="badge {% if leistung.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}">
-    {% if leistung.art == 'schulaufgabe' %}Schulaufgabe{% else %}Kleiner LN{% endif %}
+  Art: <span class="badge {% if leistung.art == 'schulaufgabe' %}badge-sa{% elif leistung.art == 'kleiner_ln' %}badge-ln{% else %}badge-ln{% endif %}">
+    {% if leistung.art == 'schulaufgabe' %}Schulaufgabe{% elif leistung.art == 'kleiner_ln' %}Kleiner LN{% else %}Test{% endif %}
   </span> ·
   Modus: <strong>{% if leistung.detailliert %}Detailliert{% else %}Pauschal{% endif %}</strong>
   {% if has_ergebnisse %}

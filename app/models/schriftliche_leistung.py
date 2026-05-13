@@ -10,6 +10,7 @@ from app.database import Base
 class LeistungArt(str, enum.Enum):
     schulaufgabe = "schulaufgabe"
     kleiner_ln = "kleiner_ln"
+    test = "test"
 
 
 class SchriftlicheLeistung(Base):

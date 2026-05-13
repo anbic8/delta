@@ -44,7 +44,10 @@ def _schriftliche_noten_fuer_art(schueler_id: int, art, db: Session) -> list[tup
 
 def _schriftliche_kleine_ln(schueler_id: int, db: Session) -> list[tuple[float, float]]:
     from app.models.schriftliche_leistung import LeistungArt
-    return _schriftliche_noten_fuer_art(schueler_id, LeistungArt.kleiner_ln, db)
+    return (
+        _schriftliche_noten_fuer_art(schueler_id, LeistungArt.kleiner_ln, db)
+        + _schriftliche_noten_fuer_art(schueler_id, LeistungArt.test, db)
+    )
 
 
 def _schriftliche_grosse_ln(schueler_id: int, db: Session) -> list[tuple[float, float]]:
