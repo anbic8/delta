@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Test-Vorlagen{% endblock %}
+{% block content %}
+<h2>Test-Vorlagen</h2>
+<p><small>Vorlagen werden beim Anlegen eines neuen Tests in der Leistungs-Detailseite angewendet.</small></p>
+
+{% if vorlagen %}
+<table>
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Aufgaben</th>
+      <th>Max. Punkte</th>
+      <th>Angelegt</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in vorlagen %}
+    <tr>
+      <td><strong>{{ v.name }}</strong></td>
+      <td>
+        {% for va in v.aufgaben %}
+        <span class="badge">{{ va.aufgabennummer }} – {{ va.aufgabe.titel | truncate(25) }}</span>
+        {% endfor %}
+      </td>
+      <td>{{ v.aufgaben | sum(attribute='aufgabe.max_punkte') | round(1) }} P</td>
+      <td><small>{{ v.erstellt_am.strftime('%d.%m.%Y') }}</small></td>
+      <td>
+        <form method="post" action="/ui/test-vorlagen/{{ v.id }}/loeschen" style="display:inline;">
+          <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
+                  onclick="return confirm('Vorlage « {{ v.name }} » löschen?')">✕</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Noch keine Vorlagen gespeichert.</p>
+<p><small>Öffne einen detaillierten Test mit zugeordneten Aufgaben und klicke auf „Als Vorlage speichern".</small></p>
+{% endif %}
+{% endblock %}

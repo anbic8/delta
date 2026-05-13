@@ -8,6 +8,7 @@ from app.models.schriftliche_leistung import SchriftlicheLeistung, LeistungAufga
 from app.models.schueler_ergebnis import SchuelerErgebnis
 from app.models.buchaufgabe import Buchaufgabe, BuchaufgabeKompetenz
 from app.models.grundwissen import Grundwissen, AufgabeGrundwissen, SchuelerGrundwissenFehler
+from app.models.test_vorlage import TestVorlage, TestVorlageAufgabe
 
 __all__ = [
     "Schuljahr", "Klasse", "Notensystem", "Schueler", "MuendlicheNote",
@@ -16,4 +17,5 @@ __all__ = [
     "SchuelerErgebnis",
     "Buchaufgabe", "BuchaufgabeKompetenz",
     "Grundwissen", "AufgabeGrundwissen", "SchuelerGrundwissenFehler",
+    "TestVorlage", "TestVorlageAufgabe",
 ]

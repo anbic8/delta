@@ -297,11 +297,13 @@ def leistung_detail(lid: int, request: Request, db: Session = Depends(get_db)):
     la_ids = [la.id for la in las]
     has_ergebnisse = bool(la_ids and db.query(SchuelerErgebnis).filter(SchuelerErgebnis.leistung_aufgabe_id.in_(la_ids)).count() > 0) or \
                      bool(db.query(SchuelerErgebnis).filter(SchuelerErgebnis.schriftliche_leistung_id == lid).count() > 0)
+    from app.models.test_vorlage import TestVorlage
     aufgaben_pool = db.query(Aufgabe).order_by(Aufgabe.titel).all()
+    vorlagen = db.query(TestVorlage).order_by(TestVorlage.name).all()
     return templates.TemplateResponse(request, "leistung_detail.html", {
         "leistung": l, "leistung_aufgaben": las,
         "max_punkte_gesamt": max_p, "has_ergebnisse": has_ergebnisse,
-        "aufgaben_pool": aufgaben_pool,
+        "aufgaben_pool": aufgaben_pool, "vorlagen": vorlagen,
         "msg": request.query_params.get("msg"),
     })
 
@@ -320,6 +322,68 @@ def aufgabe_entfernen(lid: int, la_id: int, db: Session = Depends(get_db)):
         db.delete(obj)
         db.commit()
     return REDIRECT(f"/ui/schriftliche-leistungen/{lid}")
+
+
+@router.post("/schriftliche-leistungen/{lid}/gewichtung")
+def leistung_gewichtung_aendern(lid: int, gewichtung: float = Form(...), db: Session = Depends(get_db)):
+    l = db.get(SchriftlicheLeistung, lid)
+    l.gewichtung = gewichtung
+    db.commit()
+    return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?msg=Gewichtung+gespeichert")
+
+
+@router.post("/schriftliche-leistungen/{lid}/als-vorlage")
+def leistung_als_vorlage(lid: int, name: str = Form(...), db: Session = Depends(get_db)):
+    from app.models.test_vorlage import TestVorlage, TestVorlageAufgabe
+    l = db.get(SchriftlicheLeistung, lid)
+    las = sorted(l.leistung_aufgaben, key=lambda x: x.reihenfolge)
+    v = TestVorlage(name=name.strip())
+    db.add(v)
+    db.flush()
+    for la in las:
+        db.add(TestVorlageAufgabe(
+            vorlage_id=v.id, aufgabe_id=la.aufgabe_id,
+            aufgabennummer=la.aufgabennummer, reihenfolge=la.reihenfolge,
+        ))
+    db.commit()
+    return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?msg=Vorlage+gespeichert")
+
+
+@router.post("/schriftliche-leistungen/{lid}/vorlage-laden/{vid}")
+def vorlage_laden(lid: int, vid: int, db: Session = Depends(get_db)):
+    from app.models.test_vorlage import TestVorlage
+    l = db.get(SchriftlicheLeistung, lid)
+    # Bestehende Aufgaben löschen
+    for la in list(l.leistung_aufgaben):
+        db.delete(la)
+    db.flush()
+    v = db.get(TestVorlage, vid)
+    for va in v.aufgaben:
+        db.add(LeistungAufgabe(
+            leistung_id=lid, aufgabe_id=va.aufgabe_id,
+            aufgabennummer=va.aufgabennummer, reihenfolge=va.reihenfolge,
+        ))
+    db.commit()
+    return REDIRECT(f"/ui/schriftliche-leistungen/{lid}?msg=Vorlage+geladen")
+
+
+@router.get("/test-vorlagen")
+def test_vorlagen_liste(request: Request, db: Session = Depends(get_db)):
+    from app.models.test_vorlage import TestVorlage
+    vorlagen = db.query(TestVorlage).order_by(TestVorlage.name).all()
+    return templates.TemplateResponse(request, "test_vorlagen.html", {
+        "vorlagen": vorlagen, "msg": request.query_params.get("msg"),
+    })
+
+
+@router.post("/test-vorlagen/{vid}/loeschen")
+def test_vorlage_loeschen(vid: int, db: Session = Depends(get_db)):
+    from app.models.test_vorlage import TestVorlage
+    v = db.get(TestVorlage, vid)
+    if v:
+        db.delete(v)
+        db.commit()
+    return REDIRECT("/ui/test-vorlagen?msg=Vorlage+gelöscht")
 
 
 @router.get("/schriftliche-leistungen/{lid}/punkte")
