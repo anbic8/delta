@@ -31,6 +31,15 @@
   .badge { display: inline-block; padding: 1pt 4pt; border: 1px solid #ccc;
            border-radius: 3pt; font-size: 8pt; }
   .stern { color: #f90; }
+  .radar-row { display: flex; gap: 16pt; align-items: flex-start; margin-bottom: 10pt; }
+  .radar-col { flex: 0 0 130pt; }
+  .komp-col { flex: 1; }
+  .komp-bar { display: flex; align-items: center; gap: 4pt; margin-bottom: 3pt; }
+  .komp-label { width: 20pt; font-size: 8pt; font-weight: bold; }
+  .komp-track { flex: 1; background: #e9ecef; height: 8pt; border-radius: 3pt; overflow: hidden; }
+  .komp-fill { height: 100%; border-radius: 3pt; background: #3b82f6; }
+  .komp-fill.schwach { background: #c1121f; }
+  .komp-pct { font-size: 7pt; color: #666; min-width: 22pt; }
 </style>
 </head>
 <body>
@@ -46,6 +55,44 @@
       &nbsp;·&nbsp; {{ item.leistung.datum.strftime('%d.%m.%Y') }}
     {% endif %}
   </div>
+
+  <!-- Kompetenzprofil -->
+  {% if item.radar %}
+  <div class="radar-row">
+    <div class="radar-col">
+      <svg viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg" style="width:130pt; height:130pt;">
+        <polygon points="{{ item.radar.grid }}" fill="none" stroke="#dee2e6" stroke-width="1.5"/>
+        <polygon points="{{ item.radar.grid_half }}" fill="none" stroke="#dee2e6" stroke-width="1" stroke-dasharray="3,3"/>
+        {% for ax in item.radar.axes %}
+        <line x1="{{ item.radar.cx }}" y1="{{ item.radar.cy }}" x2="{{ ax.x2 }}" y2="{{ ax.y2 }}" stroke="#dee2e6" stroke-width="1"/>
+        {% endfor %}
+        <polygon points="{{ item.radar.data }}" fill="rgba(59,130,246,0.2)" stroke="rgb(59,130,246)" stroke-width="2"/>
+        {% for lbl in item.radar.labels %}
+        <text x="{{ lbl.x }}" y="{{ lbl.y }}" text-anchor="middle" dominant-baseline="middle"
+              font-size="10" fill="{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% elif lbl.pct == 0 %}#adb5bd{% else %}#333{% endif %}">
+          {{ lbl.text }} {{ lbl.pct }}%
+        </text>
+        {% endfor %}
+        {% if not item.profil_vorhanden %}
+        <text x="{{ item.radar.cx }}" y="{{ item.radar.cy }}" text-anchor="middle" dominant-baseline="middle"
+              font-size="10" fill="#adb5bd">keine Daten</text>
+        {% endif %}
+      </svg>
+    </div>
+    <div class="komp-col">
+      <p style="margin:0 0 5pt; font-size:9pt; font-weight:bold;">Kompetenzprofil</p>
+      {% for lbl in item.radar.labels %}
+      <div class="komp-bar">
+        <span class="komp-label" style="color:{% if lbl.pct > 0 and lbl.pct < 60 %}#c1121f{% else %}#333{% endif %}">{{ lbl.text }}</span>
+        <div class="komp-track">
+          <div class="komp-fill {% if lbl.pct < 60 and lbl.pct > 0 %}schwach{% endif %}" style="width:{{ lbl.pct }}%;"></div>
+        </div>
+        <span class="komp-pct">{{ lbl.pct }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
 
   {% set hat_daten = item.bloecke | selectattr("erreicht") | list %}
 

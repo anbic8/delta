@@ -547,6 +547,13 @@ def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Sess
     })
 
 
+def _radar_fuer_schueler(s_id: int, db) -> tuple[dict, bool]:
+    profil = kp_service.berechne_profil(s_id, db)
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
+    scores = {k.kuerzel: profil.get(k.id, 0) for k in alle_k}
+    return _radar(scores), bool(profil)
+
+
 @router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung.pdf")
 def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
@@ -554,7 +561,9 @@ def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depen
     from fastapi.responses import Response
     schueler, leistung, bloecke = empfehlungen_fuer_schulaufgabe(s_id, lid, db)
     klasse = db.get(Klasse, schueler.klasse_id)
-    items = [{"schueler": schueler, "klasse": klasse, "leistung": leistung, "bloecke": bloecke}]
+    radar, profil_vorhanden = _radar_fuer_schueler(s_id, db)
+    items = [{"schueler": schueler, "klasse": klasse, "leistung": leistung,
+              "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden}]
     pdf_bytes = empfehlung_pdf(items)
     dateiname = f"Uebung_{schueler.nachname}_{leistung.titel}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
@@ -578,7 +587,9 @@ def schulaufgabe_empfehlung_pdf_alle(lid: int, db: Session = Depends(get_db)):
     items = []
     for s in schueler_liste:
         _, _, bloecke = empfehlungen_fuer_schulaufgabe(s.id, lid, db)
-        items.append({"schueler": s, "klasse": klasse, "leistung": leistung, "bloecke": bloecke})
+        radar, profil_vorhanden = _radar_fuer_schueler(s.id, db)
+        items.append({"schueler": s, "klasse": klasse, "leistung": leistung,
+                      "bloecke": bloecke, "radar": radar, "profil_vorhanden": profil_vorhanden})
     pdf_bytes = empfehlung_pdf(items)
     dateiname = f"Uebung_Klasse_{leistung.titel}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
