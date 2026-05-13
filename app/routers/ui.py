@@ -361,6 +361,174 @@ def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
     return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data})
 
 
+@router.get("/schriftliche-leistungen/{lid}/auswertung.pdf")
+def auswertung_pdf(lid: int, db: Session = Depends(get_db)):
+    from app.routers.schriftliche_leistung import auswertung as api_auswertung
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    data = api_auswertung(lid, db)
+    html = _jinja_env().get_template("pdf_auswertung.html").render(auswertung=data)
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    name = f"Notenspiegel_{data.titel}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+# ── Schüler-Verlauf ───────────────────────────────────────────
+
+def _verlauf_eintrag(schueler_id: int, leistung, db):
+    from app.models.schueler_ergebnis import SchuelerErgebnis
+    from app.services.notenberechnung import punkte_zu_note, ist_grenzfall
+
+    if leistung.detailliert and leistung.leistung_aufgaben:
+        las = sorted(leistung.leistung_aufgaben, key=lambda x: x.reihenfolge)
+        max_p = sum(la.aufgabe.max_punkte for la in las)
+        summe, alle = 0.0, True
+        for la in las:
+            e = db.query(SchuelerErgebnis).filter(
+                SchuelerErgebnis.schueler_id == schueler_id,
+                SchuelerErgebnis.leistung_aufgabe_id == la.id,
+            ).first()
+            if e and e.erreichte_punkte is not None:
+                summe += e.erreichte_punkte
+            else:
+                alle = False
+        if alle and max_p > 0:
+            return {"leistung": leistung, "summe": summe, "max": max_p,
+                    "note": punkte_zu_note(summe, max_p),
+                    "prozent": round(summe / max_p * 100, 1),
+                    "grenzfall": ist_grenzfall(summe, max_p)}
+        return {"leistung": leistung, "summe": None, "max": max_p,
+                "note": None, "prozent": None, "grenzfall": False}
+    else:
+        e = db.query(SchuelerErgebnis).filter(
+            SchuelerErgebnis.schueler_id == schueler_id,
+            SchuelerErgebnis.schriftliche_leistung_id == leistung.id,
+        ).first()
+        note = e.pauschalnote if e else None
+        return {"leistung": leistung, "summe": None, "max": None,
+                "note": note, "prozent": None, "grenzfall": False}
+
+
+def _trend_svg(eintraege: list) -> dict | None:
+    punkte = [(i, e) for i, e in enumerate(eintraege) if e["prozent"] is not None]
+    if len(punkte) < 2:
+        return None
+    w, h, padl, padt = 500, 100, 35, 12
+    n = len(eintraege)
+
+    def to_x(i): return padl + i / max(n - 1, 1) * (w - padl - 10)
+    def to_y(pct): return padt + (100 - pct) / 100 * (h - padt - 8)
+
+    coords = [(to_x(i), to_y(e["prozent"])) for i, e in punkte]
+    polyline = " ".join(f"{x:.1f},{y:.1f}" for x, y in coords)
+    return {
+        "w": w, "h": h,
+        "polyline": polyline,
+        "punkte": [
+            {"x": f"{x:.1f}", "y": f"{y:.1f}",
+             "y_label": f"{y + 12:.1f}",
+             "pct": eintraege[i]["prozent"],
+             "titel": eintraege[i]["leistung"].titel[:14],
+             "art": eintraege[i]["leistung"].art.value
+             if hasattr(eintraege[i]["leistung"].art, "value")
+             else str(eintraege[i]["leistung"].art)}
+            for (i, e), (x, y) in zip(punkte, coords)
+        ],
+    }
+
+
+@router.get("/schueler/{s_id}/verlauf")
+def schueler_verlauf_view(s_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    s = db.get(Schueler, s_id)
+    kl = db.get(Klasse, s.klasse_id)
+    leistungen = (
+        db.query(SchriftlicheLeistung)
+        .filter(SchriftlicheLeistung.klasse_id == kl.id)
+        .order_by(SchriftlicheLeistung.datum)
+        .all()
+    )
+    eintraege = [_verlauf_eintrag(s_id, l, db) for l in leistungen]
+    schnitt_data = type("S", (), {
+        "schnitt_kleine_ln": notenschnitt.schnitt_kleine_ln(s_id, db),
+        "schnitt_grosse_ln": notenschnitt.schnitt_grosse_ln(s_id, db),
+        "gesamtschnitt": notenschnitt.gesamtschnitt(s_id, db),
+    })()
+    return templates.TemplateResponse(request, "schueler_verlauf.html", {
+        "schueler": s, "klasse": kl,
+        "eintraege": eintraege,
+        "trend": _trend_svg(eintraege),
+        "schnitt": schnitt_data,
+    })
+
+
+# ── Zeugnis ───────────────────────────────────────────────────
+
+def _zeugnis_daten(kl_id: int, db):
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    from app.models.schueler_ergebnis import SchuelerErgebnis
+    from app.services.notenberechnung import punkte_zu_note
+    from app.models.schuljahr import Schuljahr
+
+    kl = db.get(Klasse, kl_id)
+    schuljahr = db.get(Schuljahr, kl.schuljahr_id)
+    schueler_liste = (
+        db.query(Schueler)
+        .filter(Schueler.klasse_id == kl_id, Schueler.geloescht_am.is_(None))
+        .order_by(Schueler.nachname, Schueler.vorname)
+        .all()
+    )
+    leistungen = (
+        db.query(SchriftlicheLeistung)
+        .filter(SchriftlicheLeistung.klasse_id == kl_id)
+        .order_by(SchriftlicheLeistung.datum)
+        .all()
+    )
+
+    zeilen = []
+    for s in schueler_liste:
+        noten_pro_leistung = {}
+        for l in leistungen:
+            e = _verlauf_eintrag(s.id, l, db)
+            if e["note"] is not None:
+                noten_pro_leistung[l.id] = e["note"]
+        zeilen.append({
+            "schueler": s,
+            "schnitt_grosse": notenschnitt.schnitt_grosse_ln(s.id, db),
+            "schnitt_kleine": notenschnitt.schnitt_kleine_ln(s.id, db),
+            "gesamt": notenschnitt.gesamtschnitt(s.id, db),
+            "noten_pro_leistung": noten_pro_leistung,
+        })
+    return kl, schuljahr, leistungen, zeilen
+
+
+@router.get("/klassen/{kl_id}/zeugnis")
+def zeugnis_view(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    kl, schuljahr, leistungen, zeilen = _zeugnis_daten(kl_id, db)
+    return templates.TemplateResponse(request, "zeugnis.html", {
+        "klasse": kl, "schuljahr": schuljahr,
+        "leistungen": leistungen, "zeilen": zeilen,
+    })
+
+
+@router.get("/klassen/{kl_id}/zeugnis.pdf")
+def zeugnis_pdf(kl_id: int, db: Session = Depends(get_db)):
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    kl, schuljahr, leistungen, zeilen = _zeugnis_daten(kl_id, db)
+    html = _jinja_env().get_template("pdf_zeugnis.html").render(
+        klasse=kl, schuljahr=schuljahr.name if schuljahr else "",
+        leistungen=leistungen, zeilen=zeilen,
+    )
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    name = f"Zeugnis_{kl.name}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 @router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung")
 def schulaufgabe_empfehlung_view(s_id: int, lid: int, request: Request, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe

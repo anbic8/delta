@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Verlauf – {{ schueler.nachname }}, {{ schueler.vorname }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem;">
+  <p style="margin:0;"><a href="/ui/schueler/{{ schueler.id }}">← Dashboard</a></p>
+</div>
+<h2>Verlauf – {{ schueler.nachname }}, {{ schueler.vorname }}</h2>
+<p style="color:#6c757d;">{{ klasse.name }}</p>
+
+<!-- Schnittübersicht -->
+<div class="r-grid-3" style="margin-bottom:1.5rem;">
+  <div style="background:#f8f9fa; border-radius:.5rem; padding:1rem; text-align:center;">
+    <div style="font-size:1.5rem; font-weight:bold;">
+      {% if schnitt.schnitt_grosse_ln %}{{ schnitt.schnitt_grosse_ln }}{% else %}–{% endif %}
+    </div>
+    <small style="color:#6c757d;">Große LN (SA)</small>
+  </div>
+  <div style="background:#f8f9fa; border-radius:.5rem; padding:1rem; text-align:center;">
+    <div style="font-size:1.5rem; font-weight:bold;">
+      {% if schnitt.schnitt_kleine_ln %}{{ schnitt.schnitt_kleine_ln }}{% else %}–{% endif %}
+    </div>
+    <small style="color:#6c757d;">Kleine LN</small>
+  </div>
+  <div style="background:#e9ecef; border-radius:.5rem; padding:1rem; text-align:center;">
+    <div style="font-size:1.5rem; font-weight:bold;">
+      {% if schnitt.gesamtschnitt %}{{ schnitt.gesamtschnitt }}{% else %}–{% endif %}
+    </div>
+    <small style="color:#6c757d;">Gesamtschnitt</small>
+  </div>
+</div>
+
+{% if trend %}
+<!-- Trendchart -->
+<div style="margin-bottom:1.5rem;">
+  <h3>Notenentwicklung</h3>
+  <div class="r-scroll">
+    <svg viewBox="0 0 {{ trend.w }} {{ trend.h }}" xmlns="http://www.w3.org/2000/svg"
+         style="width:100%; max-width:{{ trend.w }}px; height:{{ trend.h }}px; display:block;">
+      <!-- Hilfslinien -->
+      {% for pct, lbl in [(100,'1'), (83,'2'), (67,'3'), (50,'4'), (33,'5')] %}
+      {% set y = 15 + (100 - pct) / 100 * 70 %}
+      <line x1="30" y1="{{ y }}" x2="{{ trend.w - 10 }}" y2="{{ y }}"
+            stroke="#dee2e6" stroke-width="1" stroke-dasharray="3,3"/>
+      <text x="4" y="{{ y + 4 }}" font-size="9" fill="#6c757d">{{ lbl }}</text>
+      {% endfor %}
+      <!-- Verbindungslinie -->
+      <polyline points="{{ trend.polyline }}" fill="none" stroke="rgb(59,130,246)" stroke-width="2"/>
+      <!-- Punkte + Labels -->
+      {% for p in trend.punkte %}
+      <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4"
+              fill="{% if p.art == 'schulaufgabe' %}rgb(59,130,246){% else %}rgb(32,178,80){% endif %}"/>
+      <text x="{{ p.x }}" y="{{ p.y_label }}" text-anchor="middle" font-size="8" fill="#495057">{{ p.titel }}</text>
+      {% endfor %}
+    </svg>
+  </div>
+  <p style="font-size:.8rem; color:#6c757d; margin-top:.25rem;">
+    <span style="color:rgb(59,130,246);">●</span> Schulaufgabe &nbsp;
+    <span style="color:rgb(32,178,80);">●</span> Kleiner LN
+  </p>
+</div>
+{% endif %}
+
+<!-- Detailtabelle -->
+<h3>Alle Leistungen</h3>
+<div class="r-scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>Titel</th>
+      <th>Art</th>
+      <th class="hide-xs">Punkte</th>
+      <th>%</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for e in eintraege %}
+    <tr {% if e.grenzfall %}class="grenzfall"{% endif %}>
+      <td><small>{{ e.leistung.datum }}</small></td>
+      <td>
+        {% if e.leistung.detailliert %}
+        <a href="/ui/schriftliche-leistungen/{{ e.leistung.id }}/auswertung">{{ e.leistung.titel }}</a>
+        {% else %}
+        {{ e.leistung.titel }}
+        {% endif %}
+      </td>
+      <td>
+        {% if e.leistung.art == 'schulaufgabe' %}
+        <span class="badge badge-sa">SA</span>
+        {% else %}
+        <span class="badge badge-ln">Kl. LN</span>
+        {% endif %}
+      </td>
+      <td class="hide-xs">
+        {% if e.summe is not none %}{{ e.summe }}/{{ e.max }}{% else %}–{% endif %}
+      </td>
+      <td>{% if e.prozent is not none %}{{ e.prozent }}%{% else %}–{% endif %}</td>
+      <td>
+        {% if e.note %}
+        <strong class="{% if e.note == 1 %}note-1{% elif e.note >= 5 %}note-5{% endif %}">{{ e.note }}</strong>
+        {% if e.grenzfall %}🟡{% endif %}
+        {% else %}–{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if not eintraege %}
+<p style="color:#6c757d;">Noch keine schriftlichen Leistungen für diese Klasse.</p>
+{% endif %}
+{% endblock %}

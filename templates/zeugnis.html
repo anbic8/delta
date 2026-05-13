@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Zeugnis – {{ klasse.name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem;">
+  <p style="margin:0;"><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+  <a href="/ui/klassen/{{ klasse.id }}/zeugnis.pdf" role="button" class="outline secondary" style="font-size:.85rem; padding:.3rem .75rem;">📄 PDF</a>
+</div>
+<h2>Notenübersicht – {{ klasse.name }}</h2>
+
+<div class="r-scroll">
+<table>
+  <thead>
+    <tr>
+      <th>Schüler</th>
+      <th style="text-align:center;">Große LN</th>
+      <th style="text-align:center;">Kleine LN</th>
+      <th style="text-align:center;">Gesamt</th>
+      {% for l in leistungen %}
+      <th class="hide-xs" style="text-align:center; font-size:.8rem; white-space:nowrap;">
+        <span class="badge {% if l.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}">
+          {{ l.titel[:15] }}{% if l.titel|length > 15 %}…{% endif %}
+        </span>
+        <br><small>{{ l.datum.strftime('%d.%m.') }}</small>
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for z in zeilen %}
+    <tr>
+      <td>
+        <a href="/ui/schueler/{{ z.schueler.id }}">{{ z.schueler.nachname }}, {{ z.schueler.vorname }}</a>
+      </td>
+      <td style="text-align:center;">
+        {% if z.schnitt_grosse %}
+        <strong class="{% if z.schnitt_grosse == 1 %}note-1{% elif z.schnitt_grosse >= 5 %}note-5{% endif %}">
+          {{ z.schnitt_grosse }}
+        </strong>
+        {% else %}–{% endif %}
+      </td>
+      <td style="text-align:center;">
+        {% if z.schnitt_kleine %}
+        <strong>{{ z.schnitt_kleine }}</strong>
+        {% else %}–{% endif %}
+      </td>
+      <td style="text-align:center; background:#f8f9fa;">
+        {% if z.gesamt %}
+        <strong class="{% if z.gesamt == 1 %}note-1{% elif z.gesamt >= 5 %}note-5{% endif %}">
+          {{ z.gesamt }}
+        </strong>
+        {% else %}–{% endif %}
+      </td>
+      {% for l in leistungen %}
+      <td class="hide-xs" style="text-align:center; font-size:.9rem;">
+        {% set note = z.noten_pro_leistung.get(l.id) %}
+        {% if note is not none %}
+        <span class="{% if note == 1 %}note-1{% elif note >= 5 %}note-5{% endif %}">{{ note }}</span>
+        {% else %}–{% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<p style="margin-top:1rem; color:#6c757d; font-size:.85rem;">
+  Große LN = Ø Schulaufgaben &nbsp;·&nbsp; Kleine LN = Ø mündliche + schriftliche kleine LN &nbsp;·&nbsp;
+  Gesamt = (2 × Große LN + Kleine LN) / 3
+</p>
+{% endblock %}

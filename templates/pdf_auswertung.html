@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4 landscape; margin: 1.5cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; }
+  h1 { font-size: 13pt; margin: 0 0 3pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 8pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: #e9ecef; text-align: center; padding: 3pt 4pt; border: 1px solid #ccc; }
+  th.name { text-align: left; }
+  td { padding: 3pt 4pt; border: 1px solid #ddd; text-align: center; }
+  td.name { text-align: left; }
+  tr.grenzfall td { background: #fff3cd !important; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+  .note-1 { color: #2d6a4f; font-weight: bold; }
+  .note-5, .note-6 { color: #c1121f; font-weight: bold; }
+  .col-note { background: #f0f0f0; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>{{ auswertung.titel }}</h1>
+<div class="meta">
+  Max. Punkte: {{ auswertung.max_punkte_gesamt }}
+  &nbsp;·&nbsp; Klassendurchschnitt: {% if auswertung.klassendurchschnitt %}{{ auswertung.klassendurchschnitt }}{% else %}–{% endif %}
+  &nbsp;·&nbsp; 🟡 = Grenzfall
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th class="name" style="width:22%">Schüler</th>
+      {% for a in auswertung.aufgaben %}
+      <th>{{ a.aufgabennummer }}<br><small>{{ a.max_punkte }}</small></th>
+      {% endfor %}
+      <th>Summe</th>
+      <th>%</th>
+      <th class="col-note">Note</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for z in auswertung.schueler %}
+    <tr {% if z.grenzfall %}class="grenzfall"{% endif %}>
+      <td class="name">
+        {{ z.name }}{% if z.grenzfall %} 🟡{% endif %}
+      </td>
+      {% for a in auswertung.aufgaben %}
+      <td>{{ z.punkte_pro_aufgabe.get(a.aufgabennummer, '–') }}</td>
+      {% endfor %}
+      <td><strong>{{ z.summe if z.summe is not none else '–' }}</strong></td>
+      <td>{{ z.prozent if z.prozent is not none else '–' }}</td>
+      <td class="col-note">
+        {% if z.note %}
+        <span class="{% if z.note == 1 %}note-1{% elif z.note >= 5 %}note-5{% endif %}">{{ z.note }}</span>
+        {% else %}–{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<br>
+<table style="max-width:300pt;">
+  <thead><tr><th>Note</th><th>Anzahl</th><th>Anteil</th></tr></thead>
+  <tbody>
+    {% for note_str, stats in auswertung.notenverteilung.items() %}
+    {% if stats.anzahl > 0 %}
+    <tr>
+      <td class="{% if note_str == '1' %}note-1{% elif note_str in ['5','6'] %}note-5{% endif %}">{{ note_str }}</td>
+      <td>{{ stats.anzahl }}</td>
+      <td>{{ stats.prozent }}%</td>
+    </tr>
+    {% endif %}
+    {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>

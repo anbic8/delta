@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% block title %}{{ schueler.nachname }}, {{ schueler.vorname }}{% endblock %}
 {% block content %}
-<p><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+<div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem;">
+  <p style="margin:0;"><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+  <a href="/ui/schueler/{{ schueler.id }}/verlauf" class="outline secondary" role="button" style="font-size:.85rem; padding:.3rem .75rem;">📈 Verlauf</a>
+</div>
 <h2>{{ schueler.nachname }}, {{ schueler.vorname }}</h2>
 <p>Klasse: <strong>{{ klasse.name }}</strong> · Pseudonym: <code>{{ schueler.pseudonym_id }}</code></p>
 
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
+<div class="r-grid-2">
 
   <!-- Schnitte -->
   <section>
@@ -56,7 +59,7 @@
     <details style="margin-top:.75rem;">
       <summary>Note eintragen</summary>
       <form method="post" action="/ui/schueler/{{ schueler.id }}/muendliche-note" style="margin-top:.75rem;">
-        <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
+        <div class="r-grid-3">
           <label>Datum <input type="date" name="datum" required></label>
           <label>Note <input type="number" name="note" step="0.5"
             min="{% if klasse.notensystem == 'sechserskala' %}1{% else %}0{% endif %}"

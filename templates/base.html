@@ -18,6 +18,40 @@
     fieldset { border: 1px solid #dee2e6; border-radius: .5rem; padding: 1rem; }
     legend { padding: 0 .5rem; font-weight: bold; }
     small.hint { color: #6c757d; display: block; margin-top: .25rem; }
+
+    /* ── Responsive Helpers ── */
+    .r-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+    .r-grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: .75rem;
+      align-items: end;
+    }
+    .r-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    @media (max-width: 768px) {
+      .r-grid-2 { grid-template-columns: 1fr; gap: 1rem; }
+      .r-grid-3 { grid-template-columns: 1fr 1fr; }
+      .hide-xs { display: none !important; }
+      .punkte-input { width: 3.5rem; }
+    }
+    @media (max-width: 480px) {
+      .r-grid-3 { grid-template-columns: 1fr; }
+      h2 { font-size: 1.3rem; }
+      h3 { font-size: 1.1rem; }
+    }
+
+    /* ── Nav Mobile ── */
+    @media (max-width: 600px) {
+      header nav { flex-direction: column; align-items: flex-start; gap: .4rem; }
+      header nav > ul { flex-wrap: wrap; gap: .25rem .75rem; padding: 0; }
+      header nav > ul > li > a { font-size: .85rem; }
+    }
   </style>
   {% block extra_head %}{% endblock %}
 </head>

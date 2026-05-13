@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4 landscape; margin: 1.5cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; }
+  h1 { font-size: 13pt; margin: 0 0 4pt; }
+  .meta { font-size: 9pt; color: #555; margin-bottom: 10pt; }
+  table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+  th { background: #e9ecef; text-align: center; padding: 4pt 5pt; border: 1px solid #ccc; font-size: 8pt; }
+  th.name { text-align: left; }
+  td { padding: 3pt 5pt; border: 1px solid #ddd; text-align: center; }
+  td.name { text-align: left; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+  .note-1 { color: #2d6a4f; font-weight: bold; }
+  .note-5, .note-6 { color: #c1121f; font-weight: bold; }
+  .badge-sa { background: #cfe2ff; padding: 1pt 4pt; border-radius: 3pt; }
+  .badge-ln { background: #d1e7dd; padding: 1pt 4pt; border-radius: 3pt; }
+  .col-gesamt { background: #f0f0f0; font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>Notenübersicht – {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}</h1>
+<div class="meta">
+  Schuljahr {{ schuljahr }}
+  &nbsp;·&nbsp; Große LN = Ø SA &nbsp;·&nbsp; Kleine LN = Ø mündl. + schriftl. kl. LN
+  &nbsp;·&nbsp; Gesamt = (2 × Gr + Kl) / 3
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th class="name" style="width:20%">Schüler</th>
+      <th>Große LN</th>
+      <th>Kleine LN</th>
+      <th class="col-gesamt">Gesamt</th>
+      {% for l in leistungen %}
+      <th>
+        <span class="{% if l.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}">
+          {{ l.titel[:12] }}{% if l.titel|length > 12 %}…{% endif %}
+        </span>
+        <br>{{ l.datum.strftime('%d.%m.') }}
+      </th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for z in zeilen %}
+    <tr>
+      <td class="name">{{ z.schueler.nachname }}, {{ z.schueler.vorname }}</td>
+      <td>
+        {% if z.schnitt_grosse %}
+        <span class="{% if z.schnitt_grosse == 1 %}note-1{% elif z.schnitt_grosse >= 5 %}note-5{% endif %}">
+          {{ z.schnitt_grosse }}
+        </span>
+        {% else %}–{% endif %}
+      </td>
+      <td>{% if z.schnitt_kleine %}{{ z.schnitt_kleine }}{% else %}–{% endif %}</td>
+      <td class="col-gesamt">
+        {% if z.gesamt %}
+        <span class="{% if z.gesamt == 1 %}note-1{% elif z.gesamt >= 5 %}note-5{% endif %}">
+          {{ z.gesamt }}
+        </span>
+        {% else %}–{% endif %}
+      </td>
+      {% for l in leistungen %}
+      <td>
+        {% set note = z.noten_pro_leistung.get(l.id) %}
+        {% if note is not none %}
+        <span class="{% if note == 1 %}note-1{% elif note >= 5 %}note-5{% endif %}">{{ note }}</span>
+        {% else %}–{% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</body>
+</html>
