@@ -1,0 +1,42 @@
+<div style="flex-shrink:0; width:210px; background:#f8f9fa; border:1px solid #dee2e6;
+            border-radius:.5rem; padding:.6rem .8rem; font-size:.8rem; align-self:flex-start;">
+  <strong style="font-size:.85rem;">LaTeX-Spicker</strong>
+  <table style="margin:.4rem 0 0; border:none; width:100%;">
+    <thead>
+      <tr>
+        <th style="border:none; padding:2px 4px; text-align:left; color:#6c757d; font-weight:normal;">Symbol</th>
+        <th style="border:none; padding:2px 4px; text-align:left; color:#6c757d; font-weight:normal;">LaTeX</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set spicker = [
+        ('a/b (Bruch)', '\\frac{a}{b}'),
+        ('x²',         'x^2'),
+        ('xₙ',         'x_n'),
+        ('√x',         '\\sqrt{x}'),
+        ('∛x',         '\\sqrt[3]{x}'),
+        ('·',          '\\cdot'),
+        ('±',          '\\pm'),
+        ('≠',          '\\neq'),
+        ('≤',          '\\leq'),
+        ('≥',          '\\geq'),
+        ('≈',          '\\approx'),
+        ('∞',          '\\infty'),
+        ('α β γ',      '\\alpha \\beta \\gamma'),
+        ('π',          '\\pi'),
+        ('°',          '^{\\circ}'),
+        ('|x|',        '|x|  oder  \\lvert x \\rvert'),
+      ] %}
+      {% for sym, code in spicker %}
+      <tr style="border:none;">
+        <td style="border:none; padding:2px 4px;">{{ sym }}</td>
+        <td style="border:none; padding:2px 4px; font-family:monospace; color:#495057; font-size:.75rem;">{{ code }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p style="margin:.5rem 0 0; color:#6c757d; font-size:.75rem;">
+    Inline: <code>$...$</code> &nbsp; Block: <code>$$...$$</code><br>
+    Punkte: <code>[1P]</code> → <span style="color:#c1121f; font-weight:bold;">✓ 1P</span>
+  </p>
+</div>
