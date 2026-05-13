@@ -56,8 +56,114 @@
     </tr>
     {% endfor %}
   </tbody>
+  {% if aufgaben_avg %}
+  <tfoot>
+    <tr style="background:#f0f4ff; font-size:.85rem;">
+      <td><strong>Ø Klasse</strong></td>
+      {% for a in auswertung.aufgaben %}
+      <td style="text-align:center;">
+        {% if aufgaben_avg.get(a.aufgabennummer) is not none %}
+        <strong>{{ aufgaben_avg[a.aufgabennummer] }}</strong>
+        {% else %}–{% endif %}
+      </td>
+      {% endfor %}
+      <td colspan="3"></td>
+    </tr>
+  </tfoot>
+  {% endif %}
 </table>
 </div>
+
+<!-- ── SA-Analyse: Aufbau + Leistung nach AFB und Kompetenzen ── -->
+{% if afb_max %}
+{% macro pct_farbe(pct) %}{% if pct >= 85 %}#2d6a4f{% elif pct >= 70 %}#52b788{% elif pct >= 55 %}#b5c947{% elif pct >= 40 %}#f4a261{% else %}#c1121f{% endif %}{% endmacro %}
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem; flex-wrap:wrap;">
+
+  <!-- AFB -->
+  <div>
+    <h3 style="margin-bottom:.5rem;">Analyse nach AFB</h3>
+    <table style="width:100%; font-size:.88rem;">
+      <thead>
+        <tr>
+          <th style="width:4.5rem;">AFB</th>
+          <th>SA-Aufbau (Max BE)</th>
+          <th>Ø Leistung der Klasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set afb_labels = [('AFB_I','AFB I','#4c6ef5'),('AFB_II','AFB II','#2d6a4f'),('AFB_III','AFB III','#e07b39')] %}
+        {% for afb_key, afb_label, aufbau_farbe in afb_labels %}
+        {% if afb_key in afb_max %}
+        {% set max_p = afb_max[afb_key] %}
+        {% set aufbau_pct = (max_p / auswertung.max_punkte_gesamt * 100) | round(0) | int %}
+        {% set avg_pct = afb_avg_pct.get(afb_key, 0) %}
+        <tr>
+          <td><strong>{{ afb_label }}</strong></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:.4rem;">
+              <div style="width:{{ aufbau_pct }}px; height:1rem; background:{{ aufbau_farbe }}; border-radius:3px; opacity:.7; min-width:4px;"></div>
+              <span>{{ max_p | round(1) }} P &nbsp;<small style="color:#888;">({{ aufbau_pct }}%)</small></span>
+            </div>
+          </td>
+          <td>
+            {% if afb_key in afb_avg_pct %}
+            <div style="display:flex; align-items:center; gap:.4rem;">
+              <div style="width:{{ avg_pct }}px; height:1rem; background:{{ pct_farbe(avg_pct) }}; border-radius:3px; min-width:4px;"></div>
+              <strong style="color:{{ pct_farbe(avg_pct) }};">{{ avg_pct }}%</strong>
+            </div>
+            {% else %}<span style="color:#aaa;">–</span>{% endif %}
+          </td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Kompetenzen -->
+  <div>
+    <h3 style="margin-bottom:.5rem;">Analyse nach Kompetenzen</h3>
+    {% if komp_max %}
+    <table style="width:100%; font-size:.88rem;">
+      <thead>
+        <tr>
+          <th style="width:3.5rem;">Komp.</th>
+          <th>SA-Aufbau (Max BE)</th>
+          <th>Ø Leistung der Klasse</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for kuerzel, max_p in komp_max.items() %}
+        {% set aufbau_pct = (max_p / auswertung.max_punkte_gesamt * 100) | round(0) | int %}
+        {% set avg_pct = komp_avg_pct.get(kuerzel, 0) %}
+        <tr>
+          <td><strong>{{ kuerzel }}</strong></td>
+          <td>
+            <div style="display:flex; align-items:center; gap:.4rem;">
+              <div style="width:{{ aufbau_pct }}px; height:1rem; background:#6c757d; border-radius:3px; opacity:.6; min-width:4px;"></div>
+              <span>{{ max_p | round(1) }} P &nbsp;<small style="color:#888;">({{ aufbau_pct }}%)</small></span>
+            </div>
+          </td>
+          <td>
+            {% if kuerzel in komp_avg_pct %}
+            <div style="display:flex; align-items:center; gap:.4rem;">
+              <div style="width:{{ avg_pct }}px; height:1rem; background:{{ pct_farbe(avg_pct) }}; border-radius:3px; min-width:4px;"></div>
+              <strong style="color:{{ pct_farbe(avg_pct) }};">{{ avg_pct }}%</strong>
+            </div>
+            {% else %}<span style="color:#aaa;">–</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p><small style="color:#888;">Keine Kompetenzen den Aufgaben zugeordnet.</small></p>
+    {% endif %}
+  </div>
+
+</div>
+{% endif %}
 
 <!-- Notenverteilung -->
 <h3>Notenverteilung</h3>

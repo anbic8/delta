@@ -383,11 +383,95 @@ async def pauschal_speichern(lid: int, request: Request, db: Session = Depends(g
     return REDIRECT(f"/ui/klassen/{l.klasse_id}?msg=Noten+gespeichert")
 
 
+def _auswertung_extra_stats(lid: int, db):
+    """Berechnet AFB/Kompetenz-Aufbau und Durchschnittswerte für die Auswertungsseite."""
+    from app.models.schriftliche_leistung import LeistungAufgabe
+    from app.models.schueler_ergebnis import SchuelerErgebnis
+    import sqlalchemy as sa
+
+    las = (
+        db.query(LeistungAufgabe)
+        .filter(LeistungAufgabe.leistung_id == lid)
+        .order_by(LeistungAufgabe.reihenfolge)
+        .all()
+    )
+
+    aufgaben_avg: dict = {}
+    afb_max: dict = {}
+    komp_max: dict = {}
+    afb_sum: dict = {}   # afb -> [sum_erreicht, sum_max]
+    komp_sum: dict = {}  # kuerzel -> [sum_erreicht_w, sum_max_w]
+
+    for la in las:
+        afb = la.aufgabe.afb_niveau.value
+        mp = la.aufgabe.max_punkte
+
+        # Aufbau: max_punkte per AFB
+        afb_max[afb] = round(afb_max.get(afb, 0.0) + mp, 4)
+
+        # Aufbau: max_punkte per Kompetenz (weighted by gewichtung)
+        for ak in la.aufgabe.kompetenzen:
+            kuerzel = ak.kompetenz.kuerzel
+            komp_max[kuerzel] = round(komp_max.get(kuerzel, 0.0) + mp * ak.gewichtung, 4)
+
+        # Ergebnisse dieser Aufgabe
+        ergebnisse = (
+            db.query(SchuelerErgebnis)
+            .filter(
+                SchuelerErgebnis.leistung_aufgabe_id == la.id,
+                SchuelerErgebnis.erreichte_punkte.isnot(None),
+            )
+            .all()
+        )
+        if not ergebnisse:
+            continue
+
+        # Aufgaben-Durchschnitt
+        aufgaben_avg[la.aufgabennummer] = round(
+            sum(e.erreichte_punkte for e in ergebnisse) / len(ergebnisse), 1
+        )
+
+        n = len(ergebnisse)
+        sum_e = sum(e.erreichte_punkte for e in ergebnisse)
+
+        # AFB-Leistung
+        if afb not in afb_sum:
+            afb_sum[afb] = [0.0, 0.0]
+        afb_sum[afb][0] += sum_e
+        afb_sum[afb][1] += mp * n
+
+        # Kompetenz-Leistung (jeder Schüler trägt anteilig bei)
+        for ak in la.aufgabe.kompetenzen:
+            kuerzel = ak.kompetenz.kuerzel
+            if kuerzel not in komp_sum:
+                komp_sum[kuerzel] = [0.0, 0.0]
+            komp_sum[kuerzel][0] += sum_e * ak.gewichtung
+            komp_sum[kuerzel][1] += mp * ak.gewichtung * n
+
+    afb_avg_pct = {
+        afb: round(v[0] / v[1] * 100, 1) if v[1] > 0 else 0
+        for afb, v in afb_sum.items()
+    }
+    komp_avg_pct = {
+        k: round(v[0] / v[1] * 100, 1) if v[1] > 0 else 0
+        for k, v in sorted(komp_sum.items())
+    }
+
+    return {
+        "aufgaben_avg": aufgaben_avg,
+        "afb_max": afb_max,
+        "komp_max": dict(sorted(komp_max.items())),
+        "afb_avg_pct": afb_avg_pct,
+        "komp_avg_pct": komp_avg_pct,
+    }
+
+
 @router.get("/schriftliche-leistungen/{lid}/auswertung")
 def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
     from app.routers.schriftliche_leistung import auswertung as api_auswertung
     data = api_auswertung(lid, db)
-    return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data})
+    extra = _auswertung_extra_stats(lid, db)
+    return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data, **extra})
 
 
 @router.get("/schriftliche-leistungen/{lid}/auswertung.pdf")
