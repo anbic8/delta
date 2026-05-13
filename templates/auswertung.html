@@ -63,29 +63,15 @@
 {% if not hat_noten %}
 <p style="color:#6c757d; font-size:.9rem;">Noch keine vollständigen Ergebnisse – Noten werden erst berechnet wenn alle Punkte eingetragen sind.</p>
 {% endif %}
-<div style="max-width:420px; margin-bottom:1rem;">
+<div style="margin-bottom:1rem;">
   {% for note_str, stats in auswertung.notenverteilung.items() %}
   {% if stats.anzahl > 0 %}
-  <div style="display:flex; align-items:center; gap:.6rem; margin-bottom:.45rem;">
-    <strong style="width:1.4rem; text-align:center; font-size:1rem;
-      color:{% if note_str == '1' %}#2d6a4f{% elif note_str in ['5','6'] %}#c1121f{% else %}#333{% endif %}">
-      {{ note_str }}
-    </strong>
-    <div style="flex:1; background:#e9ecef; border-radius:.3rem; height:1.6rem; overflow:hidden;">
-      <div style="
-        width:{{ stats.prozent }}%;
-        height:100%;
-        border-radius:.3rem;
-        background:{% if note_str == '1' %}#2d6a4f{% elif note_str == '2' %}#52b788{% elif note_str == '3' %}#99d98c{% elif note_str == '4' %}#f4a261{% elif note_str == '5' %}#e76f51{% else %}#c1121f{% endif %};
-        display:flex; align-items:center; padding-left:.5rem;
-        color:{% if note_str in ['1','5','6'] %}#fff{% else %}#333{% endif %};
-        font-size:.8rem; font-weight:bold; min-width:{% if stats.anzahl > 0 %}1.5rem{% else %}0{% endif %};">
-        {% if stats.prozent > 10 %}{{ stats.anzahl }}×{% endif %}
-      </div>
-    </div>
-    <span style="min-width:5rem; font-size:.85rem; color:#555;">
-      {{ stats.anzahl }}× &nbsp;{{ stats.prozent }}%
-    </span>
+  {% set farbe = {'1':'#2d6a4f','2':'#52b788','3':'#99d98c','4':'#f4a261','5':'#e76f51','6':'#c1121f'}[note_str] %}
+  <div style="display:flex; align-items:center; gap:.5rem; margin-bottom:.35rem;">
+    <strong style="width:1.2rem; text-align:center; color:{{ farbe }};">{{ note_str }}</strong>
+    <div style="width:{{ (stats.prozent * 2) | int }}px; min-width:4px; height:1.4rem;
+                background:{{ farbe }}; border-radius:.3rem; flex-shrink:0;"></div>
+    <span style="font-size:.85rem; color:#555;">{{ stats.anzahl }}× &nbsp;{{ stats.prozent }}%</span>
   </div>
   {% endif %}
   {% endfor %}
