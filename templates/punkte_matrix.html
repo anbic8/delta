@@ -4,7 +4,6 @@
 <style>
   .punkte-input { width: 5rem; text-align: center; }
   .saved-indicator { color: #2d6a4f; font-size: .8rem; display: none; }
-  .punkte-input.just-saved { border-color: #2d6a4f; }
 </style>
 {% endblock %}
 {% block content %}
@@ -13,7 +12,9 @@
 <p>Notensystem: <strong>{% if notensystem == 'sechserskala' %}Sechserskala{% else %}Punkte{% endif %}</strong>
    · Max. Punkte gesamt: <strong>{{ max_punkte_gesamt }}</strong></p>
 
-<p><small>Punkte werden automatisch gespeichert sobald du eine Zelle verlässt (grüner Rand = gespeichert). Tab-Taste zum Navigieren.</small></p>
+<p><small>Punkte werden automatisch gespeichert sobald du eine Zelle verlässt (grüner Rand = gespeichert).
+{% if gw_per_la %} Bei Teilpunkten mit zugeordnetem Grundwissen öffnet sich automatisch ein Dialog.{% endif %}
+Tab-Taste zum Navigieren.</small></p>
 
 <div style="overflow-x: auto;">
 <table>
@@ -21,7 +22,9 @@
     <tr>
       <th>Schüler</th>
       {% for la in leistung_aufgaben %}
-      <th>{{ la.aufgabennummer }}<br><small>max {{ la.aufgabe.max_punkte }}</small></th>
+      <th>{{ la.aufgabennummer }}<br><small>max {{ la.aufgabe.max_punkte }}</small>
+        {% if la.id in gw_per_la %}<br><small style="color:#6c757d;" title="Hat Grundwissen zugeordnet">🧠</small>{% endif %}
+      </th>
       {% endfor %}
       <th>Summe</th>
       <th>Note</th>
@@ -43,7 +46,8 @@
                  value="{{ val if val is not none else '' }}"
                  hx-post="/ui/schriftliche-leistungen/{{ leistung.id }}/zelle"
                  hx-trigger="change"
-                 hx-swap="none"
+                 hx-target="#gw-popup-container"
+                 hx-swap="innerHTML"
                  hx-vals='{"schueler_id": {{ s.id }}, "la_id": {{ la.id }}}'
                  hx-on:htmx:after-request="this.style.borderColor='#2d6a4f'; setTimeout(()=>this.style.borderColor='',1500)">
         </td>
@@ -68,57 +72,16 @@
   <a href="/ui/schriftliche-leistungen/{{ leistung.id }}" role="button" class="outline secondary">← Zurück</a>
 </div>
 
-{% if gw_per_la %}
-<hr style="margin: 2rem 0 1.5rem;">
-<h3>🧠 Grundwissen-Fehler erfassen</h3>
-<p><small>Ankreuzen wenn der Schüler dieses Grundwissen bei der Aufgabe nicht beherrscht hat. Wird automatisch gespeichert.</small></p>
-
-{% for s in schueler %}
-<details style="margin-bottom:.5rem; border:1px solid #dee2e6; border-radius:.5rem;">
-  <summary style="cursor:pointer; font-weight:bold; padding:.5rem 1rem;">
-    {{ s.nachname }}, {{ s.vorname }}
-  </summary>
-  <div style="display:flex; flex-wrap:wrap; gap:.75rem; padding:.75rem 1rem 1rem;">
-    {% set ns_gw = namespace(hat_gw=false) %}
-    {% for la in leistung_aufgaben %}
-    {% if la.id in gw_per_la %}
-    {% set ns_gw.hat_gw = true %}
-    <div style="border:1px solid #e9ecef; border-radius:.4rem; padding:.5rem .75rem; min-width:14rem; background:#f8f9fa;">
-      <strong style="font-size:.9rem; display:block; margin-bottom:.4rem; color:#495057;">
-        Aufg. {{ la.aufgabennummer }}
-        <small style="font-weight:normal; color:#6c757d;">– {{ la.aufgabe.titel | truncate(30) }}</small>
-      </strong>
-      {% for gw in gw_per_la[la.id] %}
-      <label style="display:flex; align-items:flex-start; gap:.4rem; margin-bottom:.3rem; cursor:pointer;">
-        <input type="checkbox"
-               style="margin-top:.15rem; flex-shrink:0; accent-color:#c1121f;"
-               {% if (s.id, la.id, gw.id) in fehler_set %}checked{% endif %}
-               onchange="postGwFehler({{ leistung.id }}, {{ s.id }}, {{ la.id }}, {{ gw.id }}, this.checked)">
-        <span style="font-size:.85rem; line-height:1.35;">
-          {{ gw.aufgabe | truncate(60) }}
-          {% if gw.kapitel %}<br><small style="color:#6c757d;">{{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %}</small>{% endif %}
-        </span>
-      </label>
-      {% endfor %}
-    </div>
-    {% endif %}
-    {% endfor %}
-    {% if not ns_gw.hat_gw %}
-    <p><small style="color:#6c757d;">Keine Aufgaben mit zugeordnetem Grundwissen.</small></p>
-    {% endif %}
-  </div>
-</details>
-{% endfor %}
+<!-- Container für den GW-Popup (wird via HTMX befüllt) -->
+<div id="gw-popup-container"></div>
 
 <script>
 function postGwFehler(lid, sid, laId, gwId, checked) {
-  var body = 'schueler_id=' + sid + '&la_id=' + laId + '&grundwissen_id=' + gwId + '&checked=' + (checked ? 1 : 0);
   fetch('/ui/schriftliche-leistungen/' + lid + '/gw-fehler', {
     method: 'POST',
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    body: body
+    body: 'schueler_id=' + sid + '&la_id=' + laId + '&grundwissen_id=' + gwId + '&checked=' + (checked ? 1 : 0)
   });
 }
 </script>
-{% endif %}
 {% endblock %}

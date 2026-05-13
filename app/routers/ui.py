@@ -362,14 +362,52 @@ def punkte_matrix_form(lid: int, request: Request, db: Session = Depends(get_db)
 
 
 @router.post("/schriftliche-leistungen/{lid}/zelle")
-def punkte_zelle_speichern(lid: int, schueler_id: int = Form(...), la_id: int = Form(...), punkte: float = Form(...), db: Session = Depends(get_db)):
-    existing = db.query(SchuelerErgebnis).filter(SchuelerErgebnis.schueler_id == schueler_id, SchuelerErgebnis.leistung_aufgabe_id == la_id).first()
+def punkte_zelle_speichern(
+    lid: int, request: Request,
+    schueler_id: int = Form(...), la_id: int = Form(...), punkte: float = Form(...),
+    db: Session = Depends(get_db),
+):
+    from fastapi.responses import HTMLResponse as HResp
+    existing = db.query(SchuelerErgebnis).filter(
+        SchuelerErgebnis.schueler_id == schueler_id,
+        SchuelerErgebnis.leistung_aufgabe_id == la_id,
+    ).first()
     if existing:
         existing.erreichte_punkte = punkte
     else:
         db.add(SchuelerErgebnis(schueler_id=schueler_id, leistung_aufgabe_id=la_id, erreichte_punkte=punkte))
     db.commit()
-    return ""  # HTMX hx-swap="none"
+
+    la = db.get(LeistungAufgabe, la_id)
+    gw_items = [ag.grundwissen for ag in la.aufgabe.grundwissen_eintraege]
+
+    if punkte >= la.aufgabe.max_punkte:
+        # Volle Punktzahl → GW-Fehler für diese Zelle löschen
+        from app.models.grundwissen import SchuelerGrundwissenFehler
+        db.query(SchuelerGrundwissenFehler).filter(
+            SchuelerGrundwissenFehler.schueler_id == schueler_id,
+            SchuelerGrundwissenFehler.leistung_aufgabe_id == la_id,
+        ).delete()
+        db.commit()
+        return HResp("")
+
+    if not gw_items:
+        return HResp("")
+
+    from app.models.grundwissen import SchuelerGrundwissenFehler
+    fehler_ids = {
+        f.grundwissen_id
+        for f in db.query(SchuelerGrundwissenFehler).filter(
+            SchuelerGrundwissenFehler.schueler_id == schueler_id,
+            SchuelerGrundwissenFehler.leistung_aufgabe_id == la_id,
+        ).all()
+    }
+    s = db.get(Schueler, schueler_id)
+    return templates.TemplateResponse(request, "htmx_gw_popup.html", {
+        "schueler_id": schueler_id, "la": la, "lid": lid,
+        "gw_items": gw_items, "fehler_ids": fehler_ids,
+        "schueler_name": f"{s.nachname}, {s.vorname}",
+    })
 
 
 @router.post("/schriftliche-leistungen/{lid}/gw-fehler")
