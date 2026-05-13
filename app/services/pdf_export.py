@@ -4,13 +4,23 @@ from jinja2 import Environment, FileSystemLoader
 
 
 def _jinja_env() -> Environment:
-    return Environment(loader=FileSystemLoader("templates"), autoescape=True)
+    from app.templates_config import punkte_marker
+    env = Environment(loader=FileSystemLoader("templates"), autoescape=True)
+    env.filters["punkte_marker"] = punkte_marker
+    return env
 
 
 def kapitel_empfehlung_pdf(context: dict) -> bytes:
     """PDF für die Klassen-Kapitel-Empfehlung."""
     import weasyprint
     html = _jinja_env().get_template("pdf_kapitel_empfehlung.html").render(**context)
+    return weasyprint.HTML(string=html, base_url=".").write_pdf()
+
+
+def ehz_pdf(context: dict) -> bytes:
+    """PDF mit Aufgaben + Erwartungshorizont (EHZ) für eine SchriftlicheLeistung."""
+    import weasyprint
+    html = _jinja_env().get_template("pdf_ehz.html").render(**context)
     return weasyprint.HTML(string=html, base_url=".").write_pdf()
 
 

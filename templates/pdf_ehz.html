@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm 1.8cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
+
+  h1 { font-size: 14pt; margin: 0 0 3pt; }
+  h2 { font-size: 12pt; margin: 16pt 0 6pt; border-bottom: 2px solid #333; padding-bottom: 3pt; }
+  h3 { font-size: 10pt; margin: 12pt 0 3pt; }
+
+  .meta { font-size: 9pt; color: #555; margin-bottom: 14pt; }
+  .aufg-block { margin-bottom: 16pt; page-break-inside: avoid; }
+  .aufg-header { display: flex; justify-content: space-between; align-items: baseline;
+                 border-left: 3pt solid #333; padding-left: 6pt; margin-bottom: 4pt; }
+  .aufg-nr { font-weight: bold; font-size: 11pt; }
+  .aufg-punkte { font-size: 9pt; color: #555; }
+  .aufg-text { background: #f8f9fa; padding: 8pt; border-radius: 3pt;
+               white-space: pre-wrap; font-size: 9.5pt; line-height: 1.5; }
+
+  .loes-block { margin-bottom: 16pt; page-break-inside: avoid; }
+  .loes-header { display: flex; justify-content: space-between; align-items: baseline;
+                 border-left: 3pt solid #c1121f; padding-left: 6pt; margin-bottom: 4pt; }
+  .loes-text { background: #fff8f8; padding: 8pt; border-radius: 3pt;
+               white-space: pre-wrap; font-size: 9.5pt; line-height: 1.6; border: 1pt solid #f0d0d0; }
+  .komps { font-size: 8pt; color: #666; margin-top: 4pt; }
+  .badge { border: 1pt solid #ccc; padding: 1pt 4pt; border-radius: 3pt; font-size: 8pt; margin-right: 2pt; }
+
+  .punkte-mark { color: #c1121f; font-weight: bold; font-size: .85em;
+                 background: #fde8e8; padding: 1pt 4pt; border-radius: 3pt; }
+
+  .trennlinie { border: none; border-top: 1pt dashed #ccc; margin: 20pt 0; }
+  .page-break { page-break-before: always; }
+
+  .summe-zeile { text-align: right; font-weight: bold; font-size: 10pt;
+                 border-top: 1pt solid #333; margin-top: 8pt; padding-top: 4pt; }
+</style>
+</head>
+<body>
+
+<!-- KOPF -->
+<h1>{{ leistung.titel }}</h1>
+<div class="meta">
+  Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+  &nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') if leistung.datum else '' }}
+  &nbsp;·&nbsp; Gesamt: {{ max_punkte }} Punkte
+</div>
+
+<!-- ══ AUFGABEN ══ -->
+<h2>Aufgaben</h2>
+
+{% for la in aufgaben %}
+<div class="aufg-block">
+  <div class="aufg-header">
+    <span class="aufg-nr">Aufgabe {{ la.aufgabennummer }}</span>
+    <span class="aufg-punkte">{{ la.aufgabe.max_punkte }} Punkte</span>
+  </div>
+  {% if la.aufgabe.aufgabenstellung %}
+  <div class="aufg-text">{{ la.aufgabe.aufgabenstellung }}</div>
+  {% else %}
+  <div class="aufg-text" style="color:#888; font-style:italic;">– keine Aufgabenstellung hinterlegt –</div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="summe-zeile">Gesamt: {{ max_punkte }} Punkte</div>
+
+<!-- ══ LÖSUNGEN / ERWARTUNGSHORIZONT ══ -->
+<div class="page-break"></div>
+<h1>{{ leistung.titel }}</h1>
+<div class="meta">
+  <strong>Erwartungshorizont (EHZ)</strong>
+  &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+  &nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') if leistung.datum else '' }}
+</div>
+
+<h2>Lösungen</h2>
+
+{% for la in aufgaben %}
+<div class="loes-block">
+  <div class="loes-header">
+    <span class="aufg-nr">Aufgabe {{ la.aufgabennummer }} – {{ la.aufgabe.titel }}</span>
+    <span class="aufg-punkte">{{ la.aufgabe.max_punkte }} Punkte</span>
+  </div>
+  {% if la.aufgabe.loesung %}
+  <div class="loes-text">{{ la.aufgabe.loesung | punkte_marker | safe }}</div>
+  {% else %}
+  <div class="loes-text" style="color:#888; font-style:italic;">– keine Lösung hinterlegt –</div>
+  {% endif %}
+  {% if la.aufgabe.kompetenzen %}
+  <div class="komps">
+    Kompetenzen:
+    {% for ak in la.aufgabe.kompetenzen %}
+    <span class="badge">{{ ak.kompetenz.kuerzel }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="summe-zeile">Gesamt: {{ max_punkte }} Punkte</div>
+
+</body>
+</html>

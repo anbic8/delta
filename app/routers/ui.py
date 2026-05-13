@@ -404,6 +404,31 @@ def auswertung_pdf(lid: int, db: Session = Depends(get_db)):
                     headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
+@router.get("/schriftliche-leistungen/{lid}/ehz.pdf")
+def ehz_pdf_view(lid: int, db: Session = Depends(get_db)):
+    from app.models.schriftliche_leistung import SchriftlicheLeistung, LeistungAufgabe
+    from app.services.pdf_export import ehz_pdf
+    from fastapi.responses import Response
+    leistung = db.get(SchriftlicheLeistung, lid)
+    klasse = db.get(Klasse, leistung.klasse_id)
+    aufgaben = (
+        db.query(LeistungAufgabe)
+        .filter(LeistungAufgabe.leistung_id == lid)
+        .order_by(LeistungAufgabe.reihenfolge)
+        .all()
+    )
+    max_punkte = sum(la.aufgabe.max_punkte for la in aufgaben)
+    pdf_bytes = ehz_pdf({
+        "leistung": leistung,
+        "klasse": klasse,
+        "aufgaben": aufgaben,
+        "max_punkte": max_punkte,
+    })
+    name = f"EHZ_{leistung.titel}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 # ── Schüler-Verlauf ───────────────────────────────────────────
 
 def _verlauf_eintrag(schueler_id: int, leistung, db):
@@ -635,7 +660,7 @@ def aufgaben_pool(request: Request, db: Session = Depends(get_db)):
 
 
 @router.get("/aufgaben/suche")
-def aufgaben_suche(request: Request, q: str = "", afb: str = "", db: Session = Depends(get_db)):
+def aufgaben_suche(request: Request, q: str = "", afb: str = "", js: str = "", db: Session = Depends(get_db)):
     import sqlalchemy as sa
     query = db.query(Aufgabe)
     if q:
@@ -643,6 +668,8 @@ def aufgaben_suche(request: Request, q: str = "", afb: str = "", db: Session = D
         query = query.filter(sa.or_(Aufgabe.titel.ilike(term), Aufgabe.aufgabenstellung.ilike(term), Aufgabe.tags.ilike(term)))
     if afb:
         query = query.filter(Aufgabe.afb_niveau == AfbNiveau(afb))
+    if js and js.isdigit():
+        query = query.filter(Aufgabe.jahrgangsstufe == int(js))
     return templates.TemplateResponse(request, "htmx_aufgaben.html", {
         "aufgaben": query.order_by(Aufgabe.erstellt_am.desc()).all(),
     })
@@ -693,16 +720,32 @@ def aufgabe_neu_form(request: Request, db: Session = Depends(get_db)):
     })
 
 
+@router.get("/aufgaben/meta/jahrgangsstufe")
+def aufgaben_meta_jahrgangsstufe(kapitel: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    from fastapi.responses import HTMLResponse
+    import re as _re
+    if not kapitel:
+        return HTMLResponse("")
+    row = db.query(Buchaufgabe.buch).filter(Buchaufgabe.kapitel == kapitel).first()
+    if row:
+        m = _re.search(r'\b(\d{1,2})\b', row[0])
+        if m and 5 <= int(m.group(1)) <= 13:
+            return HTMLResponse(m.group(1))
+    return HTMLResponse("")
+
+
 @router.post("/aufgaben")
 def aufgabe_erstellen(
     titel: str = Form(...), aufgabenstellung: str = Form(...), loesung: str = Form(""),
     max_punkte: float = Form(...), afb_niveau: str = Form(...), tags: str = Form(""),
-    kapitel: str = Form(""), unterkapitel: str = Form(""),
+    jahrgangsstufe: str = Form(""), kapitel: str = Form(""), unterkapitel: str = Form(""),
     db: Session = Depends(get_db),
 ):
+    js = int(jahrgangsstufe) if jahrgangsstufe.strip().isdigit() else None
     a = Aufgabe(titel=titel, aufgabenstellung=aufgabenstellung, loesung=loesung or None,
                 max_punkte=max_punkte, afb_niveau=AfbNiveau(afb_niveau), tags=tags or None,
-                kapitel=kapitel or None, unterkapitel=unterkapitel or None)
+                jahrgangsstufe=js, kapitel=kapitel or None, unterkapitel=unterkapitel or None)
     db.add(a)
     db.commit()
     db.refresh(a)
@@ -744,13 +787,14 @@ def aufgabe_bearbeiten(
     a_id: int, titel: str = Form(...), aufgabenstellung: str = Form(...),
     loesung: str = Form(""), max_punkte: float = Form(...),
     afb_niveau: str = Form(...), tags: str = Form(""),
-    kapitel: str = Form(""), unterkapitel: str = Form(""),
+    jahrgangsstufe: str = Form(""), kapitel: str = Form(""), unterkapitel: str = Form(""),
     db: Session = Depends(get_db),
 ):
     a = db.get(Aufgabe, a_id)
     a.titel = titel; a.aufgabenstellung = aufgabenstellung
     a.loesung = loesung or None; a.max_punkte = max_punkte
     a.afb_niveau = AfbNiveau(afb_niveau); a.tags = tags or None
+    a.jahrgangsstufe = int(jahrgangsstufe) if jahrgangsstufe.strip().isdigit() else None
     a.kapitel = kapitel or None; a.unterkapitel = unterkapitel or None
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a_id}?msg=Gespeichert")

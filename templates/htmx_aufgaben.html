@@ -1,12 +1,13 @@
 {% if aufgaben %}
 <table>
   <thead>
-    <tr><th>Titel</th><th>Max. P.</th><th>AFB</th><th>Tags</th><th></th></tr>
+    <tr><th>Titel</th><th>Klasse</th><th>Max. P.</th><th>AFB</th><th>Tags</th><th></th></tr>
   </thead>
   <tbody>
     {% for a in aufgaben %}
     <tr>
       <td><a href="/ui/aufgaben/{{ a.id }}">{{ a.titel }}</a></td>
+      <td>{{ a.jahrgangsstufe or '–' }}</td>
       <td>{{ a.max_punkte }}</td>
       <td><span class="badge">{{ a.afb_niveau }}</span></td>
       <td><small>{{ a.tags or '–' }}</small></td>

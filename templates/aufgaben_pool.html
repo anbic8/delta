@@ -19,12 +19,23 @@
           hx-get="/ui/aufgaben/suche"
           hx-target="#aufgaben-liste"
           hx-trigger="change"
-          hx-include="[name='q']"
+          hx-include="[name='q'],[name='js']"
           style="width:auto;">
     <option value="">Alle AFB</option>
     <option value="AFB_I">AFB I</option>
     <option value="AFB_II">AFB II</option>
     <option value="AFB_III">AFB III</option>
+  </select>
+  <select name="js"
+          hx-get="/ui/aufgaben/suche"
+          hx-target="#aufgaben-liste"
+          hx-trigger="change"
+          hx-include="[name='q'],[name='afb']"
+          style="width:auto;">
+    <option value="">Alle Klassen</option>
+    {% for js in range(5, 14) %}
+    <option value="{{ js }}">Klasse {{ js }}</option>
+    {% endfor %}
   </select>
 </div>
 

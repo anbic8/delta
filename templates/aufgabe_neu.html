@@ -26,9 +26,9 @@
     <fieldset style="margin-top:1rem;">
       <legend>Buchkapitel-Zuordnung</legend>
       <small class="hint">Hilft später bei der Aufgaben-Empfehlung nach Schulaufgaben.</small>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem; margin-top:.5rem;">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem; margin-top:.5rem;">
         <label>Kapitel
-          <select name="kapitel"
+          <select name="kapitel" id="kapitel-select-neu"
                   hx-get="/ui/aufgaben/meta/unterkapitel"
                   hx-target="#uk-select-neu"
                   hx-swap="innerHTML"
@@ -45,8 +45,21 @@
             <option value="">– keine –</option>
           </select>
         </label>
+        <label>Jahrgangsstufe
+          <input type="number" name="jahrgangsstufe" id="js-input-neu"
+                 min="5" max="13" placeholder="5–13">
+        </label>
       </div>
     </fieldset>
+    <script>
+    document.getElementById('kapitel-select-neu').addEventListener('change', function() {
+      var k = encodeURIComponent(this.value);
+      if (!k) return;
+      fetch('/ui/aufgaben/meta/jahrgangsstufe?kapitel=' + k)
+        .then(function(r) { return r.text(); })
+        .then(function(t) { if (t.trim()) document.getElementById('js-input-neu').value = t.trim(); });
+    });
+    </script>
 
     <button type="submit" style="margin-top:1rem;">Anlegen</button>
   </form>
