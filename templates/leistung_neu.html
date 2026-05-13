@@ -11,7 +11,7 @@
   <label>Datum <input type="date" name="datum" required></label>
 
   <label>Art
-    <select name="art" id="art-select" onchange="updateDetailliert()">
+    <select name="art" id="art-select" onchange="updateForm()">
       <option value="schulaufgabe">Schulaufgabe (SA)</option>
       <option value="kleiner_ln">Kleiner schriftlicher LN</option>
       <option value="test">Test</option>
@@ -26,32 +26,52 @@
     <small class="hint" id="detailliert-hint">SA ist immer detailliert.</small>
   </div>
 
-  <label>Gewichtung
-    <select name="gewichtung" id="gew-select">
-      <option value="0.0">0 – Nicht gewertet (geht nicht in Schnitt ein)</option>
-      <option value="0.5">½</option>
-      <option value="1.0" selected>1</option>
-      <option value="2.0">2</option>
-    </select>
-  </label>
+  <div id="gew-row">
+    <label>Gewichtung
+      <!-- select bleibt immer im DOM und wird submitted; bei Test per JS auf 0 gelockt -->
+      <select name="gewichtung" id="gew-select">
+        <option value="0.0">0 – Nicht gewertet (geht nicht in Schnitt ein)</option>
+        <option value="0.5">½</option>
+        <option value="1.0" selected>1</option>
+        <option value="2.0">2</option>
+      </select>
+    </label>
+    <small class="hint" id="gew-hint" style="display:none; color:#7c3aed;">
+      Tests sind immer nicht gewertet und gehen nicht in den Schnitt ein.
+    </small>
+  </div>
 
   <button type="submit" style="margin-top:1rem;">Anlegen</button>
 </form>
 
 <script>
-function updateDetailliert() {
+function updateForm() {
   const art = document.getElementById('art-select').value;
   const cb = document.getElementById('detailliert-cb');
   const hint = document.getElementById('detailliert-hint');
+  const gewSel = document.getElementById('gew-select');
+  const gewHint = document.getElementById('gew-hint');
+
   if (art === 'schulaufgabe') {
-    cb.checked = true;
-    cb.disabled = true;
+    cb.checked = true; cb.disabled = true;
     hint.textContent = 'SA ist immer detailliert.';
+    gewSel.style.display = ''; gewSel.style.pointerEvents = ''; gewSel.style.opacity = '';
+    gewHint.style.display = 'none';
+    if (gewSel.value === '0.0') gewSel.value = '1.0';
+  } else if (art === 'test') {
+    cb.disabled = false;
+    hint.textContent = 'Detailliert = Punkte pro Aufgabe. Pauschal = direkte Noteneingabe.';
+    gewSel.value = '0.0';
+    gewSel.style.pointerEvents = 'none'; gewSel.style.opacity = '0.4';
+    gewHint.style.display = 'block';
   } else {
     cb.disabled = false;
     hint.textContent = 'Detailliert = Punkte pro Aufgabe. Pauschal = direkte Noteneingabe.';
+    gewSel.style.display = ''; gewSel.style.pointerEvents = ''; gewSel.style.opacity = '';
+    gewHint.style.display = 'none';
+    if (gewSel.value === '0.0') gewSel.value = '1.0';
   }
 }
-updateDetailliert();
+updateForm();
 </script>
 {% endblock %}

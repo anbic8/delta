@@ -48,7 +48,7 @@
       <!-- Punkte + Labels -->
       {% for p in trend.punkte %}
       <circle cx="{{ p.x }}" cy="{{ p.y }}" r="4"
-              fill="{% if p.art == 'schulaufgabe' %}rgb(59,130,246){% elif p.art == 'kleiner_ln' %}rgb(32,178,80){% else %}rgb(234,179,8){% endif %}"/>
+              fill="{% if p.art == 'schulaufgabe' %}rgb(59,130,246){% elif p.art == 'kleiner_ln' %}rgb(32,178,80){% else %}rgb(124,58,237){% endif %}"/>
       <text x="{{ p.x }}" y="{{ p.y_label }}" text-anchor="middle" font-size="8" fill="#495057">{{ p.titel }}</text>
       {% endfor %}
     </svg>
@@ -56,7 +56,7 @@
   <p style="font-size:.8rem; color:#6c757d; margin-top:.25rem;">
     <span style="color:rgb(59,130,246);">●</span> Schulaufgabe &nbsp;
     <span style="color:rgb(32,178,80);">●</span> Kleiner LN &nbsp;
-    <span style="color:rgb(234,179,8);">●</span> Test
+    <span style="color:rgb(124,58,237);">●</span> Test
   </p>
 </div>
 {% endif %}
@@ -92,7 +92,7 @@
         {% elif e.leistung.art == 'kleiner_ln' %}
         <span class="badge badge-ln">Kl. LN</span>
         {% else %}
-        <span class="badge badge-ln">Test</span>
+        <span class="badge badge-test">Test</span>
         {% endif %}
       </td>
       <td class="hide-xs">

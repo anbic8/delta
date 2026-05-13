@@ -17,7 +17,7 @@
       <th style="text-align:center;">Gesamt</th>
       {% for l in leistungen %}
       <th class="hide-xs" style="text-align:center; font-size:.8rem; white-space:nowrap;">
-        <span class="badge {% if l.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}" title="{{ 'SA' if l.art == 'schulaufgabe' else ('Kl. LN' if l.art == 'kleiner_ln' else 'Test') }}">
+        <span class="badge {% if l.art == 'schulaufgabe' %}badge-sa{% elif l.art == 'kleiner_ln' %}badge-ln{% else %}badge-test{% endif %}" title="{{ 'SA' if l.art == 'schulaufgabe' else ('Kl. LN' if l.art == 'kleiner_ln' else 'Test') }}">
           {{ l.titel[:15] }}{% if l.titel|length > 15 %}…{% endif %}
         </span>
         <br><small>{{ l.datum.strftime('%d.%m.') }}</small>

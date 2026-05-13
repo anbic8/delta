@@ -17,6 +17,7 @@
   .note-5, .note-6 { color: #c1121f; font-weight: bold; }
   .badge-sa { background: #cfe2ff; padding: 1pt 4pt; border-radius: 3pt; }
   .badge-ln { background: #d1e7dd; padding: 1pt 4pt; border-radius: 3pt; }
+  .badge-test { background: #ede9fe; color: #5b21b6; padding: 1pt 4pt; border-radius: 3pt; }
   .col-gesamt { background: #f0f0f0; font-weight: bold; }
 </style>
 </head>
@@ -37,7 +38,7 @@
       <th class="col-gesamt">Gesamt</th>
       {% for l in leistungen %}
       <th>
-        <span class="{% if l.art == 'schulaufgabe' %}badge-sa{% else %}badge-ln{% endif %}" title="{{ 'SA' if l.art == 'schulaufgabe' else ('Kl. LN' if l.art == 'kleiner_ln' else 'Test') }}">
+        <span class="{% if l.art == 'schulaufgabe' %}badge-sa{% elif l.art == 'kleiner_ln' %}badge-ln{% else %}badge-test{% endif %}" title="{{ 'SA' if l.art == 'schulaufgabe' else ('Kl. LN' if l.art == 'kleiner_ln' else 'Test') }}">
           {{ l.titel[:12] }}{% if l.titel|length > 12 %}…{% endif %}
         </span>
         <br>{{ l.datum.strftime('%d.%m.') }}
