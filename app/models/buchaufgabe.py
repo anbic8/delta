@@ -22,6 +22,7 @@ class Buchaufgabe(Base):
     afb_niveau: Mapped[AfbNiveau] = mapped_column(sa.Enum(AfbNiveau, native_enum=False, length=10))
     wichtigkeit: Mapped[int] = mapped_column(Integer, default=2)
     minimalfahrplan: Mapped[bool] = mapped_column(sa.Boolean, default=False)
+    im_unterricht: Mapped[bool] = mapped_column(sa.Boolean, default=False, server_default="false")
 
     kompetenzen: Mapped[list["BuchaufgabeKompetenz"]] = relationship(
         back_populates="buchaufgabe", cascade="all, delete-orphan"

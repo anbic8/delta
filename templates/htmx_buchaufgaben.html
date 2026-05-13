@@ -1,36 +1,49 @@
+{% macro sort_icon(col) %}{% if sort == col %}{{ '↑' if dir == 'asc' else '↓' }}{% else %}<span style="color:#ccc;">↕</span>{% endif %}{% endmacro %}
+
 {% if buchaufgaben %}
+<div class="r-scroll">
 <table>
   <thead>
     <tr>
-      <th>Buch</th>
-      <th>Kapitel</th>
-      <th>Unterkapitel</th>
-      <th>Nr.</th>
-      <th>S.</th>
+      <th><a href="#" onclick="sortBy('buch');return false;" style="text-decoration:none;color:inherit;">Buch {{ sort_icon('buch') }}</a></th>
+      <th><a href="#" onclick="sortBy('kapitel');return false;" style="text-decoration:none;color:inherit;">Kapitel {{ sort_icon('kapitel') }}</a></th>
+      <th><a href="#" onclick="sortBy('unterkapitel');return false;" style="text-decoration:none;color:inherit;">UK {{ sort_icon('unterkapitel') }}</a></th>
+      <th><a href="#" onclick="sortBy('aufgabennummer');return false;" style="text-decoration:none;color:inherit;">Nr. {{ sort_icon('aufgabennummer') }}</a></th>
+      <th><a href="#" onclick="sortBy('seite');return false;" style="text-decoration:none;color:inherit;">S. {{ sort_icon('seite') }}</a></th>
       <th>Beschreibung</th>
-      <th>AFB</th>
-      <th>Min.</th>
+      <th><a href="#" onclick="sortBy('afb');return false;" style="text-decoration:none;color:inherit;">AFB {{ sort_icon('afb') }}</a></th>
+      <th><a href="#" onclick="sortBy('wichtigkeit');return false;" style="text-decoration:none;color:inherit;" title="Wichtigkeit">Wicht. {{ sort_icon('wichtigkeit') }}</a></th>
+      <th title="Minimalfahrplan">Min.</th>
+      <th><a href="#" onclick="sortBy('im_unterricht');return false;" style="text-decoration:none;color:inherit;" title="Im Unterricht gemacht">Unterr. {{ sort_icon('im_unterricht') }}</a></th>
       <th>Kompetenz</th>
       <th></th>
     </tr>
   </thead>
   <tbody>
     {% for ba in buchaufgaben %}
-    <tr>
+    <tr {% if ba.im_unterricht %}style="opacity:.55;"{% endif %}>
       <td><small>{{ ba.buch }}</small></td>
       <td><small>{{ ba.kapitel }}</small></td>
       <td><small>{{ ba.unterkapitel or '–' }}</small></td>
       <td>{{ ba.aufgabennummer }}</td>
       <td>{{ ba.seite or '–' }}</td>
-      <td>{{ ba.beschreibung or '–' }}</td>
+      <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ ba.beschreibung or '' }}">{{ ba.beschreibung or '–' }}</td>
       <td><span class="badge">{{ ba.afb_niveau }}</span></td>
+      <td style="text-align:center;">{{ ba.wichtigkeit }}</td>
       <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
+      <td style="text-align:center;">
+        <input type="checkbox"
+               {% if ba.im_unterricht %}checked{% endif %}
+               title="Im Unterricht gemacht – von Kapitelempfehlung ausgeschlossen"
+               onchange="fetch('/ui/buchaufgaben/{{ ba.id }}/im-unterricht-toggle',{method:'POST'}).then(()=>this.closest('tr').style.opacity=this.checked?'.55':'')">
+      </td>
       <td>
         {% for ak in ba.kompetenzen %}
         <span class="badge">{{ ak.kompetenz.kuerzel }}</span>
         {% endfor %}
       </td>
-      <td>
+      <td style="white-space:nowrap;">
+        <a href="/ui/buchaufgaben/{{ ba.id }}/bearbeiten" role="button" class="outline" style="padding:.2rem .5rem; font-size:.75rem;">✎</a>
         <form method="post" action="/ui/buchaufgaben/{{ ba.id }}/loeschen" style="display:inline;">
           <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;"
                   onclick="return confirm('Buchaufgabe löschen?')">✕</button>
@@ -40,6 +53,7 @@
     {% endfor %}
   </tbody>
 </table>
+</div>
 <p><small>{{ buchaufgaben | length }} Ergebnis(se)</small></p>
 {% else %}
 <p>Keine Buchaufgaben gefunden.</p>

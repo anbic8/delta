@@ -90,7 +90,11 @@ def empfehlungen_fuer_kapitel(
 
         kandidaten = (
             db.query(Buchaufgabe)
-            .filter(Buchaufgabe.kapitel == kapitel, Buchaufgabe.unterkapitel == uk)
+            .filter(
+                Buchaufgabe.kapitel == kapitel,
+                Buchaufgabe.unterkapitel == uk,
+                Buchaufgabe.im_unterricht.is_(False),
+            )
             .all()
         )
 
@@ -174,7 +178,11 @@ def empfehlungen_pro_schueler(
         if uk_anzahl[uk] > 0:
             uk_kandidaten[uk] = (
                 db.query(Buchaufgabe)
-                .filter(Buchaufgabe.kapitel == kapitel, Buchaufgabe.unterkapitel == uk)
+                .filter(
+                    Buchaufgabe.kapitel == kapitel,
+                    Buchaufgabe.unterkapitel == uk,
+                    Buchaufgabe.im_unterricht.is_(False),
+                )
                 .all()
             )
 

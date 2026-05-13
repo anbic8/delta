@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Buchaufgabe bearbeiten{% endblock %}
+{% block content %}
+<p><a href="/ui/buchaufgaben">← Buchaufgaben-Katalog</a></p>
+<h2>Buchaufgabe bearbeiten</h2>
+
+<form method="post" action="/ui/buchaufgaben/{{ ba.id }}/bearbeiten" style="max-width:700px;">
+  <div style="display:grid; grid-template-columns:2fr 2fr 1fr; gap:.5rem;">
+    <label>Buch <input type="text" name="buch" value="{{ ba.buch }}" required></label>
+    <label>Kapitel <input type="text" name="kapitel" value="{{ ba.kapitel }}" required></label>
+    <label>Unterkapitel <input type="text" name="unterkapitel" value="{{ ba.unterkapitel or '' }}"></label>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:.5rem; margin-top:.5rem;">
+    <label>Aufg.-Nr. <input type="text" name="aufgabennummer" value="{{ ba.aufgabennummer }}" required></label>
+    <label>Seite <input type="number" name="seite" value="{{ ba.seite or '' }}"></label>
+    <label>Wichtigkeit
+      <select name="wichtigkeit">
+        {% for w in [1,2,3] %}
+        <option value="{{ w }}" {% if ba.wichtigkeit == w %}selected{% endif %}>{{ w }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>AFB
+      <select name="afb_niveau">
+        {% for afb in ['AFB_I','AFB_II','AFB_III'] %}
+        <option value="{{ afb }}" {% if ba.afb_niveau == afb %}selected{% endif %}>{{ afb }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+  <label style="margin-top:.5rem;">Beschreibung
+    <textarea name="beschreibung" rows="3">{{ ba.beschreibung or '' }}</textarea>
+  </label>
+
+  <div style="display:flex; gap:2rem; margin-top:.5rem;">
+    <label>
+      <input type="checkbox" name="minimalfahrplan" value="true" {% if ba.minimalfahrplan %}checked{% endif %}>
+      Minimalfahrplan (Pflichtaufgabe)
+    </label>
+    <label>
+      <input type="checkbox" name="im_unterricht" value="true" {% if ba.im_unterricht %}checked{% endif %}>
+      Im Unterricht gemacht (von Kapitelempfehlung ausgeschlossen)
+    </label>
+  </div>
+
+  <button type="submit" style="margin-top:1rem;">Speichern</button>
+  <a href="/ui/buchaufgaben" role="button" class="outline secondary" style="margin-left:.5rem;">Abbrechen</a>
+</form>
+
+<section style="margin-top:2rem;">
+  <h3>Kompetenzen</h3>
+  {% if ba.kompetenzen %}
+  <p>
+    {% for bak in ba.kompetenzen %}
+    <span class="badge">{{ bak.kompetenz.kuerzel }} ({{ bak.gewichtung }})</span>
+    {% endfor %}
+  </p>
+  {% else %}
+  <p><small>Keine Kompetenzen zugeordnet.</small></p>
+  {% endif %}
+</section>
+{% endblock %}

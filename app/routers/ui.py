@@ -1481,18 +1481,29 @@ def aufgabe_gw_entfernen(aid: int, gid: int, request: Request, db: Session = Dep
 @router.get("/buchaufgaben")
 def buchaufgaben_liste(
     request: Request,
-    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "", minimalfahrplan: str = "",
+    buch: str = "", kapitel: str = "", unterkapitel: str = "",
+    kompetenz_id: str = "", afb: str = "", suche: str = "",
+    minimalfahrplan: str = "", im_unterricht: str = "",
+    sort: str = "kapitel", dir: str = "asc",
     db: Session = Depends(get_db),
 ):
     from app.models.buchaufgabe import Buchaufgabe
     buecher = [r[0] for r in db.query(Buchaufgabe.buch).distinct().order_by(Buchaufgabe.buch).all()]
+    kapitel_liste = _buchaufgaben_kapitel(buch, db)
+    uk_liste = _buchaufgaben_uk(buch, kapitel, db)
     gesamt = db.query(Buchaufgabe).count()
     return templates.TemplateResponse(request, "buchaufgaben.html", {
-        "buecher": buecher, "kompetenzen": db.query(Kompetenz).order_by(Kompetenz.kuerzel).all(),
+        "buecher": buecher, "kapitel_liste": kapitel_liste, "uk_liste": uk_liste,
+        "kompetenzen": db.query(Kompetenz).order_by(Kompetenz.kuerzel).all(),
         "gesamt": gesamt,
-        "filter_buch": buch, "filter_kompetenz_id": kompetenz_id,
-        "filter_afb": afb, "filter_suche": suche, "filter_minimalfahrplan": minimalfahrplan,
-        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db),
+        "filter_buch": buch, "filter_kapitel": kapitel, "filter_uk": unterkapitel,
+        "filter_kompetenz_id": kompetenz_id, "filter_afb": afb,
+        "filter_suche": suche, "filter_minimalfahrplan": minimalfahrplan,
+        "filter_im_unterricht": im_unterricht,
+        "sort": sort, "dir": dir,
+        "buchaufgaben": _buchaufgaben_gefiltert(
+            buch, kapitel, unterkapitel, kompetenz_id, afb, suche, minimalfahrplan, im_unterricht, sort, dir, db
+        ),
         "msg": request.query_params.get("msg"),
     })
 
@@ -1500,24 +1511,82 @@ def buchaufgaben_liste(
 @router.get("/buchaufgaben/suche")
 def buchaufgaben_suche(
     request: Request,
-    buch: str = "", kompetenz_id: str = "", afb: str = "", suche: str = "", minimalfahrplan: str = "",
+    buch: str = "", kapitel: str = "", unterkapitel: str = "",
+    kompetenz_id: str = "", afb: str = "", suche: str = "",
+    minimalfahrplan: str = "", im_unterricht: str = "",
+    sort: str = "kapitel", dir: str = "asc",
     db: Session = Depends(get_db),
 ):
     return templates.TemplateResponse(request, "htmx_buchaufgaben.html", {
-        "buchaufgaben": _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db),
+        "buchaufgaben": _buchaufgaben_gefiltert(
+            buch, kapitel, unterkapitel, kompetenz_id, afb, suche, minimalfahrplan, im_unterricht, sort, dir, db
+        ),
+        "sort": sort, "dir": dir,
     })
 
 
-def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db):
+@router.get("/buchaufgaben/meta/kapitel")
+def buchaufgaben_meta_kapitel(buch: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    from fastapi.responses import HTMLResponse
+    q = db.query(Buchaufgabe.kapitel).distinct()
+    if buch:
+        q = q.filter(Buchaufgabe.buch == buch)
+    items = sorted(set(r[0] for r in q.all()))
+    opts = '<option value="">Alle Kapitel</option>' + "".join(f'<option value="{k}">{k}</option>' for k in items)
+    return HTMLResponse(opts)
+
+
+@router.get("/buchaufgaben/meta/unterkapitel")
+def buchaufgaben_meta_uk(buch: str = "", kapitel: str = "", db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    from fastapi.responses import HTMLResponse
+    q = db.query(Buchaufgabe.unterkapitel).distinct()
+    if buch:
+        q = q.filter(Buchaufgabe.buch == buch)
+    if kapitel:
+        q = q.filter(Buchaufgabe.kapitel == kapitel)
+    items = sorted(set(r[0] for r in q.all() if r[0]))
+    opts = '<option value="">Alle Unterkapitel</option>' + "".join(f'<option value="{u}">{u}</option>' for u in items)
+    return HTMLResponse(opts)
+
+
+def _buchaufgaben_kapitel(buch: str, db) -> list:
+    from app.models.buchaufgabe import Buchaufgabe
+    q = db.query(Buchaufgabe.kapitel).distinct()
+    if buch:
+        q = q.filter(Buchaufgabe.buch == buch)
+    return sorted(set(r[0] for r in q.all()))
+
+
+def _buchaufgaben_uk(buch: str, kapitel: str, db) -> list:
+    from app.models.buchaufgabe import Buchaufgabe
+    q = db.query(Buchaufgabe.unterkapitel).distinct()
+    if buch:
+        q = q.filter(Buchaufgabe.buch == buch)
+    if kapitel:
+        q = q.filter(Buchaufgabe.kapitel == kapitel)
+    return sorted(set(r[0] for r in q.all() if r[0]))
+
+
+def _buchaufgaben_gefiltert(buch, kapitel, unterkapitel, kompetenz_id, afb, suche, minimalfahrplan, im_unterricht, sort, dir, db):
     from app.models.buchaufgabe import Buchaufgabe, BuchaufgabeKompetenz
     import sqlalchemy as sa_mod
     q = db.query(Buchaufgabe)
     if buch:
         q = q.filter(Buchaufgabe.buch == buch)
+    if kapitel:
+        q = q.filter(Buchaufgabe.kapitel == kapitel)
+    if unterkapitel:
+        q = q.filter(Buchaufgabe.unterkapitel == unterkapitel)
     if afb:
         q = q.filter(Buchaufgabe.afb_niveau == afb)
     if minimalfahrplan:
         q = q.filter(Buchaufgabe.minimalfahrplan.is_(True))
+    if im_unterricht == "1":
+        q = q.filter(Buchaufgabe.im_unterricht.is_(True))
+    elif im_unterricht == "0":
+        q = q.filter(Buchaufgabe.im_unterricht.is_(False))
     if suche:
         term = f"%{suche}%"
         q = q.filter(sa_mod.or_(Buchaufgabe.beschreibung.ilike(term), Buchaufgabe.buch.ilike(term), Buchaufgabe.kapitel.ilike(term)))
@@ -1526,7 +1595,57 @@ def _buchaufgaben_gefiltert(buch, kompetenz_id, afb, suche, minimalfahrplan, db)
             q = q.join(BuchaufgabeKompetenz).filter(BuchaufgabeKompetenz.kompetenz_id == int(kompetenz_id))
         except ValueError:
             pass
-    return q.order_by(Buchaufgabe.buch, Buchaufgabe.kapitel, Buchaufgabe.aufgabennummer).all()
+    _sort_cols = {
+        "buch": Buchaufgabe.buch, "kapitel": Buchaufgabe.kapitel,
+        "unterkapitel": Buchaufgabe.unterkapitel, "aufgabennummer": Buchaufgabe.aufgabennummer,
+        "seite": Buchaufgabe.seite, "afb": Buchaufgabe.afb_niveau,
+        "wichtigkeit": Buchaufgabe.wichtigkeit, "im_unterricht": Buchaufgabe.im_unterricht,
+    }
+    col = _sort_cols.get(sort, Buchaufgabe.kapitel)
+    order = col.desc() if dir == "desc" else col.asc()
+    return q.order_by(order, Buchaufgabe.kapitel, Buchaufgabe.aufgabennummer).all()
+
+
+@router.post("/buchaufgaben/{ba_id}/im-unterricht-toggle")
+def buchaufgabe_im_unterricht_toggle(ba_id: int, db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    from fastapi.responses import Response as FResponse
+    ba = db.get(Buchaufgabe, ba_id)
+    if ba:
+        ba.im_unterricht = not ba.im_unterricht
+        db.commit()
+    return FResponse(status_code=204)
+
+
+@router.get("/buchaufgaben/{ba_id}/bearbeiten")
+def buchaufgabe_bearbeiten_form(ba_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.buchaufgabe import Buchaufgabe
+    ba = db.get(Buchaufgabe, ba_id)
+    return templates.TemplateResponse(request, "buchaufgabe_detail.html", {
+        "ba": ba, "kompetenzen": db.query(Kompetenz).order_by(Kompetenz.kuerzel).all(),
+        "msg": request.query_params.get("msg"),
+    })
+
+
+@router.post("/buchaufgaben/{ba_id}/bearbeiten")
+def buchaufgabe_bearbeiten_save(
+    ba_id: int,
+    buch: str = Form(...), kapitel: str = Form(...), unterkapitel: str = Form(""),
+    seite: str = Form(""), aufgabennummer: str = Form(...), beschreibung: str = Form(""),
+    afb_niveau: str = Form(...), wichtigkeit: int = Form(2),
+    minimalfahrplan: str = Form(""), im_unterricht: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    from app.models.buchaufgabe import Buchaufgabe
+    ba = db.get(Buchaufgabe, ba_id)
+    ba.buch = buch; ba.kapitel = kapitel; ba.unterkapitel = unterkapitel or ""
+    ba.seite = int(seite) if seite.strip().isdigit() else None
+    ba.aufgabennummer = aufgabennummer; ba.beschreibung = beschreibung or None
+    ba.afb_niveau = afb_niveau; ba.wichtigkeit = wichtigkeit
+    ba.minimalfahrplan = (minimalfahrplan == "true")
+    ba.im_unterricht = (im_unterricht == "true")
+    db.commit()
+    return REDIRECT(f"/ui/buchaufgaben/{ba_id}/bearbeiten?msg=Gespeichert")
 
 
 @router.post("/buchaufgaben/import")

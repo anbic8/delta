@@ -7,18 +7,50 @@
 </div>
 
 <!-- Filter -->
-<form hx-get="/ui/buchaufgaben/suche"
+<form id="filter-form"
+      hx-get="/ui/buchaufgaben/suche"
       hx-target="#buchaufgaben-liste"
       hx-trigger="change, input changed delay:400ms from:[name='suche']"
-      style="display:grid; grid-template-columns:2fr 1fr 1fr 1fr 1fr; gap:.5rem; margin-bottom:1rem; align-items:end;">
+      style="display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:.5rem; margin-bottom:1rem; align-items:end;">
+
+  <!-- Sort-Felder (werden per JS gesetzt) -->
+  <input type="hidden" name="sort" id="sort-field" value="{{ sort }}">
+  <input type="hidden" name="dir" id="dir-field" value="{{ dir }}">
+
   <label>Suche
     <input type="search" name="suche" placeholder="Stichwort…" value="{{ filter_suche }}">
   </label>
   <label>Buch
-    <select name="buch">
+    <select name="buch" id="buch-select"
+            hx-get="/ui/buchaufgaben/meta/kapitel"
+            hx-target="#kapitel-select"
+            hx-swap="innerHTML"
+            hx-trigger="change"
+            hx-include="[name='buch']">
       <option value="">Alle Bücher</option>
       {% for b in buecher %}
       <option value="{{ b }}" {% if b == filter_buch %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Kapitel
+    <select name="kapitel" id="kapitel-select"
+            hx-get="/ui/buchaufgaben/meta/unterkapitel"
+            hx-target="#uk-select"
+            hx-swap="innerHTML"
+            hx-trigger="change"
+            hx-include="[name='buch'],[name='kapitel']">
+      <option value="">Alle Kapitel</option>
+      {% for k in kapitel_liste %}
+      <option value="{{ k }}" {% if k == filter_kapitel %}selected{% endif %}>{{ k }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Unterkapitel
+    <select name="unterkapitel" id="uk-select">
+      <option value="">Alle Unterkapitel</option>
+      {% for u in uk_liste %}
+      <option value="{{ u }}" {% if u == filter_uk %}selected{% endif %}>{{ u }}</option>
       {% endfor %}
     </select>
   </label>
@@ -44,6 +76,13 @@
       <option value="1" {% if filter_minimalfahrplan == '1' %}selected{% endif %}>Nur Pflicht</option>
     </select>
   </label>
+  <label>Im Unterricht
+    <select name="im_unterricht">
+      <option value="">Alle</option>
+      <option value="1" {% if filter_im_unterricht == '1' %}selected{% endif %}>Bereits gemacht</option>
+      <option value="0" {% if filter_im_unterricht == '0' %}selected{% endif %}>Noch nicht</option>
+    </select>
+  </label>
 </form>
 
 <!-- Import -->
@@ -55,7 +94,6 @@
     </label>
     <small class="hint">
       Format: <code>Jahrgangsstufe,Kapitel,Unterkapitel,Aufgabe,Beschreibung,AFB,Minimalfahrplan,Kompetenz</code><br>
-      Alternativ: <code>Buch,Kapitel,Unterkapitel,Seite,Aufgabennummer,Beschreibung,AFB,Wichtigkeit,Minimalfahrplan,Kompetenz</code><br>
       Minimalfahrplan: <code>Ja</code> oder leer &middot; AFB: <code>AFB_I</code>, <code>AFB_II</code>, <code>AFB_III</code>
     </small>
     <button type="submit" style="margin-top:.5rem;">Importieren</button>
@@ -66,4 +104,14 @@
 <div id="buchaufgaben-liste">
   {% include "htmx_buchaufgaben.html" %}
 </div>
+
+<script>
+function sortBy(col) {
+  var curSort = document.getElementById('sort-field').value;
+  var curDir  = document.getElementById('dir-field').value;
+  document.getElementById('sort-field').value = col;
+  document.getElementById('dir-field').value  = (curSort === col && curDir === 'asc') ? 'desc' : 'asc';
+  htmx.trigger('#filter-form', 'change');
+}
+</script>
 {% endblock %}
