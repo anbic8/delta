@@ -48,6 +48,36 @@
   <h2>{{ pk.kapitel }}</h2>
   {% for uk in pk.uks %}
   {% if uk.unterkapitel %}<h3>{{ uk.unterkapitel }}</h3>{% endif %}
+
+  {% if uk.teste_dich_block %}
+  <div style="border:1pt solid #bbf7d0; border-radius:3pt; padding:3pt 5pt; margin-bottom:3pt; background:#f0fdf4;">
+    <div style="font-size:7.5pt; font-weight:bold; color:#15803d; text-transform:uppercase; letter-spacing:.03em; margin-bottom:2pt;">
+      Teste dich – zuerst bearbeiten
+    </div>
+    <table style="margin:0;">
+      <thead>
+        <tr>
+          <th style="width:1.4cm; background:#dcfce7;"></th>
+          <th style="width:1.4cm; background:#dcfce7;">Nr.</th>
+          <th style="background:#dcfce7;">Beschreibung</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for e in uk.teste_dich_block %}
+      <tr class="teste-dich">
+        <td style="text-align:center; white-space:nowrap;">
+          <span class="flag-td">T</span>
+        </td>
+        <td>{{ e.aufgabennummer }}</td>
+        <td>{{ e.beschreibung or '–' }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  {% if uk.aufgaben_block %}
   <table>
     <thead>
       <tr>
@@ -57,15 +87,11 @@
       </tr>
     </thead>
     <tbody>
-    {% for e in uk.eintraege %}
-    <tr {% if e.teste_dich %}class="teste-dich"{% endif %}>
+    {% for e in uk.aufgaben_block %}
+    <tr>
       <td style="text-align:center; white-space:nowrap;">
-        {% if e.teste_dich %}
-          <span class="flag-td">T</span>
-        {% else %}
-          {% if e.sa_flag %}<span class="flag-sa">SA</span>{% endif %}
-          {% if e.pers_flag %} <span class="flag-pers">Ich</span>{% endif %}
-        {% endif %}
+        {% if e.sa_flag %}<span class="flag-sa">SA</span>{% endif %}
+        {% if e.pers_flag %} <span class="flag-pers">Ich</span>{% endif %}
       </td>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>
@@ -73,6 +99,8 @@
     {% endfor %}
     </tbody>
   </table>
+  {% endif %}
+
   {% endfor %}
   {% endfor %}
 
