@@ -926,11 +926,15 @@ def lernplan_pdf(
     from app.services.lernplan import berechne_lernplan
     from app.services.pdf_export import _jinja_env
     from fastapi.responses import Response
-    import weasyprint
+    import weasyprint, base64
+    from pathlib import Path
     leistung, sa_profil, schueler_liste, _ = berechne_lernplan(lid, db, von, bis)
     klasse = db.get(Klasse, leistung.klasse_id)
+    logo_path = Path("material/aufgaben.png")
+    logo_b64 = base64.b64encode(logo_path.read_bytes()).decode() if logo_path.exists() else ""
     html = _jinja_env().get_template("pdf_lernplan.html").render(
-        leistung=leistung, klasse=klasse, schueler_liste=schueler_liste, hinweis=hinweis,
+        leistung=leistung, klasse=klasse, schueler_liste=schueler_liste,
+        hinweis=hinweis, logo_b64=logo_b64,
     )
     pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
     name = f"Lernplan_{leistung.titel}.pdf".replace(" ", "_")

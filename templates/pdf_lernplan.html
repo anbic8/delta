@@ -8,12 +8,17 @@
   .seite { page-break-after: always; }
   .seite:last-child { page-break-after: avoid; }
 
+  .kopf { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6pt; }
+  .kopf-logo { max-height: 2cm; max-width: 5cm; }
   h1 { font-size: 14pt; margin: 0 0 2pt; }
   .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
 
   h2 { font-size: 10pt; margin: 10pt 0 2pt;
        border-left: 3pt solid #3b82f6; padding-left: 5pt; }
-  h3 { font-size: 9pt; margin: 5pt 0 2pt; color: #555; font-style: italic; }
+  .uk-zeile { display: flex; justify-content: space-between; align-items: baseline;
+              margin: 5pt 0 2pt; }
+  .uk-titel { font-size: 9pt; color: #555; font-style: italic; margin: 0; }
+  .bearbeiten-bis { font-size: 7.5pt; color: #9ca3af; white-space: nowrap; }
 
   table { width: 100%; border-collapse: collapse; margin: 2pt 0 4pt; font-size: 8.5pt; }
   th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
@@ -29,19 +34,29 @@
              margin-bottom:3pt; background:#f0fdf4; }
   .td-label { font-size:7pt; font-weight:bold; color:#15803d; text-transform:uppercase;
               letter-spacing:.03em; margin-bottom:2pt; }
+  .checkbox { width: 1cm; border: 1pt solid #999; height: 0.6cm; display: block;
+              margin: auto; }
 </style>
 </head>
 <body>
 
 {% for ls in schueler_liste %}
 <div class="seite">
-  <h1>Lernplan</h1>
-  <div class="meta">
-    <strong>{{ ls.name }}</strong>
-    &nbsp;·&nbsp; {{ leistung.titel }}
-    {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
-    &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+  <div class="kopf">
+    <div>
+      <h1>Lernplan</h1>
+      <div class="meta">
+        <strong>{{ ls.name }}</strong>
+        &nbsp;·&nbsp; {{ leistung.titel }}
+        {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
+        &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+      </div>
+    </div>
+    {% if logo_b64 %}
+    <img class="kopf-logo" src="data:image/png;base64,{{ logo_b64 }}" alt="">
+    {% endif %}
   </div>
+
   {% if hinweis %}
   <div style="border:1pt solid #d1d5db; border-radius:3pt; padding:5pt 8pt; margin-bottom:8pt;
               background:#f9fafb; font-size:9pt; white-space:pre-wrap;">{{ hinweis }}</div>
@@ -51,7 +66,14 @@
   <h2>{{ pk.kapitel }}</h2>
 
   {% for uk in pk.uks %}
-  {% if uk.unterkapitel %}<h3>{{ uk.unterkapitel }}</h3>{% endif %}
+  <div class="uk-zeile">
+    {% if uk.unterkapitel %}
+    <span class="uk-titel">{{ uk.unterkapitel }}</span>
+    {% else %}
+    <span></span>
+    {% endif %}
+    <span class="bearbeiten-bis">bearbeiten bis _______________</span>
+  </div>
 
   {% if uk.teste_dich_block %}
   <div class="td-wrap">
@@ -59,9 +81,10 @@
     <table style="margin:0;">
       <thead>
         <tr>
-          <th style="width:1.4cm; background:#dcfce7;"></th>
-          <th style="width:1.4cm; background:#dcfce7;">Nr.</th>
+          <th style="width:1.2cm; background:#dcfce7;"></th>
+          <th style="width:1.2cm; background:#dcfce7;">Nr.</th>
           <th style="background:#dcfce7;">Beschreibung</th>
+          <th style="width:1cm; background:#dcfce7; text-align:center;">✓</th>
         </tr>
       </thead>
       <tbody>
@@ -72,6 +95,7 @@
         </td>
         <td>{{ e.aufgabennummer }}</td>
         <td>{{ e.beschreibung or '–' }}</td>
+        <td><div class="checkbox"></div></td>
       </tr>
       {% endfor %}
       </tbody>
@@ -83,9 +107,10 @@
   <table>
     <thead>
       <tr>
-        <th style="width:1.4cm;"></th>
-        <th style="width:1.4cm;">Nr.</th>
+        <th style="width:1.2cm;"></th>
+        <th style="width:1.2cm;">Nr.</th>
         <th>Beschreibung</th>
+        <th style="width:1cm; text-align:center;">✓</th>
       </tr>
     </thead>
     <tbody>
@@ -97,6 +122,7 @@
       </td>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>
+      <td><div class="checkbox"></div></td>
     </tr>
     {% endfor %}
     </tbody>

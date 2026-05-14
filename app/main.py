@@ -7,6 +7,7 @@ from app.routers import aufgabe, buchaufgabe, klasse, kompetenz, muendliche_note
 app = FastAPI(title="Delta – Schülerleistungen")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/material", StaticFiles(directory="material"), name="material")
 
 app.include_router(schuljahr.router)
 app.include_router(klasse.router)
