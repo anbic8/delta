@@ -69,7 +69,10 @@
     <span>{{ ls.name }}</span>
     <span style="font-weight:normal; font-size:.82rem; color:#6c757d;">
       {% set n = namespace(total=0) %}
-      {% for pk in ls.kapitel %}{% for uk in pk.uks %}{% set n.total = n.total + uk.teste_dich_block|length + uk.aufgaben_block|length %}{% endfor %}{% endfor %}
+      {% for pk in ls.kapitel %}
+        {% set n.total = n.total + pk.teste_dich_block|length %}
+        {% for uk in pk.uks %}{% set n.total = n.total + uk.aufgaben_block|length %}{% endfor %}
+      {% endfor %}
       {{ n.total }} Aufgaben in {{ ls.kapitel | length }} Kapiteln
     </span>
   </summary>
@@ -80,44 +83,43 @@
     <h4 style="margin:1rem 0 .35rem; border-left:3px solid #3b82f6; padding-left:.6rem; font-size:.95rem;">
       {{ pk.kapitel }}
     </h4>
+
+    {% if pk.teste_dich_block %}
+    <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:.4rem; padding:.4rem .6rem; margin-bottom:.6rem;">
+      <p style="margin:0 0 .3rem; font-size:.78rem; font-weight:700; color:#15803d; text-transform:uppercase; letter-spacing:.04em;">
+        Teste dich – zuerst bearbeiten
+      </p>
+      <table style="margin:0; font-size:.85rem;">
+        <thead>
+          <tr>
+            <th style="width:2rem; background:#dcfce7;"></th>
+            <th style="width:3rem; background:#dcfce7;">Nr.</th>
+            <th style="background:#dcfce7;">Beschreibung</th>
+            <th style="width:2.5rem; background:#dcfce7;" title="Wichtigkeit">W.</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for e in pk.teste_dich_block %}
+        <tr style="font-style:italic;">
+          <td style="text-align:center;">
+            <span style="background:#16a34a;color:#fff;padding:.1em .4em;border-radius:.3em;font-size:.75rem;font-style:normal;">T</span>
+          </td>
+          <td>{{ e.aufgabennummer }}</td>
+          <td style="max-width:22rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+              title="{{ e.beschreibung or '' }}">{{ e.beschreibung or '–' }}</td>
+          <td style="text-align:center;">{{ e.wichtigkeit }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+
     {% for uk in pk.uks %}
     <div style="margin-left:1rem; margin-bottom:.75rem;">
       {% if uk.unterkapitel %}
       <p style="margin:0 0 .3rem; font-size:.85rem; font-weight:600; color:#6c757d;">{{ uk.unterkapitel }}</p>
       {% endif %}
-
-      {% if uk.teste_dich_block %}
-      <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:.4rem; padding:.4rem .6rem; margin-bottom:.4rem;">
-        <p style="margin:0 0 .3rem; font-size:.78rem; font-weight:700; color:#15803d; text-transform:uppercase; letter-spacing:.04em;">
-          Teste dich – zuerst bearbeiten
-        </p>
-        <table style="margin:0; font-size:.85rem;">
-          <thead>
-            <tr>
-              <th style="width:2rem; background:#dcfce7;"></th>
-              <th style="width:3rem; background:#dcfce7;">Nr.</th>
-              <th style="background:#dcfce7;">Beschreibung</th>
-              <th style="width:2.5rem; background:#dcfce7;" title="Wichtigkeit">W.</th>
-            </tr>
-          </thead>
-          <tbody>
-          {% for e in uk.teste_dich_block %}
-          <tr style="font-style:italic;">
-            <td style="text-align:center; white-space:nowrap; font-size:.85rem;">
-              <span style="background:#16a34a;color:#fff;padding:.1em .4em;border-radius:.3em;font-size:.75rem;font-style:normal;">T</span>
-            </td>
-            <td>{{ e.aufgabennummer }}</td>
-            <td style="max-width:22rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
-                title="{{ e.beschreibung or '' }}">{{ e.beschreibung or '–' }}</td>
-            <td style="text-align:center;">{{ e.wichtigkeit }}</td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% endif %}
-
-      {% if uk.aufgaben_block %}
       <table style="margin:0; font-size:.85rem;">
         <thead>
           <tr>
@@ -142,10 +144,9 @@
         {% endfor %}
         </tbody>
       </table>
-      {% endif %}
-
     </div>
     {% endfor %}
+
     {% endfor %}
   {% else %}
   <p style="color:#6c757d;"><small>Keine passenden Buchaufgaben im gewählten Bereich.</small></p>

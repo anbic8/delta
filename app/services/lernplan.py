@@ -23,13 +23,13 @@ class PlanEintrag:
 @dataclass
 class PlanUK:
     unterkapitel: str
-    teste_dich_block: list[PlanEintrag] = field(default_factory=list)  # T-markiert
-    aufgaben_block: list[PlanEintrag] = field(default_factory=list)    # SA/Ich + 2 weitere
+    aufgaben_block: list[PlanEintrag] = field(default_factory=list)
 
 
 @dataclass
 class PlanKapitel:
     kapitel: str
+    teste_dich_block: list[PlanEintrag] = field(default_factory=list)  # einmal pro Kapitel
     uks: list[PlanUK] = field(default_factory=list)
 
 
@@ -44,13 +44,11 @@ class PlanSchueler:
 
 
 def _ist_teste_dich_uk(ba) -> bool:
-    """True wenn unterkapitel 'teste' oder 'selbsttest' enthält."""
     uk = (ba.unterkapitel or "").lower()
     return "teste" in uk or "selbsttest" in uk
 
 
 def _ist_teste_dich_beschreibung(ba) -> bool:
-    """True wenn beschreibung auf Teste-dich hinweist (auch ohne UK-Markierung)."""
     desc = (ba.beschreibung or "").lower()
     return desc.startswith("teste") or "teste dich" in desc
 
@@ -64,7 +62,6 @@ def _ist_grundwissen(ba) -> bool:
 
 
 def _ist_ausgeschlossen(ba) -> bool:
-    """Nicht in regulären Aufgaben verwenden."""
     return _ist_teste_dich(ba) or _ist_grundwissen(ba)
 
 
@@ -190,15 +187,15 @@ def berechne_lernplan(
     # ── Buchaufgaben laden ────────────────────────────────────
     alle_ba = db.query(Buchaufgabe).all()
 
-    # Teste-dich pro Kapitel (alle BA wo unterkapitel 'teste' enthält)
+    # Teste-dich pro Kapitel: alle BA die _ist_teste_dich erfüllen (UK oder Beschreibung)
     teste_dich_per_kap: dict[str, list] = defaultdict(list)
     for ba in alle_ba:
-        if _ist_teste_dich_uk(ba):
+        if _ist_teste_dich(ba):
             kap = ba.kapitel or ""
             if kap_in_scope is None or kap in kap_in_scope:
                 teste_dich_per_kap[kap].append(ba)
 
-    # Reguläre im Scope (weder Teste-dich-UK noch Grundwissen als Hauptkategorie)
+    # Reguläre im Scope: kein Teste-dich-UK (Teste-dich per Beschreibung wird per _ist_ausgeschlossen rausgefiltert)
     regulaere_scope = [
         ba for ba in alle_ba
         if not _ist_teste_dich_uk(ba)
@@ -231,34 +228,34 @@ def berechne_lernplan(
         for kap in sorted(gruppen.keys()):
             plan_kap = PlanKapitel(kapitel=kap)
 
-            # Teste-dich für dieses Kapitel – alle, sortiert nach Score
+            # ── Teste-dich Block (einmal pro Kapitel) ─────────
+            kap_profil = sa_kap.get(kap) or sa_profil_global
             td_pool = teste_dich_per_kap.get(kap, [])
+            td_scored = sorted(
+                [(_score(ba, kap_profil, schwach), ba) for ba in td_pool],
+                key=lambda x: -x[0][0],
+            )
+            for sc_t, ba in td_scored:
+                _, sa_f, pers_f = sc_t
+                plan_kap.teste_dich_block.append(_mk(ba, sa_f, pers_f, teste_dich=True))
 
+            # ── Reguläre Aufgaben pro Unterkapitel ────────────
             for uk in sorted(gruppen[kap].keys()):
                 bas_uk = gruppen[kap][uk]
-                if not bas_uk and not td_pool:
+                if not bas_uk:
                     continue
 
                 uk_profil = profil_fuer(kap, uk)
                 plan_uk = PlanUK(unterkapitel=uk)
 
-                # ── Block 1: ALLE Teste-dich ─────────────────
-                td_scored = sorted(
-                    [(_score(ba, uk_profil, schwach), ba) for ba in td_pool],
-                    key=lambda x: -x[0][0],
-                )
-                for sc_t, ba in td_scored:
-                    _, sa_f, pers_f = sc_t
-                    plan_uk.teste_dich_block.append(_mk(ba, sa_f, pers_f, teste_dich=True))
-
-                # ── Block 2: Pro Beschreibung (excl. Teste-dich + Grundwissen) ──
+                # Pro Beschreibung (excl. Teste-dich + Grundwissen): beste Aufgabe
                 regulaere = [ba for ba in bas_uk if not _ist_ausgeschlossen(ba)]
                 scored_reg = sorted(
                     [(_score(ba, uk_profil, schwach), ba) for ba in regulaere],
                     key=lambda x: -x[0][0],
                 )
 
-                by_beschr: dict[str, tuple] = {}  # beschreibung → (score, ba) bestes
+                by_beschr: dict[str, tuple] = {}
                 for sc_t, ba in scored_reg:
                     key = (ba.beschreibung or "").strip()
                     if key not in by_beschr:
@@ -272,21 +269,21 @@ def berechne_lernplan(
                     plan_uk.aufgaben_block.append(_mk(ba, sa_f, pers_f))
                     plan_ids.add(ba.id)
 
-                # ── Block 3: 2 weitere (best combined score, noch nicht gewählt) ──
-                already_block2 = {e.ba_id for e in plan_uk.aufgaben_block}
+                # 2 weitere (bester Score, noch nicht gewählt)
+                already = {e.ba_id for e in plan_uk.aufgaben_block}
                 remaining = [
                     (sc_t, ba) for sc_t, ba in scored_reg
-                    if ba.id not in plan_ids and ba.id not in already_block2
+                    if ba.id not in plan_ids and ba.id not in already
                 ]
                 for sc_t, ba in remaining[:2]:
                     _, sa_f, pers_f = sc_t
                     plan_uk.aufgaben_block.append(_mk(ba, sa_f, pers_f))
                     plan_ids.add(ba.id)
 
-                if plan_uk.teste_dich_block or plan_uk.aufgaben_block:
+                if plan_uk.aufgaben_block:
                     plan_kap.uks.append(plan_uk)
 
-            if plan_kap.uks:
+            if plan_kap.teste_dich_block or plan_kap.uks:
                 kapitel_plan.append(plan_kap)
 
         result.append(PlanSchueler(
