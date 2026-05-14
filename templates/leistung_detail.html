@@ -131,6 +131,7 @@
         {% if leistung_aufgaben %}
         <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte" role="button">✏️ Punkte eintragen</a>
         <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/auswertung" role="button" class="outline">📊 Klassenauswertung</a>
+        <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan" role="button" class="outline secondary">📖 Lernpläne erstellen</a>
         <details style="margin-top:.25rem;">
           <summary>📥 Punkte per CSV importieren</summary>
           <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/punkte-import"
@@ -149,6 +150,21 @@
       <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/pauschal" role="button">✏️ Noten eintragen</a>
       {% endif %}
     </div>
+
+    <details style="margin-top:2rem;">
+      <summary style="color:#dc2626; font-size:.9rem; cursor:pointer;">🗑 Test löschen</summary>
+      <div style="margin-top:.75rem; padding:.75rem; border:1px solid #fca5a5; border-radius:.5rem; background:#fff5f5;">
+        <p style="margin:0 0 .5rem; font-size:.9rem; color:#991b1b;">
+          Löscht den Test dauerhaft — <strong>inklusive aller eingetragenen Noten und Grundwissen-Fehler</strong>.
+        </p>
+        <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/loeschen">
+          <button type="submit" class="outline contrast" style="margin:0;"
+                  onclick="return confirm('Test « {{ leistung.titel }} » wirklich dauerhaft löschen?\nAlle Noten und Ergebnisse gehen verloren!')">
+            Endgültig löschen
+          </button>
+        </form>
+      </div>
+    </details>
   </section>
 
 </div>

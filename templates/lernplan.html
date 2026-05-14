@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Lernplan – {{ leistung.titel }}{% endblock %}
+{% block content %}
+<p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
+<div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
+  <h2 style="margin:0;">📖 Lernplan – {{ leistung.titel }}</h2>
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?buch={{ filter_buch }}&kapitel={{ filter_kapitel }}&max={{ filter_max }}"
+     role="button" class="outline secondary">📄 Alle Lernpläne PDF</a>
+</div>
+
+<!-- Filter -->
+<form method="get" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
+                          background:var(--pico-card-background-color,#f8fafc); padding:1rem; border-radius:.6rem;">
+  <label style="margin:0; min-width:160px;">Buch
+    <select name="buch">
+      <option value="">Alle Bücher</option>
+      {% for b in buecher %}
+      <option value="{{ b }}" {% if b == filter_buch %}selected{% endif %}>{{ b }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label style="margin:0; min-width:160px;">Kapitel
+    <select name="kapitel">
+      <option value="">Alle Kapitel</option>
+      {% for k in kapitel_liste %}
+      <option value="{{ k }}" {% if k == filter_kapitel %}selected{% endif %}>{{ k }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label style="margin:0; width:6rem;">Max. Aufg.
+    <input type="number" name="max" min="1" max="20" value="{{ filter_max }}">
+  </label>
+  <button type="submit" style="margin:0;">Aktualisieren</button>
+</form>
+
+<!-- SA-Profil -->
+{% if sa_profil %}
+<details style="margin-bottom:1.5rem;">
+  <summary style="font-weight:600;">SA-Kompetenzprofil (Basis für ★-Markierung)</summary>
+  <div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem;">
+    {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
+    <div style="display:flex; align-items:center; gap:.4rem; background:var(--pico-muted-background,#f0f4ff);
+                padding:.3rem .65rem; border-radius:.4rem;">
+      <span style="font-weight:600; font-size:.9rem;">{{ kuerzel }}</span>
+      <span style="font-size:.8rem; color:#6c757d;">{{ (anteil * 100) | round(0) | int }}%</span>
+    </div>
+    {% endfor %}
+  </div>
+  <p style="margin:.5rem 0 0;"><small>★ = Aufgabe deckt ≥5% der Test-Kompetenzen ab &nbsp;|&nbsp; ⚠ = trifft persönliche Schwäche</small></p>
+</details>
+{% else %}
+<div class="alert-error" style="margin-bottom:1.5rem;">Den Aufgaben des Tests sind keine Kompetenzen zugeordnet — das SA-Profil ist leer. Bitte Kompetenzen im Aufgabenpool zuordnen.</div>
+{% endif %}
+
+<!-- Schüler-Tabellen -->
+{% for ls in schueler_liste %}
+<details style="margin-bottom:.75rem; border:1px solid var(--pico-muted-border-color,#dee2e6); border-radius:.6rem;" {% if loop.first %}open{% endif %}>
+  <summary style="padding:.6rem 1rem; font-weight:600; cursor:pointer;">
+    {{ ls.name }}
+    <span style="font-weight:normal; color:#6c757d; font-size:.85rem;">– {{ ls.empfehlungen | length }} Aufgaben</span>
+  </summary>
+  <div style="padding:.5rem 1rem 1rem;">
+  {% if ls.empfehlungen %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2.5rem;"></th>
+        <th>Kapitel</th>
+        <th>UK</th>
+        <th>Nr.</th>
+        <th>Beschreibung</th>
+        <th>AFB</th>
+        <th title="Wichtigkeit">W.</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in ls.empfehlungen %}
+      <tr>
+        <td style="text-align:center; white-space:nowrap;">
+          {% if e.sa_flag %}<span title="SA-Profil (für alle)">★</span>{% endif %}
+          {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#c1121f;">⚠</span>{% endif %}
+        </td>
+        <td><small>{{ e.kapitel }}</small></td>
+        <td><small>{{ e.unterkapitel or '–' }}</small></td>
+        <td>{{ e.aufgabennummer }}</td>
+        <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ e.beschreibung or '' }}">
+          {{ e.beschreibung or '–' }}
+        </td>
+        <td><span class="badge">{{ e.afb_niveau }}</span></td>
+        <td style="text-align:center;">{{ e.wichtigkeit }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#6c757d;"><small>Keine passenden Buchaufgaben gefunden – Filter anpassen.</small></p>
+  {% endif %}
+  </div>
+</details>
+{% endfor %}
+
+{% endblock %}

@@ -8,6 +8,14 @@
   Notensystem: <strong>{% if klasse.notensystem == 'sechserskala' %}Sechserskala (1–6){% else %}Punkte (0–15){% endif %}</strong>
 </p>
 
+<!-- Klassen-Aktionen -->
+<div style="display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1.5rem;">
+  <a href="/ui/klassen/{{ klasse.id }}/zeugnis" role="button" class="outline secondary">📋 Zeugnis</a>
+  <a href="/ui/klassen/{{ klasse.id }}/kapitelempfehlung" role="button" class="outline secondary">📚 Kapitelplan (Klasse)</a>
+  <a href="/ui/klassen/{{ klasse.id }}/schueler-kapitelempfehlung" role="button" class="outline secondary">👤 Kapitelplan (individuell)</a>
+  <a href="/ui/leistung-neu?klasse_id={{ klasse.id }}" role="button" class="outline">+ Neue Leistung</a>
+</div>
+
 <div class="r-grid-2">
 
   <!-- Schüler -->
@@ -70,15 +78,7 @@
 
   <!-- Schriftliche Leistungen -->
   <section>
-    <div style="display:flex; justify-content:space-between; align-items:center; gap:.5rem;">
-      <h3>Schriftliche Leistungen</h3>
-      <div style="display:flex; gap:.5rem;">
-        <a href="/ui/klassen/{{ klasse.id }}/zeugnis" role="button" class="outline secondary" style="padding:.4rem .8rem;">📋 Zeugnis</a>
-        <a href="/ui/klassen/{{ klasse.id }}/kapitelempfehlung" role="button" class="outline secondary" style="padding:.4rem .8rem;">📚 Kapitelplan (Klasse)</a>
-        <a href="/ui/klassen/{{ klasse.id }}/schueler-kapitelempfehlung" role="button" class="outline secondary" style="padding:.4rem .8rem;">👤 Kapitelplan (individuell)</a>
-        <a href="/ui/leistung-neu?klasse_id={{ klasse.id }}" role="button" class="outline" style="padding:.4rem .8rem;">+ Neu</a>
-      </div>
-    </div>
+    <h3>Schriftliche Leistungen</h3>
 
     {% if leistungen %}
     <table>

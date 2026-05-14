@@ -873,6 +873,68 @@ def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depen
                     headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
 
 
+@router.post("/schriftliche-leistungen/{lid}/loeschen")
+def leistung_loeschen(lid: int, db: Session = Depends(get_db)):
+    from app.models.grundwissen import SchuelerGrundwissenFehler
+    l = db.get(SchriftlicheLeistung, lid)
+    if not l:
+        return REDIRECT("/ui/schuljahre")
+    klasse_id = l.klasse_id
+    # Reihenfolge: zuerst abhängige Datensätze, dann Leistung
+    la_ids = [la.id for la in l.leistung_aufgaben]
+    if la_ids:
+        db.query(SchuelerGrundwissenFehler).filter(
+            SchuelerGrundwissenFehler.leistung_aufgabe_id.in_(la_ids)
+        ).delete(synchronize_session=False)
+    db.query(SchuelerErgebnis).filter(
+        SchuelerErgebnis.schriftliche_leistung_id == lid
+    ).delete(synchronize_session=False)
+    db.query(SchuelerErgebnis).filter(
+        SchuelerErgebnis.leistung_aufgabe_id.in_(la_ids) if la_ids else False
+    ).delete(synchronize_session=False)
+    db.delete(l)
+    db.commit()
+    return REDIRECT(f"/ui/klassen/{klasse_id}?msg=Test+gelöscht")
+
+
+@router.get("/schriftliche-leistungen/{lid}/lernplan")
+def lernplan_view(
+    lid: int, request: Request,
+    buch: str = "", kapitel: str = "", max: int = 6,
+    db: Session = Depends(get_db),
+):
+    from app.services.lernplan import berechne_lernplan
+    from app.models.buchaufgabe import Buchaufgabe
+    leistung, sa_profil, schueler_liste = berechne_lernplan(lid, db, buch, kapitel, max)
+    buecher = [r[0] for r in db.query(Buchaufgabe.buch).distinct().order_by(Buchaufgabe.buch).all()]
+    kapitel_liste_all = sorted(set(r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()))
+    return templates.TemplateResponse(request, "lernplan.html", {
+        "leistung": leistung, "sa_profil": sa_profil, "schueler_liste": schueler_liste,
+        "buecher": buecher, "kapitel_liste": kapitel_liste_all,
+        "filter_buch": buch, "filter_kapitel": kapitel, "filter_max": max,
+    })
+
+
+@router.get("/schriftliche-leistungen/{lid}/lernplan.pdf")
+def lernplan_pdf(
+    lid: int, buch: str = "", kapitel: str = "", max: int = 6,
+    db: Session = Depends(get_db),
+):
+    from app.services.lernplan import berechne_lernplan
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    leistung, sa_profil, schueler_liste = berechne_lernplan(lid, db, buch, kapitel, max)
+    klasse = db.get(Klasse, leistung.klasse_id)
+    html = _jinja_env().get_template("pdf_lernplan.html").render(
+        leistung=leistung, klasse=klasse, sa_profil=sa_profil, schueler_liste=schueler_liste,
+    )
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    name = f"Lernplan_{leistung.titel}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 @router.get("/schriftliche-leistungen/{lid}/empfehlung-alle.pdf")
 def schulaufgabe_empfehlung_pdf_alle(lid: int, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe

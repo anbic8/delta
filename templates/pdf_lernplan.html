@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm 1.8cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
+  .seite { page-break-after: always; }
+  .seite:last-child { page-break-after: avoid; }
+  h1 { font-size: 14pt; margin: 0 0 2pt; }
+  h2 { font-size: 11pt; margin: 10pt 0 3pt; border-bottom: 1px solid #bbb; padding-bottom: 2pt; }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9pt; }
+  th { background: #e9ecef; text-align: left; padding: 3pt 5pt; border: 1px solid #ccc; }
+  td { padding: 3pt 5pt; border: 1px solid #ddd; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8f9fa; }
+  .badge { border: 1px solid #ccc; padding: 1pt 4pt; border-radius: 3pt; font-size: 8pt; }
+  .sa-flag  { color: #92400e; font-weight: bold; }
+  .pers-flag { color: #991b1b; font-weight: bold; }
+  .profil-chips { display: flex; flex-wrap: wrap; gap: 4pt; margin: 4pt 0 8pt; }
+  .chip { background: #e0e7ff; border-radius: 3pt; padding: 1pt 5pt; font-size: 8pt; }
+  .legende { font-size: 8pt; color: #555; margin-bottom: 6pt; }
+</style>
+</head>
+<body>
+
+{% for ls in schueler_liste %}
+<div class="seite">
+  <h1>📖 Lernplan</h1>
+  <div class="meta">
+    <strong>{{ ls.name }}</strong>
+    &nbsp;·&nbsp; {{ leistung.titel }}
+    {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
+    &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+  </div>
+
+  {% if sa_profil %}
+  <div style="margin-bottom:6pt;">
+    <strong style="font-size:9pt;">SA-Kompetenzprofil:</strong>
+    <span class="legende">★ = für alle wichtig &nbsp;|&nbsp; ⚠ = persönliche Schwäche</span>
+    <div class="profil-chips">
+      {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
+      <span class="chip">{{ kuerzel }} {{ (anteil * 100) | round(0) | int }}%</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if ls.empfehlungen %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:1.8cm;"></th>
+        <th>Kapitel</th>
+        <th>Unterkapitel</th>
+        <th style="width:1.2cm;">Nr.</th>
+        <th>Beschreibung</th>
+        <th style="width:1.4cm;">AFB</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in ls.empfehlungen %}
+      <tr>
+        <td style="text-align:center; white-space:nowrap;">
+          {% if e.sa_flag %}<span class="sa-flag" title="SA-Profil">★</span> {% endif %}
+          {% if e.pers_flag %}<span class="pers-flag" title="Persönliche Schwäche">⚠</span>{% endif %}
+        </td>
+        <td>{{ e.kapitel }}</td>
+        <td>{{ e.unterkapitel or '–' }}</td>
+        <td>{{ e.aufgabennummer }}</td>
+        <td>{{ e.beschreibung or '–' }}</td>
+        <td><span class="badge">{{ e.afb_niveau }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#888; font-size:9pt;">Keine passenden Aufgaben gefunden.</p>
+  {% endif %}
+</div>
+{% endfor %}
+
+</body>
+</html>
