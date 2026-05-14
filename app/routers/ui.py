@@ -900,10 +900,17 @@ def leistung_loeschen(lid: int, db: Session = Depends(get_db)):
 @router.get("/schriftliche-leistungen/{lid}/lernplan")
 def lernplan_view(
     lid: int, request: Request,
-    von: int = 0, bis: int = -1, hinweis: str = "",
+    von: int = -1, bis: int = -1, hinweis: str = "",
     db: Session = Depends(get_db),
 ):
-    from app.services.lernplan import berechne_lernplan
+    from app.services.lernplan import berechne_lernplan, alle_uk_paare, sa_scope_indices
+    uk_paare = alle_uk_paare(db)
+    if von < 0 or bis < 0:
+        auto_von, auto_bis = sa_scope_indices(lid, db, uk_paare)
+        if von < 0:
+            von = auto_von
+        if bis < 0:
+            bis = auto_bis
     leistung, sa_profil, schueler_liste, uk_paare = berechne_lernplan(lid, db, von, bis)
     return templates.TemplateResponse(request, "lernplan.html", {
         "leistung": leistung, "sa_profil": sa_profil, "schueler_liste": schueler_liste,

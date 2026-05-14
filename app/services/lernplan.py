@@ -75,6 +75,28 @@ def _ist_teste_dich(ba) -> bool:
     return "teste" in uk or "selbsttest" in uk
 
 
+def _ist_grundwissen(ba) -> bool:
+    return (ba.beschreibung or "").lower().startswith("grundwissen")
+
+
+def sa_scope_indices(leistung_id: int, db: Session, uk_paare: list[tuple[str, str]]) -> tuple[int, int]:
+    """Berechnet von_idx / bis_idx aus den Kapitel/UK-Feldern der SA-Aufgaben."""
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    leistung = db.get(SchriftlicheLeistung, leistung_id)
+    if not leistung or not uk_paare:
+        return 0, len(uk_paare) - 1
+    pair_idx = {p: i for i, p in enumerate(uk_paare)}
+    sa_pairs = {
+        (la.aufgabe.kapitel or "", la.aufgabe.unterkapitel or "")
+        for la in leistung.leistung_aufgaben
+        if la.aufgabe.kapitel
+    }
+    indices = [pair_idx[p] for p in sa_pairs if p in pair_idx]
+    if not indices:
+        return 0, len(uk_paare) - 1
+    return min(indices), max(indices)
+
+
 def _mk_eintrag(ba, sa_flag: bool, pers_flag: bool, ergaenzt: bool = False, teste_dich: bool = False) -> PlanEintrag:
     afb_key = _afb_str(ba.afb_niveau)
     return PlanEintrag(
@@ -235,37 +257,24 @@ def berechne_lernplan(
                     uk_eintraege.append(e)
                     # kein plan_ids.add — gleiche Teste-dich darf in mehreren UKs erscheinen
 
-                # 1. Beste SA-Aufgabe (nur reguläre, d.h. aus scored)
-                sa_candidate = next((x for x in scored if x[0][1]), None) or (scored[0] if scored else None)
-                if sa_candidate:
-                    sc_tuple, ba = sa_candidate
+                # 1 Aufgabe pro eindeutiger Beschreibung
+                # (außer Teste-dich und Grundwissen — bas ist bereits regulär/non-TD)
+                by_beschr: dict[str, list] = defaultdict(list)
+                for sc_tuple, ba in scored:
+                    if not _ist_grundwissen(ba):
+                        key = (ba.beschreibung or "").strip()
+                        by_beschr[key].append((sc_tuple, ba))
+
+                for beschr_key in sorted(by_beschr.keys()):
+                    # Beste Aufgabe dieser Beschreibung wählen
+                    sc_tuple, ba = by_beschr[beschr_key][0]  # bereits sortiert nach score
+                    if ba.id in plan_ids:
+                        continue
                     _, sa_f, pers_f = sc_tuple
-                    e = _mk_eintrag(ba, sa_flag=True, pers_flag=pers_f)
+                    e = _mk_eintrag(ba, sa_flag=sa_f, pers_flag=pers_f)
                     uk_eintraege.append(e)
                     plan_ids.add(ba.id)
                     plan_eintraege.append(e)
-
-                # 2. Beste persönliche Aufgabe (andere reguläre wenn möglich)
-                sa_id = sa_candidate[1].id if sa_candidate else -1
-                pers_candidate = (
-                    next((x for x in scored if x[0][2] and x[1].id != sa_id), None)
-                    or next((x for x in scored if x[1].id != sa_id), None)
-                )
-                if pers_candidate:
-                    sc_tuple, ba = pers_candidate
-                    _, sa_f, pers_f = sc_tuple
-                    if ba.id in plan_ids:
-                        for e in uk_eintraege:
-                            if e.ba_id == ba.id:
-                                e.pers_flag = True
-                    else:
-                        e = _mk_eintrag(ba, sa_flag=sa_f, pers_flag=True)
-                        uk_eintraege.append(e)
-                        plan_ids.add(ba.id)
-                        plan_eintraege.append(e)
-                elif len(uk_eintraege) > 1:
-                    # Erste reguläre Aufgabe erhält pers_flag
-                    next((e for e in uk_eintraege if not e.teste_dich), uk_eintraege[-1]).pers_flag = True
 
                 if uk_eintraege:
                     plan_kap.uks.append(PlanUK(unterkapitel=uk, eintraege=uk_eintraege))
