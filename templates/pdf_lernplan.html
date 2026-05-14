@@ -15,7 +15,7 @@
        border-left: 3pt solid #3b82f6; padding-left: 5pt; }
   h3 { font-size: 9pt; margin: 5pt 0 2pt; color: #555; font-style: italic; }
 
-  table { width: 100%; border-collapse: collapse; margin: 2pt 0 6pt; font-size: 8.5pt; }
+  table { width: 100%; border-collapse: collapse; margin: 2pt 0 4pt; font-size: 8.5pt; }
   th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
   td { padding: 2pt 4pt; border: 1px solid #ddd; vertical-align: top; }
   .flag-sa   { background:#fef3c7; color:#92400e; font-weight:bold; font-size:7pt;
@@ -25,8 +25,10 @@
   .flag-td   { background:#dcfce7; color:#15803d; font-weight:bold; font-size:7pt;
                padding:0 3pt; border-radius:2pt; white-space:nowrap; }
   tr.teste-dich td { background:#f0fdf4; font-style:italic; }
-  .td-header { font-size:7.5pt; font-weight:bold; color:#15803d; text-transform:uppercase;
-               letter-spacing:.03em; margin-bottom:2pt; }
+  .td-wrap { border:1pt solid #bbf7d0; border-radius:3pt; padding:2pt 4pt 4pt;
+             margin-bottom:3pt; background:#f0fdf4; }
+  .td-label { font-size:7pt; font-weight:bold; color:#15803d; text-transform:uppercase;
+              letter-spacing:.03em; margin-bottom:2pt; }
 </style>
 </head>
 <body>
@@ -48,9 +50,12 @@
   {% for pk in ls.kapitel %}
   <h2>{{ pk.kapitel }}</h2>
 
-  {% if pk.teste_dich_block %}
-  <div style="border:1pt solid #bbf7d0; border-radius:3pt; padding:3pt 5pt; margin-bottom:4pt; background:#f0fdf4;">
-    <div class="td-header">Teste dich – zuerst bearbeiten</div>
+  {% for uk in pk.uks %}
+  {% if uk.unterkapitel %}<h3>{{ uk.unterkapitel }}</h3>{% endif %}
+
+  {% if uk.teste_dich_block %}
+  <div class="td-wrap">
+    <div class="td-label">Teste dich zuerst</div>
     <table style="margin:0;">
       <thead>
         <tr>
@@ -60,7 +65,7 @@
         </tr>
       </thead>
       <tbody>
-      {% for e in pk.teste_dich_block %}
+      {% for e in uk.teste_dich_block %}
       <tr class="teste-dich">
         <td style="text-align:center; white-space:nowrap;">
           <span class="flag-td">T</span>
@@ -74,8 +79,7 @@
   </div>
   {% endif %}
 
-  {% for uk in pk.uks %}
-  {% if uk.unterkapitel %}<h3>{{ uk.unterkapitel }}</h3>{% endif %}
+  {% if uk.aufgaben_block %}
   <table>
     <thead>
       <tr>
@@ -97,8 +101,9 @@
     {% endfor %}
     </tbody>
   </table>
-  {% endfor %}
+  {% endif %}
 
+  {% endfor %}
   {% endfor %}
 
   {% if not ls.kapitel %}
