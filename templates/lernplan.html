@@ -4,96 +4,115 @@
 <p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
   <h2 style="margin:0;">📖 Lernplan – {{ leistung.titel }}</h2>
-  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?buch={{ filter_buch }}&kapitel={{ filter_kapitel }}&max={{ filter_max }}"
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?kap_von={{ kap_von }}&kap_bis={{ kap_bis }}&min_uk={{ min_uk }}"
      role="button" class="outline secondary">📄 Alle Lernpläne PDF</a>
 </div>
 
 <!-- Filter -->
-<form method="get" style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
-                          background:var(--pico-card-background-color,#f8fafc); padding:1rem; border-radius:.6rem;">
-  <label style="margin:0; min-width:160px;">Buch
-    <select name="buch">
-      <option value="">Alle Bücher</option>
-      {% for b in buecher %}
-      <option value="{{ b }}" {% if b == filter_buch %}selected{% endif %}>{{ b }}</option>
+<form method="get"
+      style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
+             background:var(--pico-card-background-color,#f8fafc); padding:1rem; border-radius:.6rem;">
+  <label style="margin:0; flex:1; min-width:160px;">Kapitel von
+    <select name="kap_von">
+      <option value="">– Anfang –</option>
+      {% for k in alle_kapitel %}
+      <option value="{{ k }}" {% if k == kap_von %}selected{% endif %}>{{ k }}</option>
       {% endfor %}
     </select>
   </label>
-  <label style="margin:0; min-width:160px;">Kapitel
-    <select name="kapitel">
-      <option value="">Alle Kapitel</option>
-      {% for k in kapitel_liste %}
-      <option value="{{ k }}" {% if k == filter_kapitel %}selected{% endif %}>{{ k }}</option>
+  <label style="margin:0; flex:1; min-width:160px;">bis
+    <select name="kap_bis">
+      <option value="">– Ende –</option>
+      {% for k in alle_kapitel %}
+      <option value="{{ k }}" {% if k == kap_bis %}selected{% endif %}>{{ k }}</option>
       {% endfor %}
     </select>
   </label>
-  <label style="margin:0; width:6rem;">Max. Aufg.
-    <input type="number" name="max" min="1" max="20" value="{{ filter_max }}">
-  </label>
-  <button type="submit" style="margin:0;">Aktualisieren</button>
+  <button type="submit" style="margin:0;">Lernpläne generieren</button>
 </form>
 
 <!-- SA-Profil -->
 {% if sa_profil %}
-<details style="margin-bottom:1.5rem;">
-  <summary style="font-weight:600;">SA-Kompetenzprofil (Basis für ★-Markierung)</summary>
-  <div style="display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.75rem;">
+<details style="margin-bottom:1.5rem;" open>
+  <summary style="font-weight:600; cursor:pointer;">SA-Kompetenzprofil</summary>
+  <div style="display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.75rem;">
     {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
-    <div style="display:flex; align-items:center; gap:.4rem; background:var(--pico-muted-background,#f0f4ff);
-                padding:.3rem .65rem; border-radius:.4rem;">
-      <span style="font-weight:600; font-size:.9rem;">{{ kuerzel }}</span>
-      <span style="font-size:.8rem; color:#6c757d;">{{ (anteil * 100) | round(0) | int }}%</span>
-    </div>
+    <span style="background:#dbeafe; color:#1d4ed8; padding:.25rem .6rem; border-radius:.4rem; font-size:.85rem; font-weight:600;">
+      {{ kuerzel }} <span style="font-weight:normal; opacity:.7;">{{ (anteil * 100) | round(0) | int }}%</span>
+    </span>
     {% endfor %}
   </div>
-  <p style="margin:.5rem 0 0;"><small>★ = Aufgabe deckt ≥5% der Test-Kompetenzen ab &nbsp;|&nbsp; ⚠ = trifft persönliche Schwäche</small></p>
+  <p style="margin:.6rem 0 0; font-size:.82rem; color:#6c757d;">
+    <strong>★</strong> Aufgabe deckt SA-Kompetenz ab (≥5%) &nbsp;|&nbsp;
+    <strong style="color:#dc2626;">⚠</strong> Trifft persönliche Schwäche des Schülers
+  </p>
 </details>
 {% else %}
-<div class="alert-error" style="margin-bottom:1.5rem;">Den Aufgaben des Tests sind keine Kompetenzen zugeordnet — das SA-Profil ist leer. Bitte Kompetenzen im Aufgabenpool zuordnen.</div>
+<div class="alert-error" style="margin-bottom:1.5rem;">
+  Keine Kompetenzen an den Testaufgaben hinterlegt — SA-Profil ist leer.
+  Bitte Kompetenzen im Aufgabenpool zuordnen.
+</div>
 {% endif %}
 
-<!-- Schüler-Tabellen -->
+<!-- Schüler-Pläne -->
 {% for ls in schueler_liste %}
-<details style="margin-bottom:.75rem; border:1px solid var(--pico-muted-border-color,#dee2e6); border-radius:.6rem;" {% if loop.first %}open{% endif %}>
-  <summary style="padding:.6rem 1rem; font-weight:600; cursor:pointer;">
-    {{ ls.name }}
-    <span style="font-weight:normal; color:#6c757d; font-size:.85rem;">– {{ ls.empfehlungen | length }} Aufgaben</span>
+<details style="margin-bottom:.6rem; border:1px solid var(--pico-muted-border-color,#dee2e6); border-radius:.6rem;"
+         {% if loop.first %}open{% endif %}>
+  <summary style="padding:.65rem 1rem; font-weight:600; cursor:pointer; display:flex; justify-content:space-between; align-items:center;">
+    <span>{{ ls.name }}</span>
+    <span style="font-weight:normal; font-size:.82rem; color:#6c757d;">
+      {% set n = namespace(total=0) %}
+      {% for pk in ls.kapitel %}{% for uk in pk.uks %}{% set n.total = n.total + uk.eintraege|length %}{% endfor %}{% endfor %}
+      {{ n.total }} Aufgaben in {{ ls.kapitel | length }} Kapiteln
+    </span>
   </summary>
+
   <div style="padding:.5rem 1rem 1rem;">
-  {% if ls.empfehlungen %}
-  <table>
-    <thead>
-      <tr>
-        <th style="width:2.5rem;"></th>
-        <th>Kapitel</th>
-        <th>UK</th>
-        <th>Nr.</th>
-        <th>Beschreibung</th>
-        <th>AFB</th>
-        <th title="Wichtigkeit">W.</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for e in ls.empfehlungen %}
-      <tr>
-        <td style="text-align:center; white-space:nowrap;">
-          {% if e.sa_flag %}<span title="SA-Profil (für alle)">★</span>{% endif %}
-          {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#c1121f;">⚠</span>{% endif %}
-        </td>
-        <td><small>{{ e.kapitel }}</small></td>
-        <td><small>{{ e.unterkapitel or '–' }}</small></td>
-        <td>{{ e.aufgabennummer }}</td>
-        <td style="max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ e.beschreibung or '' }}">
-          {{ e.beschreibung or '–' }}
-        </td>
-        <td><span class="badge">{{ e.afb_niveau }}</span></td>
-        <td style="text-align:center;">{{ e.wichtigkeit }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  {% if ls.kapitel %}
+    {% for pk in ls.kapitel %}
+    <h4 style="margin:1rem 0 .35rem; border-left:3px solid #3b82f6; padding-left:.6rem; font-size:.95rem;">
+      {{ pk.kapitel }}
+    </h4>
+    {% for uk in pk.uks %}
+    <div style="margin-left:1rem; margin-bottom:.75rem;">
+      {% if uk.unterkapitel %}
+      <p style="margin:0 0 .3rem; font-size:.85rem; font-weight:600; color:#6c757d;">{{ uk.unterkapitel }}</p>
+      {% endif %}
+      <table style="margin:0; font-size:.85rem;">
+        <thead>
+          <tr>
+            <th style="width:2rem;"></th>
+            <th style="width:3rem;">Nr.</th>
+            <th>Beschreibung</th>
+            <th style="width:8rem;">Niveau</th>
+            <th style="width:2.5rem;" title="Wichtigkeit">W.</th>
+            {% if uk.eintraege | selectattr('ergaenzt') | list %}
+            <th style="width:3rem;" title="Ergänzt zur Lückendeckung">Erg.</th>{% endif %}
+          </tr>
+        </thead>
+        <tbody>
+        {% for e in uk.eintraege %}
+        <tr {% if e.ergaenzt %}style="background:#fffbeb;"{% endif %}>
+          <td style="text-align:center; white-space:nowrap; font-size:1rem;">
+            {% if e.sa_flag %}<span title="SA-Profil">★</span>{% endif %}
+            {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#dc2626;">⚠</span>{% endif %}
+          </td>
+          <td>{{ e.aufgabennummer }}</td>
+          <td style="max-width:18rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+              title="{{ e.beschreibung or '' }}">{{ e.beschreibung or '–' }}</td>
+          <td><span class="badge">{{ e.afb_label }}</span></td>
+          <td style="text-align:center;">{{ e.wichtigkeit }}</td>
+          {% if uk.eintraege | selectattr('ergaenzt') | list %}
+          <td style="text-align:center; color:#92400e;">{% if e.ergaenzt %}+{% endif %}</td>{% endif %}
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endfor %}
+    {% endfor %}
   {% else %}
-  <p style="color:#6c757d;"><small>Keine passenden Buchaufgaben gefunden – Filter anpassen.</small></p>
+  <p style="color:#6c757d;"><small>Keine passenden Buchaufgaben im gewählten Bereich.</small></p>
   {% endif %}
   </div>
 </details>

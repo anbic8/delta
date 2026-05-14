@@ -23,3 +23,12 @@ def punkte_marker(text) -> Markup:
 
 
 templates.env.filters["punkte_marker"] = punkte_marker
+
+_AFB_LABEL = {"AFB_I": "Reproduzieren", "AFB_II": "Anwenden", "AFB_III": "Verallgemeinern"}
+
+
+def afb_label(value: str) -> str:
+    return _AFB_LABEL.get(str(value), str(value))
+
+
+templates.env.filters["afb_label"] = afb_label

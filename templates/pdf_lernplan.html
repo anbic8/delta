@@ -7,19 +7,26 @@
   body { font-family: Liberation Sans, Arial, sans-serif; font-size: 10pt; color: #1a1a1a; }
   .seite { page-break-after: always; }
   .seite:last-child { page-break-after: avoid; }
+
   h1 { font-size: 14pt; margin: 0 0 2pt; }
-  h2 { font-size: 11pt; margin: 10pt 0 3pt; border-bottom: 1px solid #bbb; padding-bottom: 2pt; }
-  .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
-  table { width: 100%; border-collapse: collapse; margin: 4pt 0 8pt; font-size: 9pt; }
-  th { background: #e9ecef; text-align: left; padding: 3pt 5pt; border: 1px solid #ccc; }
-  td { padding: 3pt 5pt; border: 1px solid #ddd; vertical-align: top; }
-  tr:nth-child(even) td { background: #f8f9fa; }
-  .badge { border: 1px solid #ccc; padding: 1pt 4pt; border-radius: 3pt; font-size: 8pt; }
-  .sa-flag  { color: #92400e; font-weight: bold; }
-  .pers-flag { color: #991b1b; font-weight: bold; }
-  .profil-chips { display: flex; flex-wrap: wrap; gap: 4pt; margin: 4pt 0 8pt; }
-  .chip { background: #e0e7ff; border-radius: 3pt; padding: 1pt 5pt; font-size: 8pt; }
-  .legende { font-size: 8pt; color: #555; margin-bottom: 6pt; }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 8pt; }
+
+  h2 { font-size: 10pt; margin: 10pt 0 2pt;
+       border-left: 3pt solid #3b82f6; padding-left: 5pt; }
+  h3 { font-size: 9pt; margin: 6pt 0 2pt; color: #555; font-style: italic; }
+
+  table { width: 100%; border-collapse: collapse; margin: 2pt 0 6pt; font-size: 8.5pt; }
+  th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
+  td { padding: 2pt 4pt; border: 1px solid #ddd; vertical-align: top; }
+  tr.ergaenzt td { background: #fffbeb; }
+
+  .flag-sa   { font-weight: bold; color: #92400e; }
+  .flag-pers { font-weight: bold; color: #991b1b; }
+  .badge { border: 1px solid #ccc; padding: 0pt 3pt; border-radius: 2pt; font-size: 7.5pt; }
+
+  .profil { display: flex; flex-wrap: wrap; gap: 3pt; margin-bottom: 6pt; }
+  .chip { background: #dbeafe; color: #1d4ed8; padding: 1pt 5pt; border-radius: 2pt; font-size: 7.5pt; font-weight: bold; }
+  .legende { font-size: 7.5pt; color: #555; margin: 0 0 6pt; }
 </style>
 </head>
 <body>
@@ -35,47 +42,47 @@
   </div>
 
   {% if sa_profil %}
-  <div style="margin-bottom:6pt;">
-    <strong style="font-size:9pt;">SA-Kompetenzprofil:</strong>
-    <span class="legende">★ = für alle wichtig &nbsp;|&nbsp; ⚠ = persönliche Schwäche</span>
-    <div class="profil-chips">
-      {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
-      <span class="chip">{{ kuerzel }} {{ (anteil * 100) | round(0) | int }}%</span>
-      {% endfor %}
-    </div>
+  <div class="profil">
+    {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
+    <span class="chip">{{ kuerzel }} {{ (anteil * 100) | round(0) | int }}%</span>
+    {% endfor %}
   </div>
   {% endif %}
+  <p class="legende"><strong>★</strong> SA-Profil (für alle wichtig) &nbsp;|&nbsp; <strong>⚠</strong> Persönliche Schwäche &nbsp;|&nbsp; <strong>+</strong> Ergänzt</p>
 
-  {% if ls.empfehlungen %}
+  {% for pk in ls.kapitel %}
+  <h2>{{ pk.kapitel }}</h2>
+  {% for uk in pk.uks %}
+  {% if uk.unterkapitel %}<h3>{{ uk.unterkapitel }}</h3>{% endif %}
   <table>
     <thead>
       <tr>
-        <th style="width:1.8cm;"></th>
-        <th>Kapitel</th>
-        <th>Unterkapitel</th>
-        <th style="width:1.2cm;">Nr.</th>
+        <th style="width:1.2cm;"></th>
+        <th style="width:1.4cm;">Nr.</th>
         <th>Beschreibung</th>
-        <th style="width:1.4cm;">AFB</th>
+        <th style="width:2.2cm;">Niveau</th>
       </tr>
     </thead>
     <tbody>
-      {% for e in ls.empfehlungen %}
-      <tr>
-        <td style="text-align:center; white-space:nowrap;">
-          {% if e.sa_flag %}<span class="sa-flag" title="SA-Profil">★</span> {% endif %}
-          {% if e.pers_flag %}<span class="pers-flag" title="Persönliche Schwäche">⚠</span>{% endif %}
-        </td>
-        <td>{{ e.kapitel }}</td>
-        <td>{{ e.unterkapitel or '–' }}</td>
-        <td>{{ e.aufgabennummer }}</td>
-        <td>{{ e.beschreibung or '–' }}</td>
-        <td><span class="badge">{{ e.afb_niveau }}</span></td>
-      </tr>
-      {% endfor %}
+    {% for e in uk.eintraege %}
+    <tr {% if e.ergaenzt %}class="ergaenzt"{% endif %}>
+      <td style="text-align:center; white-space:nowrap;">
+        {% if e.sa_flag %}<span class="flag-sa">★</span>{% endif %}
+        {% if e.pers_flag %}<span class="flag-pers"> ⚠</span>{% endif %}
+        {% if e.ergaenzt %}<span style="color:#92400e;"> +</span>{% endif %}
+      </td>
+      <td>{{ e.aufgabennummer }}</td>
+      <td>{{ e.beschreibung or '–' }}</td>
+      <td><span class="badge">{{ e.afb_label }}</span></td>
+    </tr>
+    {% endfor %}
     </tbody>
   </table>
-  {% else %}
-  <p style="color:#888; font-size:9pt;">Keine passenden Aufgaben gefunden.</p>
+  {% endfor %}
+  {% endfor %}
+
+  {% if not ls.kapitel %}
+  <p style="color:#888; font-size:9pt;">Keine Aufgaben gefunden – Kapitelbereich anpassen.</p>
   {% endif %}
 </div>
 {% endfor %}

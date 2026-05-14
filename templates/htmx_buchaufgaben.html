@@ -28,7 +28,7 @@
       <td>{{ ba.aufgabennummer }}</td>
       <td>{{ ba.seite or '–' }}</td>
       <td style="max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="{{ ba.beschreibung or '' }}">{{ ba.beschreibung or '–' }}</td>
-      <td><span class="badge">{{ ba.afb_niveau }}</span></td>
+      <td><span class="badge">{{ ba.afb_niveau | afb_label }}</span></td>
       <td style="text-align:center;">{{ ba.wichtigkeit }}</td>
       <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
       <td style="text-align:center;">

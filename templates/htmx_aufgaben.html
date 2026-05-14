@@ -9,7 +9,7 @@
       <td><a href="/ui/aufgaben/{{ a.id }}">{{ a.titel }}</a></td>
       <td>{{ a.jahrgangsstufe or '–' }}</td>
       <td>{{ a.max_punkte }}</td>
-      <td><span class="badge">{{ a.afb_niveau }}</span></td>
+      <td><span class="badge">{{ a.afb_niveau | afb_label }}</span></td>
       <td><small>{{ a.tags or '–' }}</small></td>
       <td>
         <form method="post" action="/ui/aufgaben/{{ a.id }}/loeschen" style="display:inline;">

@@ -4,9 +4,10 @@ from jinja2 import Environment, FileSystemLoader
 
 
 def _jinja_env() -> Environment:
-    from app.templates_config import punkte_marker
+    from app.templates_config import punkte_marker, afb_label
     env = Environment(loader=FileSystemLoader("templates"), autoescape=True)
     env.filters["punkte_marker"] = punkte_marker
+    env.filters["afb_label"] = afb_label
     return env
 
 

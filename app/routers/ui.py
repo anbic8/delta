@@ -900,31 +900,28 @@ def leistung_loeschen(lid: int, db: Session = Depends(get_db)):
 @router.get("/schriftliche-leistungen/{lid}/lernplan")
 def lernplan_view(
     lid: int, request: Request,
-    buch: str = "", kapitel: str = "", max: int = 6,
+    kap_von: str = "", kap_bis: str = "", min_uk: int = 2,
     db: Session = Depends(get_db),
 ):
-    from app.services.lernplan import berechne_lernplan
-    from app.models.buchaufgabe import Buchaufgabe
-    leistung, sa_profil, schueler_liste = berechne_lernplan(lid, db, buch, kapitel, max)
-    buecher = [r[0] for r in db.query(Buchaufgabe.buch).distinct().order_by(Buchaufgabe.buch).all()]
-    kapitel_liste_all = sorted(set(r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()))
+    from app.services.lernplan import berechne_lernplan, alle_buchkapitel
+    leistung, sa_profil, schueler_liste, alle_kap = berechne_lernplan(lid, db, kap_von, kap_bis, min_uk)
     return templates.TemplateResponse(request, "lernplan.html", {
         "leistung": leistung, "sa_profil": sa_profil, "schueler_liste": schueler_liste,
-        "buecher": buecher, "kapitel_liste": kapitel_liste_all,
-        "filter_buch": buch, "filter_kapitel": kapitel, "filter_max": max,
+        "alle_kapitel": alle_kap,
+        "kap_von": kap_von, "kap_bis": kap_bis, "min_uk": min_uk,
     })
 
 
 @router.get("/schriftliche-leistungen/{lid}/lernplan.pdf")
 def lernplan_pdf(
-    lid: int, buch: str = "", kapitel: str = "", max: int = 6,
+    lid: int, kap_von: str = "", kap_bis: str = "", min_uk: int = 2,
     db: Session = Depends(get_db),
 ):
     from app.services.lernplan import berechne_lernplan
     from app.services.pdf_export import _jinja_env
     from fastapi.responses import Response
     import weasyprint
-    leistung, sa_profil, schueler_liste = berechne_lernplan(lid, db, buch, kapitel, max)
+    leistung, sa_profil, schueler_liste, _ = berechne_lernplan(lid, db, kap_von, kap_bis, min_uk)
     klasse = db.get(Klasse, leistung.klasse_id)
     html = _jinja_env().get_template("pdf_lernplan.html").render(
         leistung=leistung, klasse=klasse, sa_profil=sa_profil, schueler_liste=schueler_liste,
