@@ -9,46 +9,29 @@
   .seite:last-child { page-break-after: avoid; }
 
   h1 { font-size: 14pt; margin: 0 0 2pt; }
-  .meta { color: #555; font-size: 9pt; margin-bottom: 8pt; }
+  .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
 
   h2 { font-size: 10pt; margin: 10pt 0 2pt;
        border-left: 3pt solid #3b82f6; padding-left: 5pt; }
-  h3 { font-size: 9pt; margin: 6pt 0 2pt; color: #555; font-style: italic; }
+  h3 { font-size: 9pt; margin: 5pt 0 2pt; color: #555; font-style: italic; }
 
   table { width: 100%; border-collapse: collapse; margin: 2pt 0 6pt; font-size: 8.5pt; }
   th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
   td { padding: 2pt 4pt; border: 1px solid #ddd; vertical-align: top; }
-  tr.ergaenzt td { background: #fffbeb; }
-
-  .flag-sa   { font-weight: bold; color: #92400e; }
-  .flag-pers { font-weight: bold; color: #991b1b; }
   .badge { border: 1px solid #ccc; padding: 0pt 3pt; border-radius: 2pt; font-size: 7.5pt; }
-
-  .profil { display: flex; flex-wrap: wrap; gap: 3pt; margin-bottom: 6pt; }
-  .chip { background: #dbeafe; color: #1d4ed8; padding: 1pt 5pt; border-radius: 2pt; font-size: 7.5pt; font-weight: bold; }
-  .legende { font-size: 7.5pt; color: #555; margin: 0 0 6pt; }
 </style>
 </head>
 <body>
 
 {% for ls in schueler_liste %}
 <div class="seite">
-  <h1>📖 Lernplan</h1>
+  <h1>Lernplan</h1>
   <div class="meta">
     <strong>{{ ls.name }}</strong>
     &nbsp;·&nbsp; {{ leistung.titel }}
     {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
     &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
   </div>
-
-  {% if sa_profil %}
-  <div class="profil">
-    {% for kuerzel, anteil in sa_profil | dictsort(by='value', reverse=true) %}
-    <span class="chip">{{ kuerzel }} {{ (anteil * 100) | round(0) | int }}%</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-  <p class="legende"><strong>★</strong> SA-Profil (für alle wichtig) &nbsp;|&nbsp; <strong>⚠</strong> Persönliche Schwäche &nbsp;|&nbsp; <strong>+</strong> Ergänzt</p>
 
   {% for pk in ls.kapitel %}
   <h2>{{ pk.kapitel }}</h2>
@@ -57,20 +40,14 @@
   <table>
     <thead>
       <tr>
-        <th style="width:1.2cm;"></th>
         <th style="width:1.4cm;">Nr.</th>
         <th>Beschreibung</th>
-        <th style="width:2.2cm;">Niveau</th>
+        <th style="width:2.4cm;">Niveau</th>
       </tr>
     </thead>
     <tbody>
     {% for e in uk.eintraege %}
-    <tr {% if e.ergaenzt %}class="ergaenzt"{% endif %}>
-      <td style="text-align:center; white-space:nowrap;">
-        {% if e.sa_flag %}<span class="flag-sa">★</span>{% endif %}
-        {% if e.pers_flag %}<span class="flag-pers"> ⚠</span>{% endif %}
-        {% if e.ergaenzt %}<span style="color:#92400e;"> +</span>{% endif %}
-      </td>
+    <tr>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>
       <td><span class="badge">{{ e.afb_label }}</span></td>
@@ -82,7 +59,7 @@
   {% endfor %}
 
   {% if not ls.kapitel %}
-  <p style="color:#888; font-size:9pt;">Keine Aufgaben gefunden – Kapitelbereich anpassen.</p>
+  <p style="color:#888; font-size:9pt;">Keine Aufgaben gefunden – Unterkapitelbereich anpassen.</p>
   {% endif %}
 </div>
 {% endfor %}

@@ -900,31 +900,30 @@ def leistung_loeschen(lid: int, db: Session = Depends(get_db)):
 @router.get("/schriftliche-leistungen/{lid}/lernplan")
 def lernplan_view(
     lid: int, request: Request,
-    kap_von: str = "", kap_bis: str = "", min_uk: int = 2,
+    von: int = 0, bis: int = -1,
     db: Session = Depends(get_db),
 ):
-    from app.services.lernplan import berechne_lernplan, alle_buchkapitel
-    leistung, sa_profil, schueler_liste, alle_kap = berechne_lernplan(lid, db, kap_von, kap_bis, min_uk)
+    from app.services.lernplan import berechne_lernplan
+    leistung, sa_profil, schueler_liste, uk_paare = berechne_lernplan(lid, db, von, bis)
     return templates.TemplateResponse(request, "lernplan.html", {
         "leistung": leistung, "sa_profil": sa_profil, "schueler_liste": schueler_liste,
-        "alle_kapitel": alle_kap,
-        "kap_von": kap_von, "kap_bis": kap_bis, "min_uk": min_uk,
+        "uk_paare": uk_paare, "von": von, "bis": bis,
     })
 
 
 @router.get("/schriftliche-leistungen/{lid}/lernplan.pdf")
 def lernplan_pdf(
-    lid: int, kap_von: str = "", kap_bis: str = "", min_uk: int = 2,
+    lid: int, von: int = 0, bis: int = -1,
     db: Session = Depends(get_db),
 ):
     from app.services.lernplan import berechne_lernplan
     from app.services.pdf_export import _jinja_env
     from fastapi.responses import Response
     import weasyprint
-    leistung, sa_profil, schueler_liste, _ = berechne_lernplan(lid, db, kap_von, kap_bis, min_uk)
+    leistung, sa_profil, schueler_liste, _ = berechne_lernplan(lid, db, von, bis)
     klasse = db.get(Klasse, leistung.klasse_id)
     html = _jinja_env().get_template("pdf_lernplan.html").render(
-        leistung=leistung, klasse=klasse, sa_profil=sa_profil, schueler_liste=schueler_liste,
+        leistung=leistung, klasse=klasse, schueler_liste=schueler_liste,
     )
     pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
     name = f"Lernplan_{leistung.titel}.pdf".replace(" ", "_")

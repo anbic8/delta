@@ -4,7 +4,7 @@
 <p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
   <h2 style="margin:0;">📖 Lernplan – {{ leistung.titel }}</h2>
-  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?kap_von={{ kap_von }}&kap_bis={{ kap_bis }}&min_uk={{ min_uk }}"
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?von={{ von }}&bis={{ bis }}"
      role="button" class="outline secondary">📄 Alle Lernpläne PDF</a>
 </div>
 
@@ -12,19 +12,23 @@
 <form method="get"
       style="display:flex; gap:.75rem; flex-wrap:wrap; align-items:flex-end; margin-bottom:1.5rem;
              background:var(--pico-card-background-color,#f8fafc); padding:1rem; border-radius:.6rem;">
-  <label style="margin:0; flex:1; min-width:160px;">Kapitel von
-    <select name="kap_von">
-      <option value="">– Anfang –</option>
-      {% for k in alle_kapitel %}
-      <option value="{{ k }}" {% if k == kap_von %}selected{% endif %}>{{ k }}</option>
+  <label style="margin:0; flex:1; min-width:200px;">Stoff von
+    <select name="von">
+      {% for pair in uk_paare %}
+      {% set idx = loop.index0 %}
+      <option value="{{ idx }}" {% if idx == von %}selected{% endif %}>
+        {{ pair[0] }}{% if pair[1] %} › {{ pair[1] }}{% endif %}
+      </option>
       {% endfor %}
     </select>
   </label>
-  <label style="margin:0; flex:1; min-width:160px;">bis
-    <select name="kap_bis">
-      <option value="">– Ende –</option>
-      {% for k in alle_kapitel %}
-      <option value="{{ k }}" {% if k == kap_bis %}selected{% endif %}>{{ k }}</option>
+  <label style="margin:0; flex:1; min-width:200px;">bis
+    <select name="bis">
+      {% for pair in uk_paare %}
+      {% set idx = loop.index0 %}
+      <option value="{{ idx }}" {% if idx == bis or (bis == -1 and loop.last) %}selected{% endif %}>
+        {{ pair[0] }}{% if pair[1] %} › {{ pair[1] }}{% endif %}
+      </option>
       {% endfor %}
     </select>
   </label>

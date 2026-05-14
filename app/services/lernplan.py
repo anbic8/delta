@@ -44,6 +44,13 @@ def alle_buchkapitel(db: Session) -> list[str]:
     return sorted({r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()})
 
 
+def alle_uk_paare(db: Session) -> list[tuple[str, str]]:
+    """Sortierte Liste aller (kapitel, unterkapitel)-Paare aus dem Buchaufgaben-Katalog."""
+    from app.models.buchaufgabe import Buchaufgabe
+    rows = db.query(Buchaufgabe.kapitel, Buchaufgabe.unterkapitel).distinct().all()
+    return sorted({(r[0] or "", r[1] or "") for r in rows})
+
+
 def _afb_str(value) -> str:
     key = getattr(value, "value", None) or str(value)
     if "." in key:
@@ -92,9 +99,8 @@ def _kompetenz_profil(las: list) -> dict[str, float]:
 def berechne_lernplan(
     leistung_id: int,
     db: Session,
-    kapitel_von: str = "",
-    kapitel_bis: str = "",
-    min_pro_uk: int = 2,
+    von_idx: int = 0,
+    bis_idx: int = -1,
 ) -> tuple:
     from app.models.schriftliche_leistung import SchriftlicheLeistung
     from app.models.buchaufgabe import Buchaufgabe
@@ -132,20 +138,21 @@ def berechne_lernplan(
         for la in las
     }
 
-    # ── Kapitel-Scope ─────────────────────────────────────────
-    alle_kap = alle_buchkapitel(db)
-    if kapitel_von and kapitel_bis and kapitel_von in alle_kap and kapitel_bis in alle_kap:
-        i0 = alle_kap.index(kapitel_von)
-        i1 = alle_kap.index(kapitel_bis)
-        scope = alle_kap[min(i0, i1): max(i0, i1) + 1]
+    # ── UK-Scope (Index-basiert) ──────────────────────────────
+    uk_paare = alle_uk_paare(db)
+    if not uk_paare:
+        scope_set: set[tuple[str, str]] = set()
     else:
-        scope = alle_kap
+        i0 = max(0, von_idx)
+        i1 = len(uk_paare) - 1 if bis_idx < 0 else min(bis_idx, len(uk_paare) - 1)
+        scope_set = set(uk_paare[i0: i1 + 1])
 
     # ── Buchaufgaben laden ────────────────────────────────────
-    if scope:
-        kandidaten = db.query(Buchaufgabe).filter(Buchaufgabe.kapitel.in_(scope)).all()
-    else:
-        kandidaten = db.query(Buchaufgabe).all()
+    alle_ba = db.query(Buchaufgabe).all()
+    kandidaten = [
+        ba for ba in alle_ba
+        if not scope_set or (ba.kapitel or "", ba.unterkapitel or "") in scope_set
+    ]
 
     ba_by_id = {ba.id: ba for ba in kandidaten}
 
@@ -271,4 +278,4 @@ def berechne_lernplan(
             kapitel=kapitel_plan,
         ))
 
-    return leistung, sa_profil_global, result, alle_kap
+    return leistung, sa_profil_global, result, uk_paare
