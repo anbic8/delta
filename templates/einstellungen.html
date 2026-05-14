@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Einstellungen{% endblock %}
+{% block content %}
+<h2>⚙ Einstellungen</h2>
+
+<section style="max-width:480px;">
+  <h3>Darstellung</h3>
+  <div style="display:flex; align-items:center; justify-content:space-between; padding:.75rem 0; border-bottom:1px solid var(--pico-muted-border-color, #dee2e6);">
+    <div>
+      <strong>Farbschema</strong>
+      <small class="hint">Wird im Browser gespeichert, kein Server-Reload nötig.</small>
+    </div>
+    <button id="theme-btn" onclick="deltaToggleTheme()" class="outline" style="margin:0; min-width:9rem;">
+      ☾ Dark Mode
+    </button>
+  </div>
+</section>
+
+<script>
+  // Setze Button-Text auf aktuellen Status
+  (function() {
+    var cur = document.documentElement.getAttribute('data-theme');
+    var btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = cur === 'dark' ? '☀ Light Mode' : '☾ Dark Mode';
+  })();
+</script>
+{% endblock %}

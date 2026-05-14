@@ -8,7 +8,7 @@
     <a href="/ui/schriftliche-leistungen/{{ auswertung.leistung_id }}/auswertung.pdf"
        role="button" class="outline secondary">📄 Notenspiegel PDF</a>
     <a href="/ui/schriftliche-leistungen/{{ auswertung.leistung_id }}/empfehlung-alle.pdf"
-       role="button" class="outline secondary">📄 Übungsblätter PDF</a>
+       role="button" class="outline secondary">📄 Verbesserungspläne PDF</a>
     <a href="/ui/schriftliche-leistungen/{{ auswertung.leistung_id }}/ehz.pdf"
        role="button" class="outline secondary">📄 EHZ drucken</a>
   </div>
@@ -39,7 +39,7 @@
         {{ z.name }}
         {% if z.grenzfall %}<span title="Grenzfall">🟡</span>{% endif %}
         <br><a href="/ui/schueler/{{ z.schueler_id }}/schulaufgabe/{{ auswertung.leistung_id }}/empfehlung"
-               style="font-size:.75rem;">📚 Übung</a>
+               style="font-size:.75rem;">📈 Verbesserungsplan</a>
       </td>
       {% for a in auswertung.aufgaben %}
       <td style="text-align:center;">

@@ -34,7 +34,7 @@
       <td style="text-align:center;">
         <input type="checkbox"
                {% if ba.im_unterricht %}checked{% endif %}
-               title="Im Unterricht gemacht – von Kapitelempfehlung ausgeschlossen"
+               title="Im Unterricht gemacht – von Kapitelplan ausgeschlossen"
                onchange="fetch('/ui/buchaufgaben/{{ ba.id }}/im-unterricht-toggle',{method:'POST'}).then(()=>this.closest('tr').style.opacity=this.checked?'.55':'')">
       </td>
       <td>

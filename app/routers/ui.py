@@ -75,6 +75,11 @@ _STATUS_FARBE = {
 }
 
 
+@router.get("/einstellungen")
+def einstellungen(request: Request):
+    return templates.TemplateResponse(request, "einstellungen.html", {})
+
+
 # ── Schuljahre ────────────────────────────────────────────────
 
 @router.get("/schuljahre")

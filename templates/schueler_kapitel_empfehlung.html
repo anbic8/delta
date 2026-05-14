@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Individuelle Kapitel-Empfehlung – {{ klasse.name }}{% endblock %}
+{% block title %}Individueller Kapitelplan – {{ klasse.name }}{% endblock %}
 {% block content %}
 <p><a href="/ui/klassen/{{ klasse.id }}">&larr; {{ klasse.name }}</a></p>
-<h2>Individuelle Kapitel-Empfehlung – {{ klasse.name }}</h2>
+<h2>Individueller Kapitelplan – {{ klasse.name }}</h2>
 <p style="color:#6c757d;">Jeder Schüler erhält eine auf sein persönliches Kompetenz- und AFB-Profil abgestimmte Aufgabenauswahl.</p>
 
 <form method="post" action="/ui/klassen/{{ klasse.id }}/schueler-kapitelempfehlung">

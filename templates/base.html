@@ -7,60 +7,107 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
   <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
   <style>
-    nav a { text-decoration: none; }
-    .grenzfall { background-color: #fff3cd !important; }
-    .note-1 { color: #2d6a4f; font-weight: bold; }
-    .note-5, .note-6 { color: #c1121f; font-weight: bold; }
-    .punkte-input { width: 5rem; text-align: center; padding: 0.25rem; }
-    .badge { display: inline-block; padding: .2em .5em; border-radius: .3em; font-size: .8em; background: #e9ecef; }
-    .badge-sa { background: #cfe2ff; }
-    .badge-ln { background: #d1e7dd; }
+    /* ── Theme-Init (verhindert Flash) ── */
+    :root {
+      --delta-nav-bg: #1e293b;
+      --delta-nav-text: #e2e8f0;
+      --delta-nav-hover: #3b82f6;
+      --delta-accent: #3b82f6;
+      --delta-radius: .6rem;
+      --delta-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.06);
+    }
+    [data-theme="dark"] {
+      --delta-nav-bg: #0f172a;
+      --delta-nav-text: #cbd5e1;
+    }
+
+    /* ── Navigation ── */
+    header.delta-nav {
+      background: var(--delta-nav-bg);
+      padding: 0 1.5rem;
+      position: sticky; top: 0; z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    header.delta-nav nav { align-items: center; min-height: 3.25rem; }
+    header.delta-nav nav a { color: var(--delta-nav-text); text-decoration: none; font-size: .9rem; padding: .35rem .55rem; border-radius: .35rem; transition: background .15s, color .15s; }
+    header.delta-nav nav a:hover { background: rgba(255,255,255,.1); color: #fff; }
+    header.delta-nav .logo { font-size: 1.1rem; font-weight: 700; letter-spacing: -.5px; color: var(--delta-accent) !important; }
+    header.delta-nav .logo:hover { background: transparent !important; color: #60a5fa !important; }
+    header.delta-nav nav > ul { gap: .1rem; }
+    .nav-icon { font-size: 1.1rem; opacity: .85; }
+
+    /* ── Content ── */
+    main.container { padding-top: 2rem; }
+
+    /* ── Cards / Sections ── */
+    section, .card {
+      border-radius: var(--delta-radius);
+      padding: 1.25rem 1.5rem;
+    }
+    fieldset { border: 1px solid var(--pico-muted-border-color, #dee2e6); border-radius: var(--delta-radius); padding: 1rem; }
+    legend { padding: 0 .5rem; font-weight: 600; }
+
+    /* ── Alert Banners ── */
+    .alert-success { padding: .75rem 1rem; background: #d1fae5; color: #065f46; border-radius: var(--delta-radius); border-left: 4px solid #10b981; margin-bottom: 1rem; }
+    .alert-error   { padding: .75rem 1rem; background: #fee2e2; color: #991b1b; border-radius: var(--delta-radius); border-left: 4px solid #ef4444; margin-bottom: 1rem; }
+    [data-theme="dark"] .alert-success { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+    [data-theme="dark"] .alert-error   { background: #450a0a; color: #fca5a5; border-color: #ef4444; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: .2em .55em; border-radius: .35em; font-size: .78em; font-weight: 500; background: var(--pico-muted-background, #e9ecef); }
+    .badge-sa   { background: #dbeafe; color: #1d4ed8; }
+    .badge-ln   { background: #dcfce7; color: #166534; }
     .badge-test { background: #ede9fe; color: #5b21b6; }
-    fieldset { border: 1px solid #dee2e6; border-radius: .5rem; padding: 1rem; }
-    legend { padding: 0 .5rem; font-weight: bold; }
-    small.hint { color: #6c757d; display: block; margin-top: .25rem; }
 
-    /* ── Responsive Helpers ── */
-    .r-grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      align-items: start;
-    }
-    .r-grid-3 {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: .75rem;
-      align-items: end;
-    }
-    .r-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    /* ── Tables ── */
+    table { border-radius: var(--delta-radius); overflow: hidden; }
+    thead th { font-size: .82rem; font-weight: 600; letter-spacing: .02em; text-transform: uppercase; }
+    tbody tr:hover { background: var(--pico-muted-background, #f8fafc) !important; }
 
+    /* ── Buttons ── */
+    button, [role="button"] { border-radius: .45rem !important; transition: transform .1s, box-shadow .1s; }
+    button:hover, [role="button"]:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.12); }
+
+    /* ── Misc ── */
+    .grenzfall { background-color: #fef9c3 !important; }
+    .note-1 { color: #15803d; font-weight: bold; }
+    .note-5, .note-6 { color: #dc2626; font-weight: bold; }
+    .punkte-input { width: 5rem; text-align: center; padding: 0.25rem; border-radius: .4rem; }
+    small.hint { color: var(--pico-muted-color, #6c757d); display: block; margin-top: .25rem; font-size: .82rem; }
+
+    /* ── Responsive ── */
+    .r-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    .r-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .75rem; align-items: end; }
+    .r-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--delta-radius); }
     @media (max-width: 768px) {
       .r-grid-2 { grid-template-columns: 1fr; gap: 1rem; }
       .r-grid-3 { grid-template-columns: 1fr 1fr; }
-      .hide-xs { display: none !important; }
+      .hide-xs  { display: none !important; }
       .punkte-input { width: 3.5rem; }
     }
     @media (max-width: 480px) {
       .r-grid-3 { grid-template-columns: 1fr; }
-      h2 { font-size: 1.3rem; }
-      h3 { font-size: 1.1rem; }
+      h2 { font-size: 1.25rem; } h3 { font-size: 1.05rem; }
     }
-
-    /* ── Nav Mobile ── */
     @media (max-width: 600px) {
-      header nav { flex-direction: column; align-items: flex-start; gap: .4rem; }
-      header nav > ul { flex-wrap: wrap; gap: .25rem .75rem; padding: 0; }
-      header nav > ul > li > a { font-size: .85rem; }
+      header.delta-nav nav { flex-wrap: wrap; gap: .3rem; padding: .4rem 0; }
+      header.delta-nav nav > ul { flex-wrap: wrap; gap: .15rem .5rem; padding: 0; }
     }
   </style>
+  <!-- Dark-mode init: set before render to avoid flash -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('delta-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   {% block extra_head %}{% endblock %}
 </head>
 <body>
-  <header class="container-fluid" style="padding: .75rem 1.5rem; border-bottom: 1px solid #dee2e6;">
+  <header class="delta-nav container-fluid">
     <nav>
       <ul>
-        <li><strong><a href="/ui/schuljahre">⬡ Delta</a></strong></li>
+        <li><a href="/ui/schuljahre" class="logo">⬡ Delta</a></li>
       </ul>
       <ul>
         <li><a href="/ui/schuljahre">Schuljahre</a></li>
@@ -68,23 +115,31 @@
         <li><a href="/ui/buchaufgaben">Buchaufgaben</a></li>
         <li><a href="/ui/grundwissen">Grundwissen</a></li>
         <li><a href="/ui/test-vorlagen">Vorlagen</a></li>
+        <li><a href="/ui/einstellungen" class="nav-icon" title="Einstellungen">⚙</a></li>
       </ul>
     </nav>
   </header>
 
-  <main class="container" style="padding-top: 1.5rem;">
+  <main class="container" style="padding-top: 2rem;">
     {% if msg %}
-    <div role="alert" style="margin-bottom:1rem; padding:.75rem 1rem; background:#d1e7dd; border-radius:.5rem;">
-      {{ msg }}
-    </div>
+    <div class="alert-success">{{ msg }}</div>
     {% endif %}
     {% if err %}
-    <div role="alert" style="margin-bottom:1rem; padding:.75rem 1rem; background:#f8d7da; border-radius:.5rem;">
-      {{ err }}
-    </div>
+    <div class="alert-error">{{ err }}</div>
     {% endif %}
 
     {% block content %}{% endblock %}
   </main>
+
+  <script>
+  function deltaToggleTheme() {
+    var cur  = document.documentElement.getAttribute('data-theme');
+    var next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('delta-theme', next);
+    var btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = next === 'dark' ? '☀ Light Mode' : '☾ Dark Mode';
+  }
+  </script>
 </body>
 </html>

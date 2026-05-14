@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Kapitel-Empfehlung – {{ klasse.name }}{% endblock %}
+{% block title %}Kapitelplan – {{ klasse.name }}{% endblock %}
 {% block content %}
 <p><a href="/ui/klassen/{{ klasse.id }}">&larr; {{ klasse.name }}</a></p>
-<h2>Kapitel-Empfehlung – {{ klasse.name }}</h2>
+<h2>Kapitelplan – {{ klasse.name }}</h2>
 <p style="color:#6c757d;">Basiert auf den Kompetenz- und AFB-Profilen aller bisherigen Tests der Klasse.</p>
 
 <form method="post" action="/ui/klassen/{{ klasse.id }}/kapitelempfehlung">
