@@ -18,6 +18,7 @@ class PlanEintrag:
     sa_flag: bool
     pers_flag: bool
     ergaenzt: bool = False
+    teste_dich: bool = False
 
 
 @dataclass
@@ -69,7 +70,12 @@ def _score(ba, sa_profil: dict, schwach: set) -> tuple:
     return total, sa_f, pers_f
 
 
-def _mk_eintrag(ba, sa_flag: bool, pers_flag: bool, ergaenzt: bool = False) -> PlanEintrag:
+def _ist_teste_dich(ba) -> bool:
+    uk = (ba.unterkapitel or "").lower()
+    return "teste" in uk or "selbsttest" in uk
+
+
+def _mk_eintrag(ba, sa_flag: bool, pers_flag: bool, ergaenzt: bool = False, teste_dich: bool = False) -> PlanEintrag:
     afb_key = _afb_str(ba.afb_niveau)
     return PlanEintrag(
         ba_id=ba.id,
@@ -82,6 +88,7 @@ def _mk_eintrag(ba, sa_flag: bool, pers_flag: bool, ergaenzt: bool = False) -> P
         sa_flag=sa_flag,
         pers_flag=pers_flag,
         ergaenzt=ergaenzt,
+        teste_dich=teste_dich,
     )
 
 
@@ -149,10 +156,24 @@ def berechne_lernplan(
 
     # ── Buchaufgaben laden ────────────────────────────────────
     alle_ba = db.query(Buchaufgabe).all()
+
+    # Teste-dich von regulären Aufgaben trennen
+    teste_dich_alle = [ba for ba in alle_ba if _ist_teste_dich(ba)]
+    regulaere_alle  = [ba for ba in alle_ba if not _ist_teste_dich(ba)]
+
+    # Reguläre: nur innerhalb des Scopes
     kandidaten = [
-        ba for ba in alle_ba
+        ba for ba in regulaere_alle
         if not scope_set or (ba.kapitel or "", ba.unterkapitel or "") in scope_set
     ]
+
+    # Teste-dich: pro Kapitel (ohne Scope-Filter, deckt ganzes Kapitel ab)
+    teste_dich_per_kap: dict[str, list] = defaultdict(list)
+    for ba in teste_dich_alle:
+        # Nur Kapitel die im Scope vorkommen
+        kap_in_scope = {kap for kap, _ in scope_set} if scope_set else None
+        if kap_in_scope is None or (ba.kapitel or "") in kap_in_scope:
+            teste_dich_per_kap[ba.kapitel or ""].append(ba)
 
     ba_by_id = {ba.id: ba for ba in kandidaten}
 
@@ -201,7 +222,20 @@ def berechne_lernplan(
 
                 uk_eintraege: list[PlanEintrag] = []
 
-                # 1. Beste SA-Aufgabe
+                # 0. Beste Teste-dich-Aufgabe dieses Kapitels (kein plan_ids-Check)
+                td_pool = teste_dich_per_kap.get(kap, [])
+                if td_pool:
+                    td_scored = sorted(
+                        [(_score(ba, uk_profil, schwach), ba) for ba in td_pool],
+                        key=lambda x: -x[0][0],
+                    )
+                    sc_tuple, ba = td_scored[0]
+                    _, sa_f, pers_f = sc_tuple
+                    e = _mk_eintrag(ba, sa_flag=sa_f, pers_flag=pers_f, teste_dich=True)
+                    uk_eintraege.append(e)
+                    # kein plan_ids.add — gleiche Teste-dich darf in mehreren UKs erscheinen
+
+                # 1. Beste SA-Aufgabe (nur reguläre, d.h. aus scored)
                 sa_candidate = next((x for x in scored if x[0][1]), None) or (scored[0] if scored else None)
                 if sa_candidate:
                     sc_tuple, ba = sa_candidate
@@ -211,7 +245,7 @@ def berechne_lernplan(
                     plan_ids.add(ba.id)
                     plan_eintraege.append(e)
 
-                # 2. Beste persönliche Aufgabe (andere Aufgabe wenn möglich)
+                # 2. Beste persönliche Aufgabe (andere reguläre wenn möglich)
                 sa_id = sa_candidate[1].id if sa_candidate else -1
                 pers_candidate = (
                     next((x for x in scored if x[0][2] and x[1].id != sa_id), None)
@@ -229,8 +263,9 @@ def berechne_lernplan(
                         uk_eintraege.append(e)
                         plan_ids.add(ba.id)
                         plan_eintraege.append(e)
-                elif uk_eintraege:
-                    uk_eintraege[0].pers_flag = True
+                elif len(uk_eintraege) > 1:
+                    # Erste reguläre Aufgabe erhält pers_flag
+                    next((e for e in uk_eintraege if not e.teste_dich), uk_eintraege[-1]).pers_flag = True
 
                 if uk_eintraege:
                     plan_kap.uks.append(PlanUK(unterkapitel=uk, eintraege=uk_eintraege))

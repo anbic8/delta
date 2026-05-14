@@ -23,6 +23,9 @@
                padding:0 3pt; border-radius:2pt; white-space:nowrap; }
   .flag-pers { background:#fee2e2; color:#991b1b; font-weight:bold; font-size:7pt;
                padding:0 3pt; border-radius:2pt; white-space:nowrap; }
+  .flag-td   { background:#dcfce7; color:#15803d; font-weight:bold; font-size:7pt;
+               padding:0 3pt; border-radius:2pt; white-space:nowrap; }
+  tr.teste-dich td { background:#f0fdf4; font-style:italic; }
 </style>
 </head>
 <body>
@@ -55,10 +58,14 @@
     </thead>
     <tbody>
     {% for e in uk.eintraege %}
-    <tr>
+    <tr {% if e.teste_dich %}class="teste-dich"{% endif %}>
       <td style="text-align:center; white-space:nowrap;">
-        {% if e.sa_flag %}<span class="flag-sa">SA</span>{% endif %}
-        {% if e.pers_flag %} <span class="flag-pers">Ich</span>{% endif %}
+        {% if e.teste_dich %}
+          <span class="flag-td">T</span>
+        {% else %}
+          {% if e.sa_flag %}<span class="flag-sa">SA</span>{% endif %}
+          {% if e.pers_flag %} <span class="flag-pers">Ich</span>{% endif %}
+        {% endif %}
       </td>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>

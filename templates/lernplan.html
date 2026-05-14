@@ -98,10 +98,15 @@
         </thead>
         <tbody>
         {% for e in uk.eintraege %}
-        <tr {% if e.ergaenzt %}style="background:#fffbeb;"{% endif %}>
-          <td style="text-align:center; white-space:nowrap; font-size:1rem;">
-            {% if e.sa_flag %}<span title="SA-Profil">★</span>{% endif %}
-            {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#dc2626;">⚠</span>{% endif %}
+        <tr {% if e.teste_dich %}style="background:#f0fdf4; font-style:italic;"
+            {% elif e.ergaenzt %}style="background:#fffbeb;"{% endif %}>
+          <td style="text-align:center; white-space:nowrap; font-size:.85rem;">
+            {% if e.teste_dich %}
+              <span style="background:#16a34a;color:#fff;padding:.1em .4em;border-radius:.3em;font-size:.75rem;font-style:normal;">T</span>
+            {% else %}
+              {% if e.sa_flag %}<span title="SA-Profil">★</span>{% endif %}
+              {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#dc2626;">⚠</span>{% endif %}
+            {% endif %}
           </td>
           <td>{{ e.aufgabennummer }}</td>
           <td style="max-width:22rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
