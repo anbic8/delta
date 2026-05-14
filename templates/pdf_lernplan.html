@@ -8,8 +8,8 @@
   .seite { page-break-after: always; }
   .seite:last-child { page-break-after: avoid; }
 
-  .kopf { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6pt; }
-  .kopf-logo { max-height: 2cm; max-width: 5cm; }
+  .kopf { margin-bottom: 6pt; overflow: hidden; }
+  .kopf-logo { float: right; max-height: 2cm; max-width: 5cm; margin-left: 8pt; }
   h1 { font-size: 14pt; margin: 0 0 2pt; }
   .meta { color: #555; font-size: 9pt; margin-bottom: 10pt; }
 
@@ -43,18 +43,16 @@
 {% for ls in schueler_liste %}
 <div class="seite">
   <div class="kopf">
-    <div>
-      <h1>Lernplan</h1>
-      <div class="meta">
-        <strong>{{ ls.name }}</strong>
-        &nbsp;·&nbsp; {{ leistung.titel }}
-        {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
-        &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
-      </div>
-    </div>
     {% if logo_b64 %}
     <img class="kopf-logo" src="data:image/png;base64,{{ logo_b64 }}" alt="">
     {% endif %}
+    <h1>Lernplan</h1>
+    <div class="meta">
+      <strong>{{ ls.name }}</strong>
+      &nbsp;·&nbsp; {{ leistung.titel }}
+      {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
+      &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
+    </div>
   </div>
 
   {% if hinweis %}
