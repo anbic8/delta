@@ -617,6 +617,10 @@ def auswertung_view(lid: int, request: Request, db: Session = Depends(get_db)):
     from app.routers.schriftliche_leistung import auswertung as api_auswertung
     data = api_auswertung(lid, db)
     extra = _auswertung_extra_stats(lid, db)
+    summen = [z.summe for z in data.schueler if z.summe is not None]
+    prozente = [z.prozent for z in data.schueler if z.prozent is not None]
+    extra["klassen_avg_summe"] = round(sum(summen) / len(summen), 1) if summen else None
+    extra["klassen_avg_prozent"] = round(sum(prozente) / len(prozente), 1) if prozente else None
     return templates.TemplateResponse(request, "auswertung.html", {"auswertung": data, **extra})
 
 

@@ -67,7 +67,17 @@
         {% else %}–{% endif %}
       </td>
       {% endfor %}
-      <td colspan="3"></td>
+      <td style="text-align:center;">
+        <strong>{{ klassen_avg_summe if klassen_avg_summe is not none else '–' }}</strong>
+      </td>
+      <td style="text-align:center;">
+        {{ klassen_avg_prozent if klassen_avg_prozent is not none else '–' }}
+      </td>
+      <td style="text-align:center;">
+        {% if auswertung.klassendurchschnitt is not none %}
+        <strong>{{ auswertung.klassendurchschnitt }}</strong>
+        {% else %}–{% endif %}
+      </td>
     </tr>
   </tfoot>
   {% endif %}
