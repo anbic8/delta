@@ -65,19 +65,45 @@ def berechne_lernplan(
     las = sorted(leistung.leistung_aufgaben, key=lambda x: x.reihenfolge)
 
     # ── SA-Profil ──────────────────────────────────────────────
-    sa_komp_punkte: dict[str, float] = {}
-    sa_la_komps: dict[int, set[str]] = {}   # la.id → set of kuerzel
-    for la in las:
-        kuerzels: set[str] = set()
-        for ak in la.aufgabe.kompetenzen:
-            k = ak.kompetenz.kuerzel
-            sa_komp_punkte[k] = sa_komp_punkte.get(k, 0.0) + la.aufgabe.max_punkte * ak.gewichtung
-            kuerzels.add(k)
-        sa_la_komps[la.id] = kuerzels
+    # Globales Profil (Fallback) + Profil pro (kapitel, uk) + pro kapitel
+    def _kompetenz_punkte(las_subset) -> dict[str, float]:
+        punkte: dict[str, float] = {}
+        for la in las_subset:
+            for ak in la.aufgabe.kompetenzen:
+                k = ak.kompetenz.kuerzel
+                punkte[k] = punkte.get(k, 0.0) + la.aufgabe.max_punkte * ak.gewichtung
+        return punkte
 
-    sa_gesamt = sum(sa_komp_punkte.values()) or 1.0
-    sa_profil = {k: round(v / sa_gesamt, 3) for k, v in sa_komp_punkte.items()}
-    sa_kuerzels_all: set[str] = set(sa_profil.keys())
+    def _to_profil(punkte: dict[str, float]) -> dict[str, float]:
+        gesamt = sum(punkte.values()) or 1.0
+        return {k: round(v / gesamt, 3) for k, v in punkte.items()}
+
+    sa_komp_punkte_global = _kompetenz_punkte(las)
+    sa_profil = _to_profil(sa_komp_punkte_global)  # für Anzeige + Fallback
+
+    # Index: (kapitel, uk) → profil, kapitel → profil
+    _sa_by_uk: dict[tuple[str, str], dict[str, float]] = {}
+    _sa_by_kap: dict[str, dict[str, float]] = {}
+    from collections import defaultdict as _dd
+    _by_uk: dict[tuple[str, str], list] = _dd(list)
+    _by_kap: dict[str, list] = _dd(list)
+    for la in las:
+        kap = la.aufgabe.kapitel or ""
+        uk = la.aufgabe.unterkapitel or ""
+        _by_uk[(kap, uk)].append(la)
+        _by_kap[kap].append(la)
+    for key, subset in _by_uk.items():
+        _sa_by_uk[key] = _to_profil(_kompetenz_punkte(subset))
+    for key, subset in _by_kap.items():
+        _sa_by_kap[key] = _to_profil(_kompetenz_punkte(subset))
+
+    def sa_profil_fuer(kap: str, uk: str) -> dict[str, float]:
+        """UK-spezifisches SA-Profil, Fallback: Kapitel, dann global."""
+        return _sa_by_uk.get((kap, uk)) or _sa_by_kap.get(kap) or sa_profil
+
+    sa_la_komps: dict[int, set[str]] = {}
+    for la in las:
+        sa_la_komps[la.id] = {ak.kompetenz.kuerzel for ak in la.aufgabe.kompetenzen}
 
     # ── Kapitel-Scope ─────────────────────────────────────────
     alle_kap = alle_buchkapitel(db)
@@ -130,13 +156,16 @@ def berechne_lernplan(
             for uk in sorted(gruppen[kap].keys()):
                 bas = gruppen[kap][uk]
 
+                # UK-spezifisches SA-Profil für dieses Unterkapitel
+                uk_sa_profil = sa_profil_fuer(kap, uk)
+
                 # Scoring: SA-Match + Persönlich-Match + Wichtigkeit
-                def score_ba(ba: Buchaufgabe) -> tuple[float, float, float, bool, bool]:
+                def score_ba(ba: Buchaufgabe, _sp=uk_sa_profil) -> tuple[float, float, float, bool, bool]:
                     ks = {bak.kompetenz.kuerzel for bak in ba.kompetenzen}
-                    sa_s = sum(sa_profil.get(k, 0.0) for k in ks) * 25
+                    sa_s = sum(_sp.get(k, 0.0) for k in ks) * 25
                     pers_s = len(ks & schwach) * 15
                     total = ba.wichtigkeit * 3 + sa_s + pers_s + (2 if ba.minimalfahrplan else 0)
-                    sa_f = any(sa_profil.get(k, 0.0) >= 0.05 for k in ks)
+                    sa_f = any(_sp.get(k, 0.0) >= 0.05 for k in ks)
                     pers_f = bool(ks & schwach)
                     return total, sa_s, pers_s, sa_f, pers_f
 
