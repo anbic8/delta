@@ -27,9 +27,9 @@
       {% for a in auswertung.aufgaben %}
       <th>{{ a.aufgabennummer }}<br><small>{{ a.max_punkte }}</small></th>
       {% endfor %}
-      <th>Summe</th>
-      <th>%</th>
-      <th>Note</th>
+      <th style="text-align:center;">Summe</th>
+      <th style="text-align:center;">%</th>
+      <th style="text-align:center;">Note</th>
     </tr>
   </thead>
   <tbody>
@@ -46,9 +46,9 @@
         {{ z.punkte_pro_aufgabe.get(a.aufgabennummer, '–') }}
       </td>
       {% endfor %}
-      <td><strong>{{ z.summe if z.summe is not none else '–' }}</strong></td>
-      <td>{{ z.prozent if z.prozent is not none else '–' }}</td>
-      <td>
+      <td style="text-align:center;"><strong>{{ z.summe if z.summe is not none else '–' }}</strong></td>
+      <td style="text-align:center;">{{ z.prozent if z.prozent is not none else '–' }}</td>
+      <td style="text-align:center;">
         {% if z.note %}
         <strong class="{% if z.note == 1 %}note-1{% elif z.note >= 5 %}note-5{% endif %}">{{ z.note }}</strong>
         {% else %}–{% endif %}
