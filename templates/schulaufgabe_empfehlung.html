@@ -97,7 +97,7 @@
         <td><small>{{ e.unterkapitel or '–' }}</small></td>
         <td>{{ e.aufgabennummer }}</td>
         <td>{{ e.beschreibung or '–' }}</td>
-        <td><span class="badge">{{ e.afb_niveau }}</span></td>
+        <td><span class="badge">{{ e.afb_niveau | afb_label }}</span></td>
         <td style="text-align:center;">
           {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
         </td>

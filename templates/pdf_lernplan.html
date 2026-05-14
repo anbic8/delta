@@ -43,7 +43,7 @@
 
   {% if sa_profil %}
   <div class="profil">
-    {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
+    {% for kuerzel, anteil in sa_profil | dictsort(by='value', reverse=true) %}
     <span class="chip">{{ kuerzel }} {{ (anteil * 100) | round(0) | int }}%</span>
     {% endfor %}
   </div>

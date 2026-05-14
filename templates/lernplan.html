@@ -36,7 +36,7 @@
 <details style="margin-bottom:1.5rem;" open>
   <summary style="font-weight:600; cursor:pointer;">SA-Kompetenzprofil</summary>
   <div style="display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.75rem;">
-    {% for kuerzel, anteil in sa_profil.items() | sort(attribute='1', reverse=true) %}
+    {% for kuerzel, anteil in sa_profil | dictsort(by='value', reverse=true) %}
     <span style="background:#dbeafe; color:#1d4ed8; padding:.25rem .6rem; border-radius:.4rem; font-size:.85rem; font-weight:600;">
       {{ kuerzel }} <span style="font-weight:normal; opacity:.7;">{{ (anteil * 100) | round(0) | int }}%</span>
     </span>

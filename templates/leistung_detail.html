@@ -45,7 +45,7 @@
           <td>{{ la.aufgabennummer }}</td>
           <td>{{ la.aufgabe.titel }}</td>
           <td>{{ la.aufgabe.max_punkte }}</td>
-          <td>{{ la.aufgabe.afb_niveau }}</td>
+          <td>{{ la.aufgabe.afb_niveau | afb_label }}</td>
           <td>
             <form method="post" action="/ui/schriftliche-leistungen/{{ leistung.id }}/aufgaben/{{ la.id }}/entfernen" style="display:inline;">
               <button type="submit" class="outline contrast" style="padding:.2rem .4rem; font-size:.75rem;">✕</button>

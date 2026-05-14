@@ -22,8 +22,8 @@
     </label>
     <label>AFB
       <select name="afb_niveau">
-        {% for afb in ['AFB_I','AFB_II','AFB_III'] %}
-        <option value="{{ afb }}" {% if ba.afb_niveau == afb %}selected{% endif %}>{{ afb }}</option>
+        {% for afb, label in [('AFB_I','Reproduzieren'),('AFB_II','Anwenden'),('AFB_III','Verallgemeinern')] %}
+        <option value="{{ afb }}" {% if ba.afb_niveau == afb %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </label>

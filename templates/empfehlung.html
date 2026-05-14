@@ -66,7 +66,7 @@
       <td>{{ e.aufgabennummer }}</td>
       <td class="hide-xs">{{ e.seite or '–' }}</td>
       <td class="hide-xs">{{ e.beschreibung or '–' }}</td>
-      <td><span class="badge">{{ e.afb_niveau.value }}</span></td>
+      <td><span class="badge">{{ e.afb_niveau.value | afb_label }}</span></td>
       <td class="hide-xs" style="text-align:center;">
         {% for _ in range(e.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - e.wichtigkeit) %}☆{% endfor %}
       </td>

@@ -115,7 +115,7 @@
       <td><strong>{{ ba.aufgabennummer }}</strong></td>
       <td>{{ ba.seite or '–' }}</td>
       <td>{{ ba.beschreibung or '–' }}</td>
-      <td><span class="badge">{{ ba.afb_niveau.value }}</span></td>
+      <td><span class="badge">{{ ba.afb_niveau.value | afb_label }}</span></td>
       <td>{% for _ in range(ba.wichtigkeit) %}★{% endfor %}{% for _ in range(3 - ba.wichtigkeit) %}☆{% endfor %}</td>
       <td style="text-align:center;">{% if ba.minimalfahrplan %}✓{% endif %}</td>
       <td>

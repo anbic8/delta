@@ -5,7 +5,7 @@
 <h2>{{ aufgabe.titel }}</h2>
 <p>
   Max. Punkte: <strong>{{ aufgabe.max_punkte }}</strong> ·
-  AFB: <span class="badge">{{ aufgabe.afb_niveau }}</span> ·
+  AFB: <span class="badge">{{ aufgabe.afb_niveau | afb_label }}</span> ·
   Angelegt: {{ aufgabe.erstellt_am.strftime('%d.%m.%Y') if aufgabe.erstellt_am else '' }}
 </p>
 
@@ -47,9 +47,9 @@
           <label>Max. Punkte <input type="number" name="max_punkte" step="0.5" value="{{ aufgabe.max_punkte }}" required></label>
           <label>AFB
             <select name="afb_niveau">
-              <option value="AFB_I" {% if aufgabe.afb_niveau == 'AFB_I' %}selected{% endif %}>AFB I</option>
-              <option value="AFB_II" {% if aufgabe.afb_niveau == 'AFB_II' %}selected{% endif %}>AFB II</option>
-              <option value="AFB_III" {% if aufgabe.afb_niveau == 'AFB_III' %}selected{% endif %}>AFB III</option>
+              <option value="AFB_I" {% if aufgabe.afb_niveau == 'AFB_I' %}selected{% endif %}>Reproduzieren</option>
+              <option value="AFB_II" {% if aufgabe.afb_niveau == 'AFB_II' %}selected{% endif %}>Anwenden</option>
+              <option value="AFB_III" {% if aufgabe.afb_niveau == 'AFB_III' %}selected{% endif %}>Verallgemeinern</option>
             </select>
           </label>
         </div>
