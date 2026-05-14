@@ -4,7 +4,7 @@
 <p><a href="/ui/schriftliche-leistungen/{{ leistung.id }}">← {{ leistung.titel }}</a></p>
 <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem; margin-bottom:1rem;">
   <h2 style="margin:0;">📖 Lernplan – {{ leistung.titel }}</h2>
-  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?von={{ von }}&bis={{ bis }}"
+  <a href="/ui/schriftliche-leistungen/{{ leistung.id }}/lernplan.pdf?von={{ von }}&bis={{ bis }}&hinweis={{ hinweis | urlencode }}"
      role="button" class="outline secondary">📄 Alle Lernpläne PDF</a>
 </div>
 
@@ -31,6 +31,9 @@
       </option>
       {% endfor %}
     </select>
+  </label>
+  <label style="margin:0; flex:100%; min-width:100%;">Hinweis / Arbeitsauftrag (erscheint auf jedem Lernplan)
+    <textarea name="hinweis" rows="2" placeholder="z.B. Bearbeite die Aufgaben bis zum nächsten Dienstag…" style="resize:vertical;">{{ hinweis }}</textarea>
   </label>
   <button type="submit" style="margin:0;">Lernpläne generieren</button>
 </form>
@@ -88,7 +91,6 @@
             <th style="width:2rem;"></th>
             <th style="width:3rem;">Nr.</th>
             <th>Beschreibung</th>
-            <th style="width:8rem;">Niveau</th>
             <th style="width:2.5rem;" title="Wichtigkeit">W.</th>
             {% if uk.eintraege | selectattr('ergaenzt') | list %}
             <th style="width:3rem;" title="Ergänzt zur Lückendeckung">Erg.</th>{% endif %}
@@ -102,9 +104,8 @@
             {% if e.pers_flag %}<span title="Persönliche Schwäche" style="color:#dc2626;">⚠</span>{% endif %}
           </td>
           <td>{{ e.aufgabennummer }}</td>
-          <td style="max-width:18rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+          <td style="max-width:22rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
               title="{{ e.beschreibung or '' }}">{{ e.beschreibung or '–' }}</td>
-          <td><span class="badge">{{ e.afb_label }}</span></td>
           <td style="text-align:center;">{{ e.wichtigkeit }}</td>
           {% if uk.eintraege | selectattr('ergaenzt') | list %}
           <td style="text-align:center; color:#92400e;">{% if e.ergaenzt %}+{% endif %}</td>{% endif %}

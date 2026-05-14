@@ -36,6 +36,10 @@
     {% if leistung.datum %}&nbsp;·&nbsp; {{ leistung.datum.strftime('%d.%m.%Y') }}{% endif %}
     &nbsp;·&nbsp; Klasse {{ klasse.jahrgangsstufe }}{{ klasse.buchstabe }}
   </div>
+  {% if hinweis %}
+  <div style="border:1pt solid #d1d5db; border-radius:3pt; padding:5pt 8pt; margin-bottom:8pt;
+              background:#f9fafb; font-size:9pt; white-space:pre-wrap;">{{ hinweis }}</div>
+  {% endif %}
 
   {% for pk in ls.kapitel %}
   <h2>{{ pk.kapitel }}</h2>
@@ -44,10 +48,9 @@
   <table>
     <thead>
       <tr>
-        <th style="width:1cm;"></th>
+        <th style="width:1.4cm;"></th>
         <th style="width:1.4cm;">Nr.</th>
         <th>Beschreibung</th>
-        <th style="width:2.4cm;">Niveau</th>
       </tr>
     </thead>
     <tbody>
@@ -59,7 +62,6 @@
       </td>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>
-      <td><span class="badge">{{ e.afb_label }}</span></td>
     </tr>
     {% endfor %}
     </tbody>
