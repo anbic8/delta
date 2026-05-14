@@ -19,6 +19,8 @@
   th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
   td { padding: 2pt 4pt; border: 1px solid #ddd; vertical-align: top; }
   .badge { border: 1px solid #ccc; padding: 0pt 3pt; border-radius: 2pt; font-size: 7.5pt; }
+  .flag-sa   { color: #92400e; font-weight: bold; }
+  .flag-pers { color: #991b1b; font-weight: bold; }
 </style>
 </head>
 <body>
@@ -40,6 +42,7 @@
   <table>
     <thead>
       <tr>
+        <th style="width:1cm;"></th>
         <th style="width:1.4cm;">Nr.</th>
         <th>Beschreibung</th>
         <th style="width:2.4cm;">Niveau</th>
@@ -48,6 +51,10 @@
     <tbody>
     {% for e in uk.eintraege %}
     <tr>
+      <td style="text-align:center; white-space:nowrap;">
+        {% if e.sa_flag %}<span class="flag-sa">★</span>{% endif %}
+        {% if e.pers_flag %}<span class="flag-pers"> ⚠</span>{% endif %}
+      </td>
       <td>{{ e.aufgabennummer }}</td>
       <td>{{ e.beschreibung or '–' }}</td>
       <td><span class="badge">{{ e.afb_label }}</span></td>
