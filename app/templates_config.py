@@ -27,8 +27,12 @@ templates.env.filters["punkte_marker"] = punkte_marker
 _AFB_LABEL = {"AFB_I": "Reproduzieren", "AFB_II": "Anwenden", "AFB_III": "Verallgemeinern"}
 
 
-def afb_label(value: str) -> str:
-    return _AFB_LABEL.get(str(value), str(value))
+def afb_label(value) -> str:
+    # .value für Enum-Objekte, dann split für "EnumClass.KEY"-Format
+    key = getattr(value, "value", None) or str(value)
+    if key not in _AFB_LABEL and "." in key:
+        key = key.rsplit(".", 1)[-1]
+    return _AFB_LABEL.get(key, key)
 
 
 templates.env.filters["afb_label"] = afb_label
