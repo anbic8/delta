@@ -292,52 +292,29 @@ def schueler_loeschen(s_id: int, db: Session = Depends(get_db)):
 
 @router.get("/schueler/{s_id}")
 def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db)):
-    s = db.get(Schueler, s_id)
-    kl = db.get(Klasse, s.klasse_id)
-    noten = db.query(MuendlicheNote).filter(MuendlicheNote.schueler_id == s_id, MuendlicheNote.geloescht_am.is_(None)).order_by(MuendlicheNote.datum.desc()).all()
-
-    schnitt_data = type("S", (), {
-        "schnitt_kleine_ln": notenschnitt.schnitt_kleine_ln(s_id, db),
-        "schnitt_grosse_ln": notenschnitt.schnitt_grosse_ln(s_id, db),
-        "gesamtschnitt": notenschnitt.gesamtschnitt(s_id, db),
-    })()
-
+    daten = _schueler_bericht_daten(s_id, db)
+    s = daten["schueler"]
     profil_data = kp_service.berechne_profil(s_id, db)
     meta = kp_service.metadaten(s_id, db)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
-    scores_by_kuerzel = {}
-    profil_scores = []
-    getestete_kuerzels = set()
-    for k in alle_k:
-        pct = profil_data.get(k.id, 0)
-        scores_by_kuerzel[k.kuerzel] = pct
-        if k.id in profil_data:
-            getestete_kuerzels.add(k.kuerzel)
-            profil_scores.append(type("Sc", (), {
-                "kompetenz_id": k.id, "kuerzel": k.kuerzel,
-                "bezeichnung": k.bezeichnung, "prozent": pct,
-                "status": ("kritisch" if pct == 0 else "schwach" if pct < 60 else "ok"),
-            })())
-
+    scores_by_kuerzel = {k.kuerzel: profil_data.get(k.id, 0) for k in alle_k}
+    getestete_kuerzels = {k.kuerzel for k in alle_k if k.id in profil_data}
+    profil_scores = [
+        type("Sc", (), {"kompetenz_id": k.id, "kuerzel": k.kuerzel,
+             "bezeichnung": k.bezeichnung, "prozent": profil_data.get(k.id, 0),
+             "status": ("kritisch" if profil_data.get(k.id, 0) == 0
+                        else "schwach" if profil_data.get(k.id, 0) < 60 else "ok")})()
+        for k in alle_k if k.id in profil_data
+    ]
     profil = type("P", (), {
         "scores": profil_scores,
         "leistungen_mit_daten": meta["leistungen_mit_daten"],
         "leistungen_gesamt": meta["leistungen_gesamt"],
     })()
-
-    from app.models.grundwissen_abfrage import SchuelerGrundwissenAbfrage
-    gw_abfragen = (
-        db.query(SchuelerGrundwissenAbfrage)
-        .filter(SchuelerGrundwissenAbfrage.schueler_id == s_id)
-        .order_by(SchuelerGrundwissenAbfrage.datum.desc())
-        .all()
-    )
-
     return templates.TemplateResponse(request, "schueler_dashboard.html", {
-        "schueler": s, "klasse": kl,
-        "muendliche_noten": noten, "schnitt": schnitt_data,
-        "profil": profil, "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
-        "gw_abfragen": gw_abfragen,
+        **daten,
+        "profil": profil,
+        "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
         "msg": request.query_params.get("msg"),
     })
 
@@ -985,6 +962,102 @@ def _radar_fuer_schueler(s_id: int, db) -> tuple[dict, bool]:
     return _radar(scores, getestete=getestete), bool(profil)
 
 
+def _schriftliche_ergebnisse_fuer_schueler(s_id: int, db) -> list[dict]:
+    """Alle schriftlichen Leistungen der Klasse mit Note/Prozent für diesen Schüler."""
+    from app.models.schriftliche_leistung import SchriftlicheLeistung
+    from app.models.schueler_ergebnis import SchuelerErgebnis
+    from app.services.notenberechnung import punkte_zu_note, ist_grenzfall
+
+    s = db.get(Schueler, s_id)
+    if not s:
+        return []
+    leistungen = (
+        db.query(SchriftlicheLeistung)
+        .filter(SchriftlicheLeistung.klasse_id == s.klasse_id)
+        .order_by(SchriftlicheLeistung.datum.desc())
+        .all()
+    )
+    result = []
+    for l in leistungen:
+        if l.detailliert:
+            la_ids = [la.id for la in l.leistung_aufgaben]
+            if not la_ids:
+                continue
+            ergebnisse = (
+                db.query(SchuelerErgebnis)
+                .filter(
+                    SchuelerErgebnis.schueler_id == s_id,
+                    SchuelerErgebnis.leistung_aufgabe_id.in_(la_ids),
+                ).all()
+            )
+            if not ergebnisse:
+                continue
+            summe = sum(e.erreichte_punkte for e in ergebnisse if e.erreichte_punkte is not None)
+            max_p = sum(la.aufgabe.max_punkte for la in l.leistung_aufgaben)
+            prozent = round(summe / max_p * 100, 1) if max_p > 0 else 0
+            note = int(punkte_zu_note(summe, max_p))
+            grenzfall = ist_grenzfall(summe, max_p)
+        else:
+            ergebnis = (
+                db.query(SchuelerErgebnis)
+                .filter(
+                    SchuelerErgebnis.schueler_id == s_id,
+                    SchuelerErgebnis.schriftliche_leistung_id == l.id,
+                ).first()
+            )
+            if not ergebnis:
+                continue
+            note = ergebnis.pauschalnote
+            summe = None
+            max_p = None
+            prozent = None
+            grenzfall = False
+        result.append({
+            "leistung": l, "note": note,
+            "summe": summe, "max_p": max_p,
+            "prozent": prozent, "grenzfall": grenzfall,
+        })
+    return result
+
+
+def _schueler_bericht_daten(s_id: int, db) -> dict:
+    """Sammelt alle Daten für den Schüler-Bericht (Web + PDF)."""
+    from app.models.grundwissen_abfrage import SchuelerGrundwissenAbfrage
+    s = db.get(Schueler, s_id)
+    kl = db.get(Klasse, s.klasse_id)
+    noten = (
+        db.query(MuendlicheNote)
+        .filter(MuendlicheNote.schueler_id == s_id, MuendlicheNote.geloescht_am.is_(None))
+        .order_by(MuendlicheNote.datum.desc()).all()
+    )
+    profil_raw = kp_service.berechne_profil(s_id, db)
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
+    kompetenz_scores = [
+        {"kuerzel": k.kuerzel, "bezeichnung": k.bezeichnung,
+         "prozent": profil_raw.get(k.id, 0),
+         "status": ("kritisch" if profil_raw.get(k.id, 0) == 0 else
+                    "schwach" if profil_raw.get(k.id, 0) < 60 else "ok")}
+        for k in alle_k if k.id in profil_raw
+    ]
+    gw_abfragen = (
+        db.query(SchuelerGrundwissenAbfrage)
+        .filter(SchuelerGrundwissenAbfrage.schueler_id == s_id)
+        .order_by(SchuelerGrundwissenAbfrage.datum.desc()).all()
+    )
+    return {
+        "schueler": s, "klasse": kl,
+        "muendliche_noten": noten,
+        "schriftliche_ergebnisse": _schriftliche_ergebnisse_fuer_schueler(s_id, db),
+        "kompetenz_scores": kompetenz_scores,
+        "gw_abfragen": gw_abfragen,
+        "schnitt": type("S", (), {
+            "schnitt_kleine_ln": notenschnitt.schnitt_kleine_ln(s_id, db),
+            "schnitt_grosse_ln": notenschnitt.schnitt_grosse_ln(s_id, db),
+            "gesamtschnitt": notenschnitt.gesamtschnitt(s_id, db),
+        })(),
+    }
+
+
 @router.get("/schueler/{s_id}/schulaufgabe/{lid}/empfehlung.pdf")
 def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depends(get_db)):
     from app.services.schulaufgabe_empfehlung import empfehlungen_fuer_schulaufgabe
@@ -1000,6 +1073,48 @@ def schulaufgabe_empfehlung_pdf_einzeln(s_id: int, lid: int, db: Session = Depen
     dateiname = f"Uebung_{schueler.nachname}_{leistung.titel}.pdf".replace(" ", "_")
     return Response(pdf_bytes, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{dateiname}"'})
+
+
+@router.get("/schueler/{s_id}/bericht.pdf")
+def schueler_bericht_pdf(s_id: int, db: Session = Depends(get_db)):
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    from datetime import date
+    daten = _schueler_bericht_daten(s_id, db)
+    html = _jinja_env().get_template("pdf_schueler_bericht.html").render(
+        schueler_items=[daten],
+        heute=date.today().strftime("%d.%m.%Y"),
+    )
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    s = daten["schueler"]
+    name = f"Bericht_{s.nachname}_{s.vorname}.pdf".replace(" ", "_")
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+@router.get("/klassen/{kl_id}/schueler-berichte.pdf")
+def klasse_schueler_berichte_pdf(kl_id: int, db: Session = Depends(get_db)):
+    from app.services.pdf_export import _jinja_env
+    from fastapi.responses import Response
+    import weasyprint
+    from datetime import date
+    schueler_qs = (
+        db.query(Schueler)
+        .filter(Schueler.klasse_id == kl_id, Schueler.geloescht_am.is_(None))
+        .order_by(Schueler.nachname, Schueler.vorname)
+        .all()
+    )
+    items = [_schueler_bericht_daten(s.id, db) for s in schueler_qs]
+    html = _jinja_env().get_template("pdf_schueler_bericht.html").render(
+        schueler_items=items,
+        heute=date.today().strftime("%d.%m.%Y"),
+    )
+    pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
+    kl = db.get(Klasse, kl_id)
+    name = f"Berichte_{kl.jahrgangsstufe}{kl.buchstabe}.pdf"
+    return Response(pdf_bytes, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{name}"'})
 
 
 @router.post("/schriftliche-leistungen/{lid}/loeschen")

@@ -3,7 +3,10 @@
 {% block content %}
 <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:.5rem; margin-bottom:.5rem;">
   <p style="margin:0;"><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
-  <a href="/ui/schueler/{{ schueler.id }}/verlauf" class="outline secondary" role="button" style="font-size:.85rem; padding:.3rem .75rem;">📈 Verlauf</a>
+  <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+    <a href="/ui/schueler/{{ schueler.id }}/verlauf" class="outline secondary" role="button" style="font-size:.85rem; padding:.3rem .75rem;">📈 Verlauf</a>
+    <a href="/ui/schueler/{{ schueler.id }}/bericht.pdf" class="outline secondary" role="button" style="font-size:.85rem; padding:.3rem .75rem;">📄 Bericht PDF</a>
+  </div>
 </div>
 <h2>{{ schueler.nachname }}, {{ schueler.vorname }}</h2>
 <p>Klasse: <strong>{{ klasse.name }}</strong> · Pseudonym: <code>{{ schueler.pseudonym_id }}</code></p>
@@ -29,6 +32,43 @@
         </tr>
       </tbody>
     </table>
+
+    <!-- Schriftliche Leistungen -->
+    <h4 style="margin-top:1.5rem;">Schriftliche Leistungen</h4>
+    {% if schriftliche_ergebnisse %}
+    <table style="font-size:.88rem;">
+      <thead>
+        <tr>
+          <th>Datum</th><th>Titel</th><th>Art</th>
+          <th style="text-align:center;">Note</th>
+          <th style="text-align:center;">%</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for e in schriftliche_ergebnisse %}
+      <tr {% if e.grenzfall %}class="grenzfall"{% endif %}>
+        <td style="white-space:nowrap;">{{ e.leistung.datum }}</td>
+        <td>{{ e.leistung.titel }}{% if e.grenzfall %} <span title="Grenzfall">🟡</span>{% endif %}</td>
+        <td>
+          {% if e.leistung.art == 'schulaufgabe' %}<span class="badge badge-sa">SA</span>
+          {% elif e.leistung.art == 'kleiner_ln' %}<span class="badge badge-ln">Kl. LN</span>
+          {% else %}<span class="badge badge-test">Test</span>{% endif %}
+        </td>
+        <td style="text-align:center;">
+          <strong class="{% if e.note == 1 %}note-1{% elif e.note is not none and e.note >= 5 %}note-5{% endif %}">
+            {{ e.note if e.note is not none else '–' }}
+          </strong>
+        </td>
+        <td style="text-align:center; color:#6c757d; font-size:.82rem;">
+          {{ e.prozent if e.prozent is not none else '–' }}
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#6c757d; font-size:.88rem;">Noch keine schriftlichen Ergebnisse.</p>
+    {% endif %}
 
     <!-- Mündliche Noten -->
     <h4 style="margin-top:1.5rem;">Mündliche Noten</h4>

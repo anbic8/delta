@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 1.8cm 1.6cm; }
+  body { font-family: Liberation Sans, Arial, sans-serif; font-size: 9.5pt; color: #1a1a1a; }
+  .seite { page-break-after: always; }
+  .seite:last-child { page-break-after: avoid; }
+
+  .kopf { overflow: hidden; margin-bottom: 8pt; border-bottom: 1.5pt solid #3b82f6; padding-bottom: 5pt; }
+  .kopf h1 { font-size: 15pt; margin: 0 0 1pt; }
+  .kopf .meta { font-size: 8.5pt; color: #555; }
+
+  h2 { font-size: 10pt; margin: 10pt 0 3pt; border-left: 3pt solid #3b82f6; padding-left: 5pt; }
+  h3 { font-size: 9pt; margin: 7pt 0 2pt; color: #374151; }
+
+  table { width: 100%; border-collapse: collapse; margin: 2pt 0 6pt; font-size: 8.5pt; }
+  th { background: #e9ecef; text-align: left; padding: 2pt 4pt; border: 1px solid #ccc; font-size: 8pt; }
+  td { padding: 2pt 4pt; border: 1px solid #ddd; vertical-align: top; }
+  td.center { text-align: center; }
+
+  .badge-sa   { background:#dbeafe; color:#1e3a8a; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+  .badge-ln   { background:#f3f4f6; color:#374151; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+  .badge-test { background:#ede9fe; color:#5b21b6; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+  .note-1  { color: #15803d; font-weight: bold; }
+  .note-5  { color: #b91c1c; font-weight: bold; }
+  .grenzfall td { background: #fffbeb; }
+
+  .komp-bar-wrap { width: 6cm; display: inline-block; vertical-align: middle; }
+  .komp-bar { height: 0.45cm; border-radius: 2pt; }
+
+  .gw-gewusst   { background:#dcfce7; color:#15803d; font-weight:bold; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+  .gw-teilweise { background:#fef9c3; color:#854d0e; font-weight:bold; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+  .gw-nicht     { background:#fee2e2; color:#991b1b; font-weight:bold; font-size:7pt; padding:0 3pt; border-radius:2pt; }
+
+  .schnitt-box { float: right; border: 1pt solid #e5e7eb; border-radius: 3pt; padding: 4pt 8pt; font-size: 8.5pt; text-align: center; }
+  .schnitt-box .wert { font-size: 14pt; font-weight: bold; color: #1d4ed8; display: block; }
+</style>
+</head>
+<body>
+
+{% for item in schueler_items %}
+<div class="seite">
+
+  <div class="kopf">
+    <div class="schnitt-box">
+      <span class="wert">{{ item.schnitt.gesamtschnitt if item.schnitt.gesamtschnitt else '–' }}</span>
+      Gesamtschnitt
+    </div>
+    <h1>{{ item.schueler.nachname }}, {{ item.schueler.vorname }}</h1>
+    <div class="meta">
+      Klasse {{ item.klasse.jahrgangsstufe }}{{ item.klasse.buchstabe }} ·
+      Fach: {{ item.klasse.fach }} ·
+      Erstellt: {{ heute }}
+    </div>
+  </div>
+
+  <!-- Notenschnitte -->
+  <h2>Notenschnitte</h2>
+  <table style="width:auto; min-width:12cm;">
+    <tbody>
+      <tr>
+        <td>Große LN (Schulaufgaben)</td>
+        <td class="center"><strong>{{ item.schnitt.schnitt_grosse_ln if item.schnitt.schnitt_grosse_ln else '–' }}</strong></td>
+      </tr>
+      <tr>
+        <td>Kleine LN (mündl. + schriftl.)</td>
+        <td class="center"><strong>{{ item.schnitt.schnitt_kleine_ln if item.schnitt.schnitt_kleine_ln else '–' }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Schriftliche Leistungen -->
+  {% if item.schriftliche_ergebnisse %}
+  <h2>Schriftliche Leistungen</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2cm;">Datum</th>
+        <th>Titel</th>
+        <th style="width:1.5cm;">Art</th>
+        <th style="width:1.2cm; text-align:center;">Note</th>
+        <th style="width:1.2cm; text-align:center;">%</th>
+        <th style="width:1.8cm; text-align:center;">Punkte</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for e in item.schriftliche_ergebnisse %}
+    <tr {% if e.grenzfall %}class="grenzfall"{% endif %}>
+      <td>{{ e.leistung.datum.strftime('%d.%m.%Y') if e.leistung.datum else '–' }}</td>
+      <td>{{ e.leistung.titel }}</td>
+      <td>
+        {% if e.leistung.art == 'schulaufgabe' %}<span class="badge-sa">SA</span>
+        {% elif e.leistung.art == 'kleiner_ln' %}<span class="badge-ln">Kl. LN</span>
+        {% else %}<span class="badge-test">Test</span>{% endif %}
+      </td>
+      <td class="center">
+        <strong class="{{ 'note-1' if e.note == 1 else ('note-5' if e.note is not none and e.note >= 5 else '') }}">
+          {{ e.note if e.note is not none else '–' }}
+        </strong>
+      </td>
+      <td class="center">{{ e.prozent if e.prozent is not none else '–' }}</td>
+      <td class="center">
+        {% if e.summe is not none %}{{ e.summe }}/{{ e.max_p }}{% else %}–{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Mündliche Noten -->
+  {% if item.muendliche_noten %}
+  <h2>Mündliche Noten</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2cm;">Datum</th>
+        <th style="width:1.5cm; text-align:center;">Note</th>
+        <th style="width:1.5cm; text-align:center;">Gew.</th>
+        <th>Beschreibung</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for n in item.muendliche_noten %}
+    <tr>
+      <td>{{ n.datum }}</td>
+      <td class="center"><strong>{{ n.note }}</strong></td>
+      <td class="center">×{{ n.gewichtung }}</td>
+      <td>{{ n.beschreibung or '' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Kompetenzprofil -->
+  {% if item.kompetenz_scores %}
+  <h2>Kompetenzprofil</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:1.5cm;">Komp.</th>
+        <th>Bezeichnung</th>
+        <th style="width:6.5cm;">Profil</th>
+        <th style="width:1.2cm; text-align:center;">%</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for sc in item.kompetenz_scores %}
+    {% set farbe = '#2d6a4f' if sc.status == 'ok' else ('#c1121f' if sc.status == 'kritisch' else '#e07b39') %}
+    <tr>
+      <td><strong style="color:{{ farbe }};">{{ sc.kuerzel }}</strong></td>
+      <td>{{ sc.bezeichnung }}</td>
+      <td style="padding:3pt 4pt;">
+        <div class="komp-bar-wrap">
+          <div class="komp-bar" style="width:{{ sc.prozent }}%; background:{{ farbe }};"></div>
+        </div>
+      </td>
+      <td class="center" style="color:{{ farbe }}; font-weight:{{ 'bold' if sc.status != 'ok' else 'normal' }};">
+        {{ sc.prozent }}%
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <!-- Grundwissen-Abfragen -->
+  {% if item.gw_abfragen %}
+  <h2>Grundwissen-Abfragen</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width:2cm;">Datum</th>
+        <th>Grundwissen</th>
+        <th style="width:3cm;">Ergebnis</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for a in item.gw_abfragen %}
+    <tr>
+      <td>{{ a.datum.strftime('%d.%m.%Y') }}</td>
+      <td>
+        {% if a.grundwissen %}
+          <small style="color:#6b7280;">{{ a.grundwissen.kapitel }}{% if a.grundwissen.unterkapitel %} › {{ a.grundwissen.unterkapitel }}{% endif %}</small>
+          {{ a.grundwissen.aufgabe | truncate(70) }}
+        {% else %}
+          {{ a.grundwissen_text or '–' }}
+        {% endif %}
+      </td>
+      <td>
+        {% if a.ergebnis.value == 'gewusst' %}<span class="gw-gewusst">gewusst</span>
+        {% elif a.ergebnis.value == 'teilweise_gewusst' %}<span class="gw-teilweise">teilweise gewusst</span>
+        {% else %}<span class="gw-nicht">nicht gewusst</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+</div>
+{% endfor %}
+
+</body>
+</html>
