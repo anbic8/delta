@@ -122,7 +122,11 @@ async def aufgabe_vorschlag(
 
         start = raw.find("{")
         end = raw.rfind("}") + 1
-        data = json.loads(raw[start:end] if start >= 0 and end > start else raw)
+        snippet = raw[start:end] if start >= 0 and end > start else raw
+        # Ungültige Backslash-Sequenzen (z.B. LaTeX \frac) doppelt escapen
+        import re
+        snippet = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', snippet)
+        data = json.loads(snippet)
 
         return {
             "loesung": str(data.get("loesung") or ""),
