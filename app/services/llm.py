@@ -2,31 +2,61 @@ from __future__ import annotations
 import json
 
 
-# ── Prompt ────────────────────────────────────────────────────
+# ── Kompetenz-Beschreibungen ──────────────────────────────────
+# Merkmale die aus dem Aufgabentext erkennbar sind
 
-_AFB_HINWEIS = (
-    "AFB_I (Reproduzieren): Fakten, Definitionen, Standardverfahren direkt abrufen. "
-    "AFB_II (Anwenden): bekannte Methoden auf neue Situationen übertragen. "
-    "AFB_III (Verallgemeinern): Probleme lösen, modellieren, Zusammenhänge erkennen."
+_KOMP_BESCHREIBUNGEN = {
+    "K1": "Argumentieren/Begründen: Aufgabe fragt nach Begründung, Beweis, 'Warum', 'Zeige dass', Erklärung",
+    "K2": "Problemlösen: unbekannter Lösungsweg, mehrere Schritte nötig, kreative Strategie gefragt",
+    "K3": "Modellieren: Sachaufgabe mit realem Kontext, Übersetzung in Mathematik und zurück",
+    "K4": "Darstellen: Tabelle, Graph, Diagramm, geometrische Figur zeichnen oder lesen",
+    "K5": "Kommunizieren: Beschreiben, Erläutern, Fachbegriffe verwenden, Text lesen/verfassen",
+    "K6": "Rechnen/Operieren: Berechnung, Algorithmus, Formel anwenden, Gleichung lösen",
+}
+
+_AFB_BESCHREIBUNGEN = (
+    "AFB_I (Reproduzieren): Formel direkt einsetzen, Definition nennen, "
+    "Standardverfahren ohne Variation anwenden (z.B. 'Berechne...', 'Gib an...').\n"
+    "AFB_II (Anwenden): bekannte Methode auf neue Situation übertragen, "
+    "mehrere Schritte kombinieren (z.B. 'Löse...', 'Bestimme...', Sachaufgaben).\n"
+    "AFB_III (Verallgemeinern): Zusammenhänge erkennen, begründen, modellieren, "
+    "Strategie selbst entwickeln (z.B. 'Begründe...', 'Untersuche...', 'Beweise...')."
 )
 
-_JSON_SCHEMA = (
-    '{"loesung":"...","afb_niveau":"AFB_I|AFB_II|AFB_III",'
-    '"kapitel":"...","unterkapitel":"...","kompetenzen":["K1",...]}'
-)
 
+def _system_prompt(uk_paare: list[tuple[str, str]], kompetenzen: list[dict]) -> str:
+    # Kompetenz-Beschreibungen (nutzt eigene Texte oder DB-Bezeichnung als Fallback)
+    komp_lines = []
+    for k in kompetenzen:
+        beschr = _KOMP_BESCHREIBUNGEN.get(k["kuerzel"], k["bezeichnung"])
+        komp_lines.append(f"  {k['kuerzel']}: {beschr}")
+    komp_str = "\n".join(komp_lines)
 
-def _system_prompt(kapitel_liste: list[str], kompetenzen: list[dict]) -> str:
-    komp = ", ".join(f"{k['kuerzel']}={k['bezeichnung']}" for k in kompetenzen)
-    kap = " | ".join(kapitel_liste[:40])
-    return (
-        "Du bist Mathematiklehrer am bayerischen Gymnasium. "
-        "Antworte NUR mit gültigem JSON, kein Text davor oder danach.\n"
-        f"Schema: {_JSON_SCHEMA}\n\n"
-        f"AFB: {_AFB_HINWEIS}\n\n"
-        f"Kompetenzen (wähle passende): {komp}\n\n"
-        f"Kapitel (wähle das passendste): {kap}"
-    )
+    # Kapitel/Unterkapitel-Paare (max 60 um Tokens zu sparen)
+    kap_uk_lines = []
+    seen_kap = set()
+    for kap, uk in uk_paare[:60]:
+        if kap not in seen_kap:
+            kap_uk_lines.append(f"  Kapitel: \"{kap}\"")
+            seen_kap.add(kap)
+        if uk:
+            kap_uk_lines.append(f"    Unterkapitel: \"{uk}\"")
+    kap_str = "\n".join(kap_uk_lines)
+
+    return f"""Du bist Mathematiklehrer am bayerischen Gymnasium (Klasse 5–13).
+Analysiere die Aufgabe und antworte NUR mit gültigem JSON – kein Text davor oder danach.
+
+JSON-Schema (alle Felder PFLICHT):
+{{"loesung":"Musterlösung mit Rechenweg","afb_niveau":"AFB_I|AFB_II|AFB_III","kapitel":"exakt wie unten","unterkapitel":"exakt wie unten","kompetenzen":["K1","K6"]}}
+
+AFB-Niveau – wähle anhand dieser Merkmale:
+{_AFB_BESCHREIBUNGEN}
+
+Kompetenzen – wähle ALLE zutreffenden (meist 1–3):
+{komp_str}
+
+Verfügbare Kapitel und Unterkapitel (wähle exakt passende Bezeichnung):
+{kap_str}"""
 
 
 def _user_msg(aufgabenstellung: str) -> str:
@@ -71,17 +101,17 @@ async def _claude(system: str, user: str) -> str:
 
 async def aufgabe_vorschlag(
     aufgabenstellung: str,
-    kapitel_liste: list[str],
+    uk_paare: list[tuple[str, str]],
     kompetenzen: list[dict],
 ) -> dict:
     """
-    Gibt Vorschläge zurück:
-      loesung, afb_niveau, kapitel, unterkapitel, kompetenzen (list[str])
+    uk_paare: Liste von (kapitel, unterkapitel) aus den Buchaufgaben.
+    Gibt zurück: {loesung, afb_niveau, kapitel, unterkapitel, kompetenzen}
     oder {"error": "..."} bei Fehler.
     """
     from app.config import settings
 
-    system = _system_prompt(kapitel_liste, kompetenzen)
+    system = _system_prompt(uk_paare, kompetenzen)
     user = _user_msg(aufgabenstellung)
 
     try:
@@ -90,7 +120,6 @@ async def aufgabe_vorschlag(
         else:
             raw = await _ollama(system, user)
 
-        # JSON extrahieren (Modell könnte trotzdem extra Text liefern)
         start = raw.find("{")
         end = raw.rfind("}") + 1
         data = json.loads(raw[start:end] if start >= 0 and end > start else raw)

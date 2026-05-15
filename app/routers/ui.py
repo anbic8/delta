@@ -1297,11 +1297,18 @@ async def aufgabe_llm_vorschlag(
     db: Session = Depends(get_db),
 ):
     from app.services.llm import aufgabe_vorschlag
+    from app.models.buchaufgabe import Buchaufgabe
     from fastapi.responses import JSONResponse
-    kapitel = _kapitel_liste(db)
+    import sqlalchemy as sa_mod
+    uk_paare = (
+        db.query(Buchaufgabe.kapitel, Buchaufgabe.unterkapitel)
+        .distinct()
+        .order_by(Buchaufgabe.kapitel, Buchaufgabe.unterkapitel)
+        .all()
+    )
     komps = [{"kuerzel": k.kuerzel, "bezeichnung": k.bezeichnung}
              for k in db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()]
-    result = await aufgabe_vorschlag(aufgabenstellung, kapitel, komps)
+    result = await aufgabe_vorschlag(aufgabenstellung, uk_paare, komps)
     return JSONResponse(result)
 
 
