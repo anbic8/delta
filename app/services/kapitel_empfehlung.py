@@ -174,6 +174,47 @@ def _score_kandidaten(kandidaten, schwach_k_ids, ziel, anzahl):
     return _pick_aufgaben(kandidaten, schwach_k_ids, ziel, anzahl)
 
 
+def grundwissen_vorschlaege(kl_id: int, kapitel: str, db: Session) -> dict:
+    """
+    Schlägt Grundwissen-Aufgaben vor:
+    - Buchaufgaben mit 'Grundwissen'-Beschreibung für dieses Kapitel,
+      gefiltert nach Jahrgangsstufe über den Buchnamen
+    - Aufgabenpool-Aufgaben mit Tag 'Übung', passend zur Jahrgangsstufe
+    """
+    from app.models.buchaufgabe import Buchaufgabe
+    from app.models.aufgabe import Aufgabe
+    from app.models.klasse import Klasse
+
+    kl = db.get(Klasse, kl_id)
+    js = kl.jahrgangsstufe
+
+    buch_gw = (
+        db.query(Buchaufgabe)
+        .filter(
+            Buchaufgabe.kapitel == kapitel,
+            Buchaufgabe.beschreibung.ilike("grundwissen%"),
+            Buchaufgabe.buch.ilike(f"%{js}%"),
+        )
+        .order_by(Buchaufgabe.unterkapitel, Buchaufgabe.aufgabennummer)
+        .all()
+    )
+
+    uebung_qs = (
+        db.query(Aufgabe)
+        .filter(
+            Aufgabe.tags.ilike("%übung%"),
+            Aufgabe.jahrgangsstufe == js,
+        )
+        .order_by(Aufgabe.kapitel, Aufgabe.titel)
+        .all()
+    )
+    # Kapitel-match bevorzugen, sonst alle passenden Jahrgangsstufe
+    uebung_kap = [a for a in uebung_qs if a.kapitel == kapitel]
+    uebung = uebung_kap if uebung_kap else uebung_qs
+
+    return {"buch_gw": buch_gw, "uebung": uebung}
+
+
 def empfehlungen_pro_schueler(
     klasse_id: int,
     kapitel: str,

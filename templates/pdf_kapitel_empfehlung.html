@@ -73,5 +73,44 @@
 {% endif %}
 {% endfor %}
 
+{% if gw_vorschlaege and (gw_vorschlaege.buch_gw or gw_vorschlaege.uebung) %}
+<h2 style="border-left:3pt solid #059669; padding-left:5pt; border-bottom:none; color:#065f46;">Grundwissen-Aufgaben</h2>
+
+{% if gw_vorschlaege.buch_gw %}
+<h3 style="font-size:9.5pt; margin:6pt 0 2pt;">Aus dem Buch (Grundwissen-Abschnitte)</h3>
+<table>
+  <thead><tr><th style="width:1.5cm;">Nr.</th><th style="width:3cm;">Unterkapitel</th><th>Beschreibung</th><th style="width:1cm;">S.</th><th style="width:2cm;">AFB</th></tr></thead>
+  <tbody>
+  {% for ba in gw_vorschlaege.buch_gw %}
+  <tr>
+    <td><strong>{{ ba.aufgabennummer }}</strong></td>
+    <td style="color:#555; font-size:8pt;">{{ ba.unterkapitel or '–' }}</td>
+    <td>{{ ba.beschreibung or '–' }}</td>
+    <td>{{ ba.seite or '–' }}</td>
+    <td><span class="badge">{{ ba.afb_niveau.value | afb_label }}</span></td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+{% if gw_vorschlaege.uebung %}
+<h3 style="font-size:9.5pt; margin:6pt 0 2pt;">Aus dem Aufgabenpool (Tag: Übung)</h3>
+<table>
+  <thead><tr><th>Titel</th><th style="width:2cm;">AFB</th><th style="width:1.5cm;">Max. P.</th><th style="width:3cm;">Kapitel</th></tr></thead>
+  <tbody>
+  {% for a in gw_vorschlaege.uebung %}
+  <tr>
+    <td>{{ a.titel }}</td>
+    <td><span class="badge">{{ a.afb_niveau.value | afb_label }}</span></td>
+    <td>{{ a.max_punkte }}</td>
+    <td style="color:#555; font-size:8pt;">{{ a.kapitel or '–' }}</td>
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endif %}
+
 </body>
 </html>

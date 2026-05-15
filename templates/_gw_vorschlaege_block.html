@@ -1,0 +1,53 @@
+{# Wiederverwendbarer Grundwissen-Aufgaben-Block für Kapitelplan (Web) #}
+{% if gw_vorschlaege and (gw_vorschlaege.buch_gw or gw_vorschlaege.uebung) %}
+<div style="margin-top:2rem; border:1px solid #d1fae5; border-radius:.5rem; padding:1rem 1.25rem; background:#f0fdf4;">
+  <h3 style="margin:0 0 .75rem; color:#065f46;">📚 Grundwissen-Aufgaben</h3>
+
+  {% if gw_vorschlaege.buch_gw %}
+  <h4 style="margin:.5rem 0 .35rem; font-size:.92rem;">Aus dem Buch (Grundwissen-Abschnitte)</h4>
+  <table style="font-size:.88rem;">
+    <thead>
+      <tr>
+        <th>Nr.</th><th>UK</th><th>Beschreibung</th><th>S.</th><th>AFB</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for ba in gw_vorschlaege.buch_gw %}
+    <tr>
+      <td><strong>{{ ba.aufgabennummer }}</strong></td>
+      <td style="color:#6c757d; font-size:.82rem;">{{ ba.unterkapitel or '–' }}</td>
+      <td>{{ ba.beschreibung or '–' }}</td>
+      <td>{{ ba.seite or '–' }}</td>
+      <td><span class="badge">{{ ba.afb_niveau.value | afb_label }}</span></td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if gw_vorschlaege.uebung %}
+  <h4 style="margin:1rem 0 .35rem; font-size:.92rem;">Aus dem Aufgabenpool (Tag: Übung)</h4>
+  <table style="font-size:.88rem;">
+    <thead>
+      <tr>
+        <th>Titel</th><th>AFB</th><th>Max. P.</th><th>Kapitel</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for a in gw_vorschlaege.uebung %}
+    <tr>
+      <td><a href="/ui/aufgaben/{{ a.id }}">{{ a.titel }}</a></td>
+      <td><span class="badge">{{ a.afb_niveau.value | afb_label }}</span></td>
+      <td>{{ a.max_punkte }}</td>
+      <td style="color:#6c757d; font-size:.82rem;">{{ a.kapitel or '–' }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if not gw_vorschlaege.buch_gw and not gw_vorschlaege.uebung %}
+  <p style="color:#6c757d; font-size:.9rem;">Keine passenden Grundwissen-Aufgaben gefunden.</p>
+  {% endif %}
+</div>
+{% endif %}

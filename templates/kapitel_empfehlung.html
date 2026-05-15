@@ -134,6 +134,8 @@
 {% endif %}
 {% endfor %}
 
+{% include "_gw_vorschlaege_block.html" %}
+
 <!-- PDF-Download -->
 <form method="post" action="/ui/klassen/{{ klasse.id }}/kapitelempfehlung/pdf"
       style="margin-top:1.5rem;">
