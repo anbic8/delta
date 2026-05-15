@@ -201,14 +201,11 @@ def grundwissen_vorschlaege(kl_id: int, kapitel: str, db: Session) -> dict:
 
     uebung_qs = (
         db.query(Aufgabe)
-        .filter(
-            Aufgabe.tags.ilike("%übung%"),
-            Aufgabe.jahrgangsstufe == js,
-        )
+        .filter(Aufgabe.tags.ilike("%übung%"))
         .order_by(Aufgabe.kapitel, Aufgabe.titel)
         .all()
     )
-    # Kapitel-match bevorzugen, sonst alle passenden Jahrgangsstufe
+    # Kapitel-match bevorzugen, sonst alle mit Übung-Tag
     uebung_kap = [a for a in uebung_qs if a.kapitel == kapitel]
     uebung = uebung_kap if uebung_kap else uebung_qs
 
