@@ -134,4 +134,47 @@
   </section>
 
 </div>
+
+<!-- Grundwissen-Abfragen -->
+{% if gw_abfragen %}
+<section style="margin-top:2rem;">
+  <h3>Grundwissen-Abfragen</h3>
+  {% set farbe_map = {
+    'gewusst': ('#dcfce7', '#15803d', 'gewusst'),
+    'teilweise_gewusst': ('#fef9c3', '#854d0e', 'teilweise gewusst'),
+    'nicht_gewusst': ('#fee2e2', '#991b1b', 'nicht gewusst')
+  } %}
+  <table style="font-size:.9rem;">
+    <thead>
+      <tr>
+        <th>Datum</th>
+        <th>Grundwissen</th>
+        <th>Ergebnis</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for a in gw_abfragen %}
+    {% set fc = farbe_map[a.ergebnis.value] %}
+    <tr>
+      <td style="white-space:nowrap;">{{ a.datum.strftime('%d.%m.%Y') }}</td>
+      <td>
+        {% if a.grundwissen %}
+          <small style="color:#6c757d;">{{ a.grundwissen.kapitel }}{% if a.grundwissen.unterkapitel %} › {{ a.grundwissen.unterkapitel }}{% endif %}</small><br>
+          {{ a.grundwissen.aufgabe | truncate(80) }}
+        {% else %}
+          <span style="color:#9ca3af; font-style:italic;">{{ a.grundwissen_text or '–' }}</span>
+        {% endif %}
+      </td>
+      <td>
+        <span style="background:{{ fc[0] }}; color:{{ fc[1] }}; padding:.15em .5em; border-radius:.3em; font-size:.8rem; font-weight:600; white-space:nowrap;">
+          {{ fc[2] }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endif %}
+
 {% endblock %}

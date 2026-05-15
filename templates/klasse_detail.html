@@ -64,6 +64,22 @@
     </details>
 
     <details style="margin-top:.5rem;">
+      <summary>📥 Grundwissen-Abfragen importieren (CSV)</summary>
+      <form method="post" action="/ui/klassen/{{ klasse.id }}/grundwissen-csv-import"
+            enctype="multipart/form-data" style="margin-top:.75rem;">
+        <label>CSV-Datei
+          <input type="file" name="file" accept=".csv,.txt" required>
+        </label>
+        <small class="hint">
+          Spalten: <code>Vorname, Nachname, Grundwissen, Datum, Ergebnis</code><br>
+          Ergebnis: <em>gewusst</em> · <em>teilweise gewusst</em> · <em>nicht gewusst</em><br>
+          Datum: TT.MM.JJJJ oder JJJJ-MM-TT
+        </small>
+        <button type="submit" style="margin-top:.5rem;">Importieren</button>
+      </form>
+    </details>
+
+    <details style="margin-top:.5rem;">
       <summary>📥 Schülerliste per CSV importieren</summary>
       <form method="post" action="/ui/klassen/{{ klasse.id }}/schueler-import"
             enctype="multipart/form-data" style="margin-top:.75rem;">

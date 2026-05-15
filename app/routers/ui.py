@@ -162,6 +162,112 @@ def klasse_detail(kl_id: int, request: Request, db: Session = Depends(get_db)):
     })
 
 
+# ── Grundwissen-Abfragen CSV-Import ──────────────────────────
+
+@router.post("/klassen/{kl_id}/grundwissen-csv-import")
+async def grundwissen_csv_import(kl_id: int, request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen
+    from app.models.grundwissen_abfrage import SchuelerGrundwissenAbfrage, AbfrageErgebnis
+    from datetime import date as date_type
+    import sqlalchemy as sa
+
+    schueler_qs = db.query(Schueler).filter(Schueler.klasse_id == kl_id, Schueler.geloescht_am.is_(None)).all()
+    schueler_map = {
+        _normalize(s.vorname) + "|" + _normalize(s.nachname): s
+        for s in schueler_qs
+    }
+    gw_alle = db.query(Grundwissen).all()
+
+    def _match_gw(text: str):
+        t = text.strip().lower()
+        # 1. Exakt
+        for gw in gw_alle:
+            if gw.aufgabe.strip().lower() == t:
+                return gw
+        # 2. GW-Aufgabe beginnt mit Text
+        for gw in gw_alle:
+            if gw.aufgabe.strip().lower().startswith(t):
+                return gw
+        # 3. Text ist in GW-Aufgabe enthalten
+        for gw in gw_alle:
+            if t in gw.aufgabe.strip().lower():
+                return gw
+        return None
+
+    def _parse_ergebnis(val: str) -> AbfrageErgebnis | None:
+        v = val.strip().lower().replace("-", " ").replace("_", " ")
+        if v in ("gewusst", "ja", "richtig", "g"):
+            return AbfrageErgebnis.gewusst
+        if v in ("teilweise gewusst", "teilweise", "t", "tw"):
+            return AbfrageErgebnis.teilweise_gewusst
+        if v in ("nicht gewusst", "nicht", "nein", "falsch", "n", "ng"):
+            return AbfrageErgebnis.nicht_gewusst
+        return None
+
+    def _parse_datum(val: str) -> date_type | None:
+        val = val.strip()
+        for fmt in ("%d.%m.%Y", "%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(val, fmt).date()
+            except ValueError:
+                pass
+        return None
+
+    raw = await file.read()
+    try:
+        text = raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        text = raw.decode("latin-1")
+
+    reader = csv.DictReader(io.StringIO(text))
+    # Normalize header keys
+    rows = [{k.strip(): v.strip() for k, v in row.items()} for row in reader]
+
+    ok = skipped = 0
+    fehler = []
+    for i, row in enumerate(rows, start=2):
+        vorname = _normalize(row.get("Vorname", ""))
+        nachname = _normalize(row.get("Nachname", ""))
+        gw_text = row.get("Grundwissen", "")
+        datum_str = row.get("Datum", "")
+        ergebnis_str = row.get("Ergebnis", "")
+
+        key = vorname + "|" + nachname
+        s = schueler_map.get(key)
+        if not s:
+            fehler.append(f"Zeile {i}: Schüler '{row.get('Vorname','')} {row.get('Nachname','')}' nicht gefunden")
+            skipped += 1
+            continue
+
+        datum = _parse_datum(datum_str)
+        if not datum:
+            fehler.append(f"Zeile {i}: Datum '{datum_str}' nicht erkannt")
+            skipped += 1
+            continue
+
+        ergebnis = _parse_ergebnis(ergebnis_str)
+        if not ergebnis:
+            fehler.append(f"Zeile {i}: Ergebnis '{ergebnis_str}' nicht erkannt")
+            skipped += 1
+            continue
+
+        gw = _match_gw(gw_text)
+        db.add(SchuelerGrundwissenAbfrage(
+            schueler_id=s.id,
+            grundwissen_id=gw.id if gw else None,
+            datum=datum,
+            ergebnis=ergebnis,
+            grundwissen_text=gw_text if not gw else None,
+        ))
+        ok += 1
+
+    db.commit()
+    msg = f"{ok} Einträge importiert"
+    if skipped:
+        msg += f", {skipped} übersprungen: " + " · ".join(fehler[:5])
+    return REDIRECT(f"/ui/klassen/{kl_id}?msg={msg}")
+
+
 # ── Schüler ───────────────────────────────────────────────────
 
 @router.post("/schueler")
@@ -216,10 +322,19 @@ def schueler_dashboard(s_id: int, request: Request, db: Session = Depends(get_db
         "leistungen_gesamt": meta["leistungen_gesamt"],
     })()
 
+    from app.models.grundwissen_abfrage import SchuelerGrundwissenAbfrage
+    gw_abfragen = (
+        db.query(SchuelerGrundwissenAbfrage)
+        .filter(SchuelerGrundwissenAbfrage.schueler_id == s_id)
+        .order_by(SchuelerGrundwissenAbfrage.datum.desc())
+        .all()
+    )
+
     return templates.TemplateResponse(request, "schueler_dashboard.html", {
         "schueler": s, "klasse": kl,
         "muendliche_noten": noten, "schnitt": schnitt_data,
         "profil": profil, "radar": _radar(scores_by_kuerzel, getestete=getestete_kuerzels),
+        "gw_abfragen": gw_abfragen,
         "msg": request.query_params.get("msg"),
     })
 
