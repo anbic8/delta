@@ -59,6 +59,43 @@ Verfügbare Kapitel und Unterkapitel (wähle exakt passende Bezeichnung):
 {kap_str}"""
 
 
+def _clean_llm_json(s: str) -> str:
+    """
+    Bereinigt LLM-JSON:
+    - Escapet Steuerzeichen (\\n, \\t …) innerhalb von String-Werten
+    - Escapet ungültige Backslash-Sequenzen (LaTeX: \\frac, \\cdot …)
+    """
+    import re
+    result: list[str] = []
+    in_string = False
+    skip_next = False
+    for i, ch in enumerate(s):
+        if skip_next:
+            result.append(ch)
+            skip_next = False
+            continue
+        if ch == '\\' and in_string:
+            # nächstes Zeichen prüfen
+            nxt = s[i + 1] if i + 1 < len(s) else ''
+            if nxt in ('"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u'):
+                result.append(ch)   # gültiges Escape – unverändert
+            else:
+                result.append('\\\\')  # LaTeX o.ä. – doppelt escapen
+            skip_next = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            result.append(ch)
+            continue
+        if in_string and ord(ch) < 0x20:
+            # Steuerzeichen innerhalb eines Strings escapen
+            result.append({'\\n': '\\n', '\n': '\\n',
+                           '\r': '\\r', '\t': '\\t'}.get(ch, f'\\u{ord(ch):04x}'))
+            continue
+        result.append(ch)
+    return ''.join(result)
+
+
 def _user_msg(aufgabenstellung: str) -> str:
     return f"Aufgabe:\n{aufgabenstellung.strip()}"
 
@@ -123,10 +160,7 @@ async def aufgabe_vorschlag(
         start = raw.find("{")
         end = raw.rfind("}") + 1
         snippet = raw[start:end] if start >= 0 and end > start else raw
-        # Ungültige Backslash-Sequenzen (z.B. LaTeX \frac) doppelt escapen
-        import re
-        snippet = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', snippet)
-        data = json.loads(snippet)
+        data = json.loads(_clean_llm_json(snippet))
 
         return {
             "loesung": str(data.get("loesung") or ""),
