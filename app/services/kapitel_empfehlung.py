@@ -174,6 +174,142 @@ def _score_kandidaten(kandidaten, schwach_k_ids, ziel, anzahl):
     return _pick_aufgaben(kandidaten, schwach_k_ids, ziel, anzahl)
 
 
+def grundwissen_schwaechen_schueler(schueler_id: int, kapitel: str, db: Session) -> dict:
+    """
+    Schwache Grundwissen-Einträge eines Schülers (nicht/teilweise gewusst in Abfragen
+    oder Fehler in Tests), gefiltert auf das gewählte Kapitel, plus passende Aufgaben.
+    """
+    from app.models.grundwissen_abfrage import SchuelerGrundwissenAbfrage, AbfrageErgebnis
+    from app.models.grundwissen import SchuelerGrundwissenFehler, Grundwissen, AufgabeGrundwissen
+    from app.models.buchaufgabe import Buchaufgabe
+    from app.models.aufgabe import Aufgabe
+
+    schwach_ids: set[int] = set()
+
+    abfragen = db.query(SchuelerGrundwissenAbfrage).filter(
+        SchuelerGrundwissenAbfrage.schueler_id == schueler_id,
+        SchuelerGrundwissenAbfrage.ergebnis.in_([
+            AbfrageErgebnis.nicht_gewusst.value,
+            AbfrageErgebnis.teilweise_gewusst.value,
+        ]),
+        SchuelerGrundwissenAbfrage.grundwissen_id.isnot(None),
+    ).all()
+    schwach_ids.update(a.grundwissen_id for a in abfragen)
+
+    fehler = db.query(SchuelerGrundwissenFehler).filter(
+        SchuelerGrundwissenFehler.schueler_id == schueler_id,
+    ).all()
+    schwach_ids.update(f.grundwissen_id for f in fehler)
+
+    if not schwach_ids:
+        return {"gw_eintraege": [], "buch_gw": [], "uebung": []}
+
+    gw_eintraege = db.query(Grundwissen).filter(
+        Grundwissen.id.in_(schwach_ids),
+        Grundwissen.kapitel == kapitel,
+    ).order_by(Grundwissen.unterkapitel).all()
+
+    if not gw_eintraege:
+        return {"gw_eintraege": [], "buch_gw": [], "uebung": []}
+
+    gw_ids = {g.id for g in gw_eintraege}
+
+    # Buchaufgaben im gleichen Kapitel/UK mit Grundwissen-Beschreibung
+    seen_ba: set[int] = set()
+    buch_gw = []
+    for gw in gw_eintraege:
+        for ba in db.query(Buchaufgabe).filter(
+            Buchaufgabe.kapitel == kapitel,
+            Buchaufgabe.unterkapitel == (gw.unterkapitel or ""),
+            Buchaufgabe.beschreibung.ilike("grundwissen%"),
+        ).all():
+            if ba.id not in seen_ba:
+                seen_ba.add(ba.id)
+                buch_gw.append(ba)
+
+    # Pool-Aufgaben mit Übung-Tag, die dieses Grundwissen als Vorkenntnis haben
+    # oder direkt dieses Grundwissen repräsentieren
+    via_vorkenntnis = db.query(Aufgabe).join(
+        AufgabeGrundwissen, AufgabeGrundwissen.aufgabe_id == Aufgabe.id
+    ).filter(
+        AufgabeGrundwissen.grundwissen_id.in_(gw_ids),
+        Aufgabe.tags.ilike("%übung%"),
+    ).all()
+
+    via_direkt = db.query(Aufgabe).filter(
+        Aufgabe.grundwissen_id.in_(gw_ids),
+        Aufgabe.tags.ilike("%übung%"),
+    ).all()
+
+    seen_a: set[int] = set()
+    uebung = []
+    for a in via_vorkenntnis + via_direkt:
+        if a.id not in seen_a:
+            seen_a.add(a.id)
+            uebung.append(a)
+    uebung.sort(key=lambda a: a.titel)
+
+    return {"gw_eintraege": gw_eintraege, "buch_gw": buch_gw, "uebung": uebung}
+
+
+def grundwissen_schwaechen_klasse(kl_id: int, kapitel: str, db: Session) -> dict:
+    """Aggregiert schwache Grundwissen-Einträge aller Schüler der Klasse."""
+    from app.models.schueler import Schueler
+    from app.models.grundwissen import Grundwissen, AufgabeGrundwissen
+    from app.models.buchaufgabe import Buchaufgabe
+    from app.models.aufgabe import Aufgabe
+
+    schueler = db.query(Schueler).filter(
+        Schueler.klasse_id == kl_id, Schueler.geloescht_am.is_(None)
+    ).all()
+
+    alle_gw_ids: set[int] = set()
+    for s in schueler:
+        daten = grundwissen_schwaechen_schueler(s.id, kapitel, db)
+        alle_gw_ids.update(g.id for g in daten["gw_eintraege"])
+
+    if not alle_gw_ids:
+        return {"gw_eintraege": [], "buch_gw": [], "uebung": []}
+
+    gw_eintraege = db.query(Grundwissen).filter(
+        Grundwissen.id.in_(alle_gw_ids)
+    ).order_by(Grundwissen.unterkapitel).all()
+
+    seen_ba: set[int] = set()
+    buch_gw = []
+    for gw in gw_eintraege:
+        for ba in db.query(Buchaufgabe).filter(
+            Buchaufgabe.kapitel == kapitel,
+            Buchaufgabe.unterkapitel == (gw.unterkapitel or ""),
+            Buchaufgabe.beschreibung.ilike("grundwissen%"),
+        ).all():
+            if ba.id not in seen_ba:
+                seen_ba.add(ba.id)
+                buch_gw.append(ba)
+
+    via_vorkenntnis = db.query(Aufgabe).join(
+        AufgabeGrundwissen, AufgabeGrundwissen.aufgabe_id == Aufgabe.id
+    ).filter(
+        AufgabeGrundwissen.grundwissen_id.in_(alle_gw_ids),
+        Aufgabe.tags.ilike("%übung%"),
+    ).all()
+
+    via_direkt = db.query(Aufgabe).filter(
+        Aufgabe.grundwissen_id.in_(alle_gw_ids),
+        Aufgabe.tags.ilike("%übung%"),
+    ).all()
+
+    seen_a: set[int] = set()
+    uebung = []
+    for a in via_vorkenntnis + via_direkt:
+        if a.id not in seen_a:
+            seen_a.add(a.id)
+            uebung.append(a)
+    uebung.sort(key=lambda a: a.titel)
+
+    return {"gw_eintraege": gw_eintraege, "buch_gw": buch_gw, "uebung": uebung}
+
+
 def grundwissen_vorschlaege(kl_id: int, kapitel: str, db: Session) -> dict:
     """
     Schlägt Grundwissen-Aufgaben vor:
@@ -266,5 +402,6 @@ def empfehlungen_pro_schueler(
             "komps": komps,
             "afb_profil": afb_prof,
             "ziel": ziel,
+            "gw_schwaechen": grundwissen_schwaechen_schueler(s.id, kapitel, db),
         })
     return results

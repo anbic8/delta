@@ -1,53 +1,52 @@
-{# Wiederverwendbarer Grundwissen-Aufgaben-Block für Kapitelplan (Web) #}
-{% if gw_vorschlaege and (gw_vorschlaege.buch_gw or gw_vorschlaege.uebung) %}
-<div style="margin-top:2rem; border:1px solid #d1fae5; border-radius:.5rem; padding:1rem 1.25rem; background:#f0fdf4;">
-  <h3 style="margin:0 0 .75rem; color:#065f46;">📚 Grundwissen-Aufgaben</h3>
+{# Grundwissen-Block – erwartet Variable 'gw_daten' mit {gw_eintraege, buch_gw, uebung} #}
+{% if gw_daten and (gw_daten.gw_eintraege or gw_daten.buch_gw or gw_daten.uebung) %}
+<div style="margin-top:1rem; border:1px solid #d1fae5; border-radius:.4rem; padding:.75rem 1rem; background:#f0fdf4;">
+  <strong style="color:#065f46; font-size:.9rem;">📚 Grundwissen-Aufgaben</strong>
 
-  {% if gw_vorschlaege.buch_gw %}
-  <h4 style="margin:.5rem 0 .35rem; font-size:.92rem;">Aus dem Buch (Grundwissen-Abschnitte)</h4>
-  <table style="font-size:.88rem;">
-    <thead>
-      <tr>
-        <th>Nr.</th><th>UK</th><th>Beschreibung</th><th>S.</th><th>AFB</th>
-      </tr>
-    </thead>
+  {% if gw_daten.gw_eintraege %}
+  <p style="margin:.4rem 0 .2rem; font-size:.82rem; color:#374151; font-weight:600;">Schwache Grundwissen-Themen:</p>
+  <ul style="margin:0 0 .5rem; padding-left:1.2rem; font-size:.82rem;">
+    {% for gw in gw_daten.gw_eintraege %}
+    <li>{% if gw.unterkapitel %}<em>{{ gw.unterkapitel }}</em> – {% endif %}{{ gw.aufgabe | truncate(80) }}</li>
+    {% endfor %}
+  </ul>
+  {% endif %}
+
+  {% if gw_daten.buch_gw %}
+  <p style="margin:.4rem 0 .2rem; font-size:.82rem; font-weight:600;">Buchaufgaben (Grundwissen-Abschnitte):</p>
+  <table style="font-size:.82rem; margin:0 0 .5rem;">
+    <thead><tr><th>Nr.</th><th>UK</th><th>Beschreibung</th><th>S.</th></tr></thead>
     <tbody>
-    {% for ba in gw_vorschlaege.buch_gw %}
+    {% for ba in gw_daten.buch_gw %}
     <tr>
       <td><strong>{{ ba.aufgabennummer }}</strong></td>
-      <td style="color:#6c757d; font-size:.82rem;">{{ ba.unterkapitel or '–' }}</td>
+      <td style="color:#6c757d;">{{ ba.unterkapitel or '–' }}</td>
       <td>{{ ba.beschreibung or '–' }}</td>
       <td>{{ ba.seite or '–' }}</td>
-      <td><span class="badge">{{ ba.afb_niveau.value | afb_label }}</span></td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
   {% endif %}
 
-  {% if gw_vorschlaege.uebung %}
-  <h4 style="margin:1rem 0 .35rem; font-size:.92rem;">Aus dem Aufgabenpool (Tag: Übung)</h4>
-  <table style="font-size:.88rem;">
-    <thead>
-      <tr>
-        <th>Titel</th><th>AFB</th><th>Max. P.</th><th>Kapitel</th>
-      </tr>
-    </thead>
+  {% if gw_daten.uebung %}
+  <p style="margin:.4rem 0 .2rem; font-size:.82rem; font-weight:600;">Aufgabenpool (Übung):</p>
+  <table style="font-size:.82rem; margin:0;">
+    <thead><tr><th>Titel</th><th>AFB</th><th>Max. P.</th></tr></thead>
     <tbody>
-    {% for a in gw_vorschlaege.uebung %}
+    {% for a in gw_daten.uebung %}
     <tr>
       <td><a href="/ui/aufgaben/{{ a.id }}">{{ a.titel }}</a></td>
       <td><span class="badge">{{ a.afb_niveau.value | afb_label }}</span></td>
       <td>{{ a.max_punkte }}</td>
-      <td style="color:#6c757d; font-size:.82rem;">{{ a.kapitel or '–' }}</td>
     </tr>
     {% endfor %}
     </tbody>
   </table>
   {% endif %}
 
-  {% if not gw_vorschlaege.buch_gw and not gw_vorschlaege.uebung %}
-  <p style="color:#6c757d; font-size:.9rem;">Keine passenden Grundwissen-Aufgaben gefunden.</p>
+  {% if not gw_daten.buch_gw and not gw_daten.uebung %}
+  <p style="color:#6c757d; font-size:.82rem; margin:.4rem 0 0;">Keine passenden Aufgaben gefunden.</p>
   {% endif %}
 </div>
 {% endif %}

@@ -1549,13 +1549,13 @@ async def punkte_import_bestaetigen(lid: int, request: Request, db: Session = De
 # ── Kapitel-Empfehlung (Klasse) ───────────────────────────────
 
 def _kapitel_empfehlung_kontext(kl_id: int, kapitel: str, uk_anzahl: dict, db):
-    from app.services.kapitel_empfehlung import empfehlungen_fuer_kapitel, grundwissen_vorschlaege
+    from app.services.kapitel_empfehlung import empfehlungen_fuer_kapitel, grundwissen_schwaechen_klasse
     from app.models.kompetenz import Kompetenz
     ergebnis, komps, afb_profil, ziel = empfehlungen_fuer_kapitel(kl_id, kapitel, uk_anzahl, db)
     alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     schwach_ids = {k_id for k_id, score in komps.items() if score < 60}
     komp_map = {k.id: k.kuerzel for k in alle_k}
-    gw_vorschlaege = grundwissen_vorschlaege(kl_id, kapitel, db)
+    gw_vorschlaege = grundwissen_schwaechen_klasse(kl_id, kapitel, db)
     return ergebnis, komps, afb_profil, ziel, alle_k, schwach_ids, komp_map, gw_vorschlaege
 
 
@@ -1580,7 +1580,6 @@ async def schueler_kapitel_empfehlung_post(kl_id: int, request: Request, db: Ses
     kapitel = form.get("kapitel", "")
     uk_anzahl = _parse_uk_anzahl(form)
     kl = db.get(Klasse, kl_id)
-    from app.services.kapitel_empfehlung import grundwissen_vorschlaege
     ergebnisse = empfehlungen_pro_schueler(kl_id, kapitel, uk_anzahl, db)
     return templates.TemplateResponse(request, "schueler_kapitel_empfehlung.html", {
         "klasse": kl, "kapitel_liste": _kapitel_liste(db),
@@ -1588,7 +1587,6 @@ async def schueler_kapitel_empfehlung_post(kl_id: int, request: Request, db: Ses
         "ergebnisse": ergebnisse,
         "uk_anzahl_hidden": uk_anzahl,
         "unterkapitel_liste": [(uk, uk_anzahl[uk]) for uk in uk_anzahl],
-        "gw_vorschlaege": grundwissen_vorschlaege(kl_id, kapitel, db),
     })
 
 
@@ -1602,11 +1600,9 @@ async def schueler_kapitel_empfehlung_pdf(kl_id: int, request: Request, db: Sess
     kapitel = form.get("kapitel", "")
     uk_anzahl = _parse_uk_anzahl(form)
     kl = db.get(Klasse, kl_id)
-    from app.services.kapitel_empfehlung import grundwissen_vorschlaege
     ergebnisse = empfehlungen_pro_schueler(kl_id, kapitel, uk_anzahl, db)
     html = _jinja_env().get_template("pdf_schueler_kapitel_empfehlung.html").render(
         klasse=kl, kapitel=kapitel, ergebnisse=ergebnisse,
-        gw_vorschlaege=grundwissen_vorschlaege(kl_id, kapitel, db),
     )
     pdf_bytes = weasyprint.HTML(string=html, base_url=".").write_pdf()
     dateiname = f"Individuelle_Empfehlung_{kl.name}_{kapitel[:25]}.pdf".replace(" ", "_")

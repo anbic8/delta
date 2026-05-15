@@ -68,49 +68,46 @@
   <p class="leer">Keine Aufgaben gefunden.</p>
   {% endif %}
   {% endfor %}
+
+  {# Grundwissen-Block pro Schüler #}
+  {% set gw = item.gw_schwaechen %}
+  {% if gw and (gw.gw_eintraege or gw.buch_gw or gw.uebung) %}
+  <div style="margin-top:6pt; border:1pt solid #a7f3d0; border-radius:3pt; padding:4pt 6pt; background:#f0fdf4;">
+    <strong style="font-size:8.5pt; color:#065f46;">Grundwissen-Schwächen &amp; passende Aufgaben</strong>
+    {% if gw.gw_eintraege %}
+    <ul style="margin:2pt 0 4pt; padding-left:1.2em; font-size:8pt;">
+      {% for g in gw.gw_eintraege %}
+      <li>{% if g.unterkapitel %}<em>{{ g.unterkapitel }}</em> – {% endif %}{{ g.aufgabe | truncate(80) }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if gw.buch_gw %}
+    <p style="margin:2pt 0 1pt; font-size:8pt; font-weight:bold;">Buchaufgaben:</p>
+    <table style="font-size:7.5pt; margin:0 0 3pt;">
+      <thead><tr><th style="width:1.2cm;">Nr.</th><th style="width:2.5cm;">UK</th><th>Beschreibung</th><th style="width:.8cm;">S.</th></tr></thead>
+      <tbody>
+      {% for ba in gw.buch_gw %}
+      <tr><td><strong>{{ ba.aufgabennummer }}</strong></td><td>{{ ba.unterkapitel or '–' }}</td><td>{{ ba.beschreibung or '–' }}</td><td>{{ ba.seite or '–' }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+    {% if gw.uebung %}
+    <p style="margin:2pt 0 1pt; font-size:8pt; font-weight:bold;">Aufgabenpool (Übung):</p>
+    <table style="font-size:7.5pt; margin:0;">
+      <thead><tr><th>Titel</th><th style="width:2cm;">AFB</th><th style="width:1.2cm;">P.</th></tr></thead>
+      <tbody>
+      {% for a in gw.uebung %}
+      <tr><td>{{ a.titel }}</td><td>{{ a.afb_niveau.value | afb_label }}</td><td>{{ a.max_punkte }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endif %}
+
 </div>
 {% endfor %}
-
-{% if gw_vorschlaege and (gw_vorschlaege.buch_gw or gw_vorschlaege.uebung) %}
-<div style="margin-top:1.5cm; border-top:1pt solid #059669; padding-top:8pt;">
-<h2 style="font-size:11pt; color:#065f46; margin:0 0 6pt;">Grundwissen-Aufgaben</h2>
-
-{% if gw_vorschlaege.buch_gw %}
-<h3 style="font-size:9.5pt; margin:4pt 0 2pt;">Aus dem Buch (Grundwissen-Abschnitte)</h3>
-<table>
-  <thead><tr><th style="width:1.5cm;">Nr.</th><th style="width:3cm;">Unterkapitel</th><th>Beschreibung</th><th style="width:1cm;">S.</th><th style="width:2cm;">AFB</th></tr></thead>
-  <tbody>
-  {% for ba in gw_vorschlaege.buch_gw %}
-  <tr>
-    <td><strong>{{ ba.aufgabennummer }}</strong></td>
-    <td style="color:#555; font-size:8pt;">{{ ba.unterkapitel or '–' }}</td>
-    <td>{{ ba.beschreibung or '–' }}</td>
-    <td>{{ ba.seite or '–' }}</td>
-    <td>{{ ba.afb_niveau.value | afb_label }}</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% endif %}
-
-{% if gw_vorschlaege.uebung %}
-<h3 style="font-size:9.5pt; margin:6pt 0 2pt;">Aus dem Aufgabenpool (Tag: Übung)</h3>
-<table>
-  <thead><tr><th>Titel</th><th style="width:2cm;">AFB</th><th style="width:1.5cm;">Max. P.</th><th style="width:3cm;">Kapitel</th></tr></thead>
-  <tbody>
-  {% for a in gw_vorschlaege.uebung %}
-  <tr>
-    <td>{{ a.titel }}</td>
-    <td>{{ a.afb_niveau.value | afb_label }}</td>
-    <td>{{ a.max_punkte }}</td>
-    <td style="color:#555; font-size:8pt;">{{ a.kapitel or '–' }}</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-{% endif %}
-</div>
-{% endif %}
 
 </body>
 </html>

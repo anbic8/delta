@@ -134,7 +134,7 @@
 {% endif %}
 {% endfor %}
 
-{% include "_gw_vorschlaege_block.html" %}
+{% with gw_daten = gw_vorschlaege %}{% include "_gw_vorschlaege_block.html" %}{% endwith %}
 
 <!-- PDF-Download -->
 <form method="post" action="/ui/klassen/{{ klasse.id }}/kapitelempfehlung/pdf"
