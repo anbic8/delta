@@ -1,0 +1,167 @@
+[
+  {
+    "id": "anteil_K1_AFB1",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K1",
+    "kompetenz_name": "Mathematisch argumentieren",
+    "anforderungsbereich": 1,
+    "aufgabe": "Von 20 Schuelerinnen und Schuelern einer Klasse sind 5 krank. Welcher Bruchteil der Klasse ist krank?",
+    "loesung": "\\frac{5}{20} = \\frac{1}{4} der Klasse ist krank.",
+    "bewertungshinweis": "Bruch korrekt aufgestellt (1 P.), vollstaendig gekuerzt (1 P.), Antwort in Worten (1 P.)."
+  },
+  {
+    "id": "anteil_K1_AFB2",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K1",
+    "kompetenz_name": "Mathematisch argumentieren",
+    "anforderungsbereich": 2,
+    "aufgabe": "Lena sagt: Ein Viertel von 60 ist 20. Stimmt das? Begruende mit einer Rechnung.",
+    "loesung": "\\frac{1}{4} \\cdot 60 = 15 \\neq 20. Lenas Aussage ist falsch. Ein Viertel von 60 ist 15.",
+    "bewertungshinweis": "Rechnung korrekt (2 P.), klare Schlussfolgerung zur Aussage von Lena (1 P.)."
+  },
+  {
+    "id": "anteil_K1_AFB3",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K1",
+    "kompetenz_name": "Mathematisch argumentieren",
+    "anforderungsbereich": 3,
+    "aufgabe": "Tim behauptet: Wenn ich von einer Zahl zuerst \\frac{1}{2} nehme und dann davon nochmal \\frac{1}{2}, erhalte ich \\frac{1}{2} der Ausgangszahl. Hat Tim recht? Begruende allgemein.",
+    "loesung": "\\frac{1}{2} \\cdot \\frac{1}{2} \\cdot x = \\frac{1}{4} \\cdot x. Tim hat nicht recht. Man erhaelt \\frac{1}{4} der Ausgangszahl. Beispiel: Von 40 zunaechst \\frac{1}{2} = 20, dann \\frac{1}{2} davon = 10 = \\frac{1}{4} \\cdot 40.",
+    "bewertungshinweis": "Allgemeine Begruendung mit Variable oder Beispiel (2 P.), korrektes Ergebnis \\frac{1}{4} (1 P.), klare Schlussfolgerung (1 P.)."
+  },
+  {
+    "id": "anteil_K2_AFB1",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K2",
+    "kompetenz_name": "Probleme mathematisch loesen",
+    "anforderungsbereich": 1,
+    "aufgabe": "Berechne \\frac{3}{4} von 48.",
+    "loesung": "\\frac{3}{4} \\cdot 48 = \\frac{3 \\cdot 48}{4} = \\frac{144}{4} = 36",
+    "bewertungshinweis": "Rechenweg nachvollziehbar (1 P.), Ergebnis korrekt (1 P.)."
+  },
+  {
+    "id": "anteil_K2_AFB2",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K2",
+    "kompetenz_name": "Probleme mathematisch loesen",
+    "anforderungsbereich": 2,
+    "aufgabe": "In einer Schule gibt es 360 Schuelerinnen und Schueler. 25\\% fahren mit dem Fahrrad, \\frac{1}{3} mit dem Bus und der Rest zu Fuss. Wie viele kommen zu Fuss?",
+    "loesung": "Fahrrad: 25\\% \\cdot 360 = 90. Bus: \\frac{1}{3} \\cdot 360 = 120. Zu Fuss: 360 - 90 - 120 = 150.",
+    "bewertungshinweis": "Beide Anteile korrekt berechnet (je 1 P.), Subtraktion korrekt (1 P.), Antwort in Worten (1 P.)."
+  },
+  {
+    "id": "anteil_K2_AFB3",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K2",
+    "kompetenz_name": "Probleme mathematisch loesen",
+    "anforderungsbereich": 3,
+    "aufgabe": "Ein Behaelter ist zu \\frac{3}{8} gefuellt. Dann werden 15 Liter entnommen, danach ist er zu \\frac{1}{4} gefuellt. Wie viele Liter fasst der Behaelter insgesamt?",
+    "loesung": "\\frac{3}{8} - \\frac{1}{4} = \\frac{3}{8} - \\frac{2}{8} = \\frac{1}{8}. Also: \\frac{1}{8} \\cdot V = 15 \\Rightarrow V = 120 \\text{ Liter}.",
+    "bewertungshinweis": "Differenz der Anteile korrekt (2 P.), Ansatz fuer Gesamtvolumen korrekt (1 P.), Ergebnis mit Einheit (1 P.)."
+  },
+  {
+    "id": "anteil_K3_AFB1",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K3",
+    "kompetenz_name": "Mathematisch modellieren",
+    "anforderungsbereich": 1,
+    "aufgabe": "Ein T-Shirt kostet 30 Euro. Es wird um 20\\% reduziert. Wie viel kostet es jetzt?",
+    "loesung": "20\\% \\cdot 30 = \\frac{20}{100} \\cdot 30 = 6 \\text{ Euro}. Neuer Preis: 30 - 6 = 24 \\text{ Euro}.",
+    "bewertungshinweis": "Rabattbetrag korrekt (1 P.), neuer Preis korrekt (1 P.), Einheit angegeben (1 P.)."
+  },
+  {
+    "id": "anteil_K3_AFB2",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K3",
+    "kompetenz_name": "Mathematisch modellieren",
+    "anforderungsbereich": 2,
+    "aufgabe": "In einer Klasse mit 28 Schuelerinnen und Schuelern haben 7 eine Brille. Ein neues Kind kommt hinzu, das keine Brille traegt. Wie veraendert sich der Anteil der Brillentraeger? Gib alten und neuen Anteil als Bruch und als Prozentsatz an.",
+    "loesung": "Alt: \\frac{7}{28} = \\frac{1}{4} = 25\\%. Neu: \\frac{7}{29} \\approx 0{,}241 \\approx 24{,}1\\%. Der Anteil sinkt leicht.",
+    "bewertungshinweis": "Alter Anteil als Bruch und Prozent korrekt (2 P.), neuer Anteil berechnet und gerundet (2 P.), Vergleich in Worten (1 P.)."
+  },
+  {
+    "id": "anteil_K3_AFB3",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K3",
+    "kompetenz_name": "Mathematisch modellieren",
+    "anforderungsbereich": 3,
+    "aufgabe": "Ein Sportverein hat 240 Mitglieder. \\frac{5}{8} sind Erwachsene, der Rest Kinder. Von den Kindern sind 40\\% Maedchen. Wie viele Maedchen sind Mitglied? Wie viel Prozent der Gesamtmitgliederzahl sind das?",
+    "loesung": "Kinder: 240 - \\frac{5}{8} \\cdot 240 = 240 - 150 = 90. Maedchen: 40\\% \\cdot 90 = 36. Anteil: \\frac{36}{240} = 0{,}15 = 15\\%.",
+    "bewertungshinweis": "Anzahl Kinder korrekt (1 P.), Anzahl Maedchen korrekt (1 P.), prozentualer Anteil an Gesamt korrekt (2 P.)."
+  },
+  {
+    "id": "anteil_K4_AFB1",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K4",
+    "kompetenz_name": "Mathematische Darstellungen verwenden",
+    "anforderungsbereich": 1,
+    "aufgabe": "Ein Rechteck ist in 10 gleiche Teile geteilt. 6 Teile sind blau gefaerbt. Gib den blauen Anteil als Bruch, als Dezimalzahl und als Prozentsatz an.",
+    "loesung": "\\frac{6}{10} = \\frac{3}{5} = 0{,}6 = 60\\%",
+    "bewertungshinweis": "Bruch gekuerzt (1 P.), Dezimalzahl korrekt (1 P.), Prozentsatz korrekt (1 P.)."
+  },
+  {
+    "id": "anteil_K4_AFB2",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K4",
+    "kompetenz_name": "Mathematische Darstellungen verwenden",
+    "anforderungsbereich": 2,
+    "aufgabe": "Ein Kreisdiagramm zeigt die Lieblingstiere einer Klasse: Hunde 40\\%, Katzen 35\\%, Voegel 15\\%, Sonstige 10\\%. Die Klasse hat 40 Schuelerinnen und Schueler. Wie viele moegen Katzen am liebsten?",
+    "loesung": "35\\% \\cdot 40 = \\frac{35}{100} \\cdot 40 = 14 \\text{ Schuelerinnen und Schueler}.",
+    "bewertungshinweis": "Rechenweg korrekt (1 P.), Ergebnis korrekt (1 P.), Antwort in Worten (1 P.)."
+  },
+  {
+    "id": "anteil_K4_AFB3",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K4",
+    "kompetenz_name": "Mathematische Darstellungen verwenden",
+    "anforderungsbereich": 3,
+    "aufgabe": "Von 400 Schuelerinnen und Schuelern einer Schule sind 180 Maedchen, davon treiben 45 keinen Sport. Erstelle eine Tabelle (Maedchen/Jungen x Sport/kein Sport) und berechne: Welcher Anteil aller Schuelerinnen und Schueler sind Maedchen ohne Sport?",
+    "loesung": "Tabelle: Maedchen gesamt 180, davon ohne Sport 45. Anteil: \\frac{45}{400} = \\frac{9}{80} = 11{,}25\\%.",
+    "bewertungshinweis": "Tabelle sinnvoll strukturiert mit korrekten Werten (2 P.), Anteilsbruch korrekt und gekuerzt (1 P.), Prozentwert korrekt (1 P.)."
+  },
+  {
+    "id": "anteil_K5_AFB1",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K5",
+    "kompetenz_name": "Mit symbolischen, formalen und technischen Elementen umgehen",
+    "anforderungsbereich": 1,
+    "aufgabe": "Berechne: \\frac{2}{5} \\cdot 35 \\quad \\text{und} \\quad 30\\% \\cdot 80.",
+    "loesung": "\\frac{2}{5} \\cdot 35 = 14. \\qquad 30\\% \\cdot 80 = \\frac{30}{100} \\cdot 80 = 24.",
+    "bewertungshinweis": "Erste Rechnung korrekt (1 P.), zweite Rechnung korrekt (1 P.)."
+  },
+  {
+    "id": "anteil_K5_AFB2",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K5",
+    "kompetenz_name": "Mit symbolischen, formalen und technischen Elementen umgehen",
+    "anforderungsbereich": 2,
+    "aufgabe": "Forme um und berechne: Welcher Prozentsatz entspricht \\frac{7}{25}? Welcher vollstaendig gekuerzte Bruch entspricht 45\\%?",
+    "loesung": "\\frac{7}{25} = \\frac{28}{100} = 28\\%. \\qquad 45\\% = \\frac{45}{100} = \\frac{9}{20}.",
+    "bewertungshinweis": "Erster Umrechnungsweg korrekt (1 P.), zweiter korrekt (1 P.), Bruch vollstaendig gekuerzt (1 P.)."
+  },
+  {
+    "id": "anteil_K5_AFB3",
+    "thema": "Anteile bestimmen",
+    "klasse": 6,
+    "kompetenz": "K5",
+    "kompetenz_name": "Mit symbolischen, formalen und technischen Elementen umgehen",
+    "anforderungsbereich": 3,
+    "aufgabe": "Vereinfache den Ausdruck und berechne das Ergebnis fuer n = 60: \\frac{n}{4} + 20\\% \\cdot n - \\frac{n}{10}.",
+    "loesung": "\\frac{n}{4} + \\frac{n}{5} - \\frac{n}{10} = \\frac{5n}{20} + \\frac{4n}{20} - \\frac{2n}{20} = \\frac{7n}{20}. \\quad \\text{Fuer } n=60: \\frac{7 \\cdot 60}{20} = 21.",
+    "bewertungshinweis": "Umformung 20\\% in Bruch korrekt (1 P.), gemeinsamer Nenner 20 korrekt (1 P.), vereinfachter Ausdruck \\frac{7n}{20} (1 P.), Einsetzen und Ergebnis 21 (1 P.)."
+  }
+]

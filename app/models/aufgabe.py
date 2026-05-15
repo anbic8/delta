@@ -2,7 +2,7 @@ from __future__ import annotations
 import enum
 from datetime import datetime, timezone
 import sqlalchemy as sa
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
@@ -26,6 +26,9 @@ class Aufgabe(Base):
     jahrgangsstufe: Mapped[int | None] = mapped_column(Integer, nullable=True)
     kapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
     unterkapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    bild_aufgabe: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    bild_loesung: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    grundwissen_id: Mapped[int | None] = mapped_column(ForeignKey("grundwissen.id", ondelete="SET NULL"), nullable=True)
     erstellt_am: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     kompetenzen: Mapped[list["AufgabeKompetenz"]] = relationship(
@@ -34,6 +37,9 @@ class Aufgabe(Base):
     leistung_aufgaben: Mapped[list["LeistungAufgabe"]] = relationship(back_populates="aufgabe")
     grundwissen_eintraege: Mapped[list["AufgabeGrundwissen"]] = relationship(
         back_populates="aufgabe", cascade="all, delete-orphan"
+    )
+    grundwissen: Mapped["Grundwissen | None"] = relationship(
+        "Grundwissen", foreign_keys="[Aufgabe.grundwissen_id]", back_populates="aufgaben_direkt"
     )
 
 

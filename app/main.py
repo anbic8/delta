@@ -1,6 +1,9 @@
+from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+
+Path("uploads/aufgaben").mkdir(parents=True, exist_ok=True)
 
 from app.routers import aufgabe, buchaufgabe, klasse, kompetenz, muendliche_note, schueler, schuljahr, schriftliche_leistung, ui
 
@@ -8,6 +11,7 @@ app = FastAPI(title="Delta – Schülerleistungen")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/material", StaticFiles(directory="material"), name="material")
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(schuljahr.router)
 app.include_router(klasse.router)

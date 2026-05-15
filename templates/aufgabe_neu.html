@@ -5,10 +5,16 @@
 <h2>Neue Aufgabe</h2>
 
 <div style="display:flex; gap:1.5rem; align-items:flex-start;">
-  <form method="post" action="/ui/aufgaben" style="flex:1; min-width:0;">
+  <form method="post" action="/ui/aufgaben" enctype="multipart/form-data" style="flex:1; min-width:0;">
     <label>Titel <input type="text" name="titel" required></label>
     <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="5" required></textarea></label>
+    <label>Bild zur Aufgabenstellung (optional)
+      <input type="file" name="bild_aufgabe" accept="image/*">
+    </label>
     <label>Lösung (optional) <textarea name="loesung" rows="4"></textarea></label>
+    <label>Bild zur Lösung (optional)
+      <input type="file" name="bild_loesung" accept="image/*">
+    </label>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
       <label>Max. Punkte <input type="number" name="max_punkte" step="0.5" min="0.5" required></label>
       <label>AFB-Niveau
@@ -20,7 +26,18 @@
       </label>
     </div>
     <label>Tags (kommagetrennt)
-      <input type="text" name="tags" placeholder="optional">
+      <input type="text" name="tags" placeholder="optional, z.B. Übung, Hausaufgabe">
+    </label>
+
+    <label style="margin-top:.5rem;">Diese Aufgabe entspricht direkt folgendem Grundwissen (optional)
+      <select name="grundwissen_id">
+        <option value="">– keine –</option>
+        {% for gw in grundwissen_liste %}
+        <option value="{{ gw.id }}">
+          Kl.{{ gw.jahrgangsstufe }} · {{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %} — {{ gw.aufgabe | truncate(60) }}
+        </option>
+        {% endfor %}
+      </select>
     </label>
 
     <fieldset style="margin-top:1rem;">

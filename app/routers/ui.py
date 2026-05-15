@@ -2,7 +2,9 @@ import csv
 import io
 import math
 import unicodedata
+import uuid
 from datetime import datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 from fastapi.responses import RedirectResponse
@@ -303,7 +305,12 @@ def leistung_detail(lid: int, request: Request, db: Session = Depends(get_db)):
     has_ergebnisse = bool(la_ids and db.query(SchuelerErgebnis).filter(SchuelerErgebnis.leistung_aufgabe_id.in_(la_ids)).count() > 0) or \
                      bool(db.query(SchuelerErgebnis).filter(SchuelerErgebnis.schriftliche_leistung_id == lid).count() > 0)
     from app.models.test_vorlage import TestVorlage
-    aufgaben_pool = db.query(Aufgabe).order_by(Aufgabe.titel).all()
+    aufgaben_pool = (
+        db.query(Aufgabe)
+        .filter(sa.not_(sa.func.lower(Aufgabe.tags).contains("übung")))
+        .order_by(Aufgabe.titel)
+        .all()
+    )
     vorlagen = db.query(TestVorlage).order_by(TestVorlage.name).all()
     return templates.TemplateResponse(request, "leistung_detail.html", {
         "leistung": l, "leistung_aufgaben": las,
@@ -1038,10 +1045,26 @@ def _kapitel_liste(db):
     return sorted(set(r[0] for r in db.query(Buchaufgabe.kapitel).distinct().all()))
 
 
+async def _bild_speichern(upload: UploadFile | None, aufgabe_id: int, typ: str) -> str | None:
+    """Speichert ein hochgeladenes Bild und gibt den Dateinamen zurück (oder None)."""
+    if not upload or not upload.filename:
+        return None
+    suffix = Path(upload.filename).suffix.lower()
+    if suffix not in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+        return None
+    name = f"{aufgabe_id}_{typ}_{uuid.uuid4().hex[:8]}{suffix}"
+    dest = Path("uploads/aufgaben") / name
+    dest.write_bytes(await upload.read())
+    return name
+
+
 @router.get("/aufgaben/neu")
 def aufgabe_neu_form(request: Request, db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen
+    gw_liste = db.query(Grundwissen).order_by(Grundwissen.jahrgangsstufe, Grundwissen.kapitel).all()
     return templates.TemplateResponse(request, "aufgabe_neu.html", {
         "kapitel_liste": _kapitel_liste(db),
+        "grundwissen_liste": gw_liste,
     })
 
 
@@ -1061,19 +1084,26 @@ def aufgaben_meta_jahrgangsstufe(kapitel: str = "", db: Session = Depends(get_db
 
 
 @router.post("/aufgaben")
-def aufgabe_erstellen(
+async def aufgabe_erstellen(
     titel: str = Form(...), aufgabenstellung: str = Form(...), loesung: str = Form(""),
     max_punkte: float = Form(...), afb_niveau: str = Form(...), tags: str = Form(""),
     jahrgangsstufe: str = Form(""), kapitel: str = Form(""), unterkapitel: str = Form(""),
+    grundwissen_id: str = Form(""),
+    bild_aufgabe: UploadFile = File(None), bild_loesung: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
     js = int(jahrgangsstufe) if jahrgangsstufe.strip().isdigit() else None
+    gw_id = int(grundwissen_id) if grundwissen_id.strip().isdigit() else None
     a = Aufgabe(titel=titel, aufgabenstellung=aufgabenstellung, loesung=loesung or None,
                 max_punkte=max_punkte, afb_niveau=AfbNiveau(afb_niveau), tags=tags or None,
-                jahrgangsstufe=js, kapitel=kapitel or None, unterkapitel=unterkapitel or None)
+                jahrgangsstufe=js, kapitel=kapitel or None, unterkapitel=unterkapitel or None,
+                grundwissen_id=gw_id)
     db.add(a)
     db.commit()
     db.refresh(a)
+    a.bild_aufgabe = await _bild_speichern(bild_aufgabe, a.id, "aufgabe")
+    a.bild_loesung = await _bild_speichern(bild_loesung, a.id, "loesung")
+    db.commit()
     return REDIRECT(f"/ui/aufgaben/{a.id}?msg=Aufgabe+angelegt")
 
 
@@ -1097,25 +1127,29 @@ def aufgabe_detail(a_id: int, request: Request, db: Session = Depends(get_db)):
     uk_liste = sorted(set(r[0] for r in db.query(Buchaufgabe.unterkapitel)
                           .filter(Buchaufgabe.kapitel == a.kapitel, Buchaufgabe.unterkapitel != "")
                           .distinct().all())) if a.kapitel else []
-    from app.models.grundwissen import AufgabeGrundwissen
+    from app.models.grundwissen import AufgabeGrundwissen, Grundwissen
     gw_eintraege = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.aufgabe_id == a_id).all()
+    gw_liste = db.query(Grundwissen).order_by(Grundwissen.jahrgangsstufe, Grundwissen.kapitel).all()
     return templates.TemplateResponse(request, "aufgabe_detail.html", {
         "aufgabe": a,
         "kompetenzen_aktuell": aks, "alle_kompetenzen": alle_k,
         "kompetenzen_map": kompetenzen_map,
         "kapitel_liste": kap_liste, "unterkapitel_liste": uk_liste,
         "grundwissen_aktuell": gw_eintraege,
+        "grundwissen_liste": gw_liste,
         "msg": request.query_params.get("msg"),
         "err": request.query_params.get("err"),
     })
 
 
 @router.post("/aufgaben/{a_id}/bearbeiten")
-def aufgabe_bearbeiten(
+async def aufgabe_bearbeiten(
     a_id: int, titel: str = Form(...), aufgabenstellung: str = Form(...),
     loesung: str = Form(""), max_punkte: float = Form(...),
     afb_niveau: str = Form(...), tags: str = Form(""),
     jahrgangsstufe: str = Form(""), kapitel: str = Form(""), unterkapitel: str = Form(""),
+    grundwissen_id: str = Form(""),
+    bild_aufgabe: UploadFile = File(None), bild_loesung: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
     a = db.get(Aufgabe, a_id)
@@ -1124,6 +1158,13 @@ def aufgabe_bearbeiten(
     a.afb_niveau = AfbNiveau(afb_niveau); a.tags = tags or None
     a.jahrgangsstufe = int(jahrgangsstufe) if jahrgangsstufe.strip().isdigit() else None
     a.kapitel = kapitel or None; a.unterkapitel = unterkapitel or None
+    a.grundwissen_id = int(grundwissen_id) if grundwissen_id.strip().isdigit() else None
+    neu_aufgabe = await _bild_speichern(bild_aufgabe, a_id, "aufgabe")
+    neu_loesung = await _bild_speichern(bild_loesung, a_id, "loesung")
+    if neu_aufgabe:
+        a.bild_aufgabe = neu_aufgabe
+    if neu_loesung:
+        a.bild_loesung = neu_loesung
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a_id}?msg=Gespeichert")
 
@@ -1474,10 +1515,26 @@ def grundwissen_detail(gid: int, request: Request, db: Session = Depends(get_db)
     from app.models.grundwissen import Grundwissen as GW, AufgabeGrundwissen
     g = db.get(GW, gid)
     verwendungen = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.grundwissen_id == gid).all()
+    aufgaben_alle = db.query(Aufgabe).order_by(Aufgabe.titel).all()
     return templates.TemplateResponse(request, "grundwissen_detail.html", {
         "eintrag": g, "verwendungen": verwendungen,
+        "aufgaben_alle": aufgaben_alle,
         "msg": request.query_params.get("msg"),
     })
+
+
+@router.post("/grundwissen/{gid}/aufgabe-verknuepfen")
+def grundwissen_aufgabe_verknuepfen(gid: int, aufgabe_id: str = Form(""), db: Session = Depends(get_db)):
+    a_id = int(aufgabe_id) if aufgabe_id.strip().isdigit() else None
+    # Vorherige Verknüpfung dieser Grundwissen-ID aufheben
+    for a in db.query(Aufgabe).filter(Aufgabe.grundwissen_id == gid).all():
+        a.grundwissen_id = None
+    if a_id:
+        a = db.get(Aufgabe, a_id)
+        if a:
+            a.grundwissen_id = gid
+    db.commit()
+    return REDIRECT(f"/ui/grundwissen/{gid}?msg=Verknüpfung+gespeichert")
 
 
 @router.post("/grundwissen/{gid}/bearbeiten")

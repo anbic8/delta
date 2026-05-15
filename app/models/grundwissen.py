@@ -20,6 +20,9 @@ class Grundwissen(Base):
     aufgabe_grundwissen: Mapped[list["AufgabeGrundwissen"]] = relationship(
         back_populates="grundwissen", cascade="all, delete-orphan"
     )
+    aufgaben_direkt: Mapped[list["Aufgabe"]] = relationship(
+        "Aufgabe", foreign_keys="[Aufgabe.grundwissen_id]", back_populates="grundwissen"
+    )
 
 
 class AufgabeGrundwissen(Base):

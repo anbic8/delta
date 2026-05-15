@@ -3,10 +3,15 @@
 {% block content %}
 <p><a href="/ui/aufgaben">← Aufgabenpool</a></p>
 <h2>{{ aufgabe.titel }}</h2>
+{% if msg %}<div class="alert-success">{{ msg }}</div>{% endif %}
+{% if err %}<div class="alert-error">{{ err }}</div>{% endif %}
 <p>
   Max. Punkte: <strong>{{ aufgabe.max_punkte }}</strong> ·
   AFB: <span class="badge">{{ aufgabe.afb_niveau | afb_label }}</span> ·
   Angelegt: {{ aufgabe.erstellt_am.strftime('%d.%m.%Y') if aufgabe.erstellt_am else '' }}
+  {% if aufgabe.grundwissen %}
+  · <span class="badge" style="background:#fef9c3; color:#854d0e;">Grundwissensaufgabe</span>
+  {% endif %}
 </p>
 
 <div style="display:grid; grid-template-columns:1fr 1fr; gap:2rem; align-items:start;">
@@ -14,11 +19,19 @@
   <section>
     <h3>Aufgabenstellung</h3>
     <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; white-space:pre-wrap;">{{ aufgabe.aufgabenstellung }}</div>
+    {% if aufgabe.bild_aufgabe %}
+    <img src="/uploads/aufgaben/{{ aufgabe.bild_aufgabe }}" alt="Bild zur Aufgabe"
+         style="max-width:100%; margin-top:.75rem; border-radius:.4rem; border:1px solid #dee2e6;">
+    {% endif %}
 
     {% if aufgabe.loesung %}
     <details style="margin-top:1rem;">
       <summary>Lösung anzeigen</summary>
       <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; margin-top:.5rem; white-space:pre-wrap;">{{ aufgabe.loesung | punkte_marker | safe }}</div>
+      {% if aufgabe.bild_loesung %}
+      <img src="/uploads/aufgaben/{{ aufgabe.bild_loesung }}" alt="Bild zur Lösung"
+           style="max-width:100%; margin-top:.75rem; border-radius:.4rem; border:1px solid #dee2e6;">
+      {% endif %}
     </details>
     {% endif %}
 
@@ -36,13 +49,30 @@
     </p>
     {% endif %}
 
+    {% if aufgabe.grundwissen %}
+    <p style="margin-top:.5rem;">
+      <small>🎓 Grundwissen:
+        <a href="/ui/grundwissen/{{ aufgabe.grundwissen_id }}">
+          {{ aufgabe.grundwissen.kapitel }} — {{ aufgabe.grundwissen.aufgabe | truncate(60) }}
+        </a>
+      </small>
+    </p>
+    {% endif %}
+
     <details style="margin-top:1.5rem;">
       <summary>Aufgabe bearbeiten</summary>
       <div style="display:flex; gap:1rem; align-items:flex-start; margin-top:.75rem;">
-      <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/bearbeiten" style="flex:1; min-width:0;">
+      <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/bearbeiten"
+            enctype="multipart/form-data" style="flex:1; min-width:0;">
         <label>Titel <input type="text" name="titel" value="{{ aufgabe.titel }}" required></label>
         <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="4">{{ aufgabe.aufgabenstellung }}</textarea></label>
+        <label>Neues Bild zur Aufgabenstellung (leer lassen = unverändert)
+          <input type="file" name="bild_aufgabe" accept="image/*">
+        </label>
         <label>Lösung <textarea name="loesung" rows="4">{{ aufgabe.loesung or '' }}</textarea></label>
+        <label>Neues Bild zur Lösung (leer lassen = unverändert)
+          <input type="file" name="bild_loesung" accept="image/*">
+        </label>
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:.5rem;">
           <label>Max. Punkte <input type="number" name="max_punkte" step="0.5" value="{{ aufgabe.max_punkte }}" required></label>
           <label>AFB
@@ -54,6 +84,17 @@
           </label>
         </div>
         <label>Tags (kommagetrennt) <input type="text" name="tags" value="{{ aufgabe.tags or '' }}"></label>
+
+        <label style="margin-top:.5rem;">Entspricht direkt folgendem Grundwissen
+          <select name="grundwissen_id">
+            <option value="">– keine –</option>
+            {% for gw in grundwissen_liste %}
+            <option value="{{ gw.id }}" {% if aufgabe.grundwissen_id == gw.id %}selected{% endif %}>
+              Kl.{{ gw.jahrgangsstufe }} · {{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %} — {{ gw.aufgabe | truncate(60) }}
+            </option>
+            {% endfor %}
+          </select>
+        </label>
 
         <fieldset style="margin-top:.75rem;">
           <legend>Buchkapitel-Zuordnung</legend>

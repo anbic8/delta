@@ -57,7 +57,36 @@
   </section>
 
   <section>
-    <h3>Zugeordnete Aufgaben (Pool)</h3>
+    <h3>Verknüpfte Grundwissensaufgabe</h3>
+    <small class="hint">Diese Aufgabe aus dem Pool entspricht direkt diesem Grundwissen-Eintrag.</small>
+    {% set direkt = eintrag.aufgaben_direkt %}
+    {% if direkt %}
+    <p style="margin-top:.5rem;">
+      <a href="/ui/aufgaben/{{ direkt[0].id }}">{{ direkt[0].titel }}</a>
+      <span class="badge" style="background:#fef9c3; color:#854d0e;">Grundwissensaufgabe</span>
+    </p>
+    {% else %}
+    <p style="margin-top:.5rem;"><small style="color:#6c757d;">Keine Aufgabe verknüpft.</small></p>
+    {% endif %}
+
+    <details style="margin-top:.75rem;">
+      <summary>Verknüpfung ändern</summary>
+      <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/aufgabe-verknuepfen" style="margin-top:.5rem;">
+        <label>Aufgabe aus dem Pool
+          <select name="aufgabe_id">
+            <option value="">– keine –</option>
+            {% for a in aufgaben_alle %}
+            <option value="{{ a.id }}" {% if direkt and direkt[0].id == a.id %}selected{% endif %}>
+              {{ a.titel }}{% if a.kapitel %} · {{ a.kapitel }}{% endif %}
+            </option>
+            {% endfor %}
+          </select>
+        </label>
+        <button type="submit" style="margin-top:.5rem;">Speichern</button>
+      </form>
+    </details>
+
+    <h3 style="margin-top:1.5rem;">Aufgaben mit diesem als Voraussetzung</h3>
     {% if verwendungen %}
     <ul style="padding-left:1.25rem;">
       {% for ag in verwendungen %}
@@ -65,7 +94,7 @@
       {% endfor %}
     </ul>
     {% else %}
-    <p><small>Noch keiner Aufgabe zugeordnet.</small></p>
+    <p><small>Noch keiner Aufgabe als Voraussetzung zugeordnet.</small></p>
     {% endif %}
   </section>
 </div>
