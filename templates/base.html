@@ -140,6 +140,10 @@
     var btn = document.getElementById('theme-btn');
     if (btn) btn.textContent = next === 'dark' ? '☀ Light Mode' : '☾ Dark Mode';
   }
+  function deltaFilterSelect(input, sel) {
+    var q = input.value.toLowerCase();
+    for (var o of sel.options) { o.hidden = q !== '' && !o.text.toLowerCase().includes(q); }
+  }
   </script>
 </body>
 </html>

@@ -29,19 +29,26 @@
       <input type="text" name="tags" placeholder="optional, z.B. Übung, Hausaufgabe">
     </label>
 
-    <label style="margin-top:.5rem;">Grundwissen als Vorkenntnis (Mehrfachauswahl mit Strg/Cmd)
-      <select name="gw_vorkenntnis" multiple size="5"
-              style="height:auto; min-height:5rem;">
+    <div style="margin-top:.5rem;">
+      <label style="margin-bottom:.25rem; display:block;">Grundwissen als Vorkenntnis (Mehrfachauswahl mit Strg/Cmd)</label>
+      <input type="search" placeholder="Filtern…" autocomplete="off"
+             oninput="deltaFilterSelect(this, document.getElementById('gw-vorkenntnis-neu'))"
+             style="margin-bottom:.25rem; max-width:100%;">
+      <select name="gw_vorkenntnis" id="gw-vorkenntnis-neu" multiple size="6">
         {% for gw in grundwissen_liste %}
         <option value="{{ gw.id }}">
           Kl.{{ gw.jahrgangsstufe }} · {{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %} — {{ gw.aufgabe | truncate(60) }}
         </option>
         {% endfor %}
       </select>
-    </label>
+    </div>
 
-    <label style="margin-top:.5rem;">Diese Aufgabe entspricht direkt folgendem Grundwissen (optional)
-      <select name="grundwissen_id">
+    <div style="margin-top:.5rem;">
+      <label style="margin-bottom:.25rem; display:block;">Diese Aufgabe entspricht direkt folgendem Grundwissen (optional)</label>
+      <input type="search" placeholder="Filtern…" autocomplete="off"
+             oninput="deltaFilterSelect(this, document.getElementById('gw-direkt-neu'))"
+             style="margin-bottom:.25rem; max-width:100%;">
+      <select name="grundwissen_id" id="gw-direkt-neu">
         <option value="">– keine –</option>
         {% for gw in grundwissen_liste %}
         <option value="{{ gw.id }}">
@@ -49,7 +56,7 @@
         </option>
         {% endfor %}
       </select>
-    </label>
+    </div>
 
     <fieldset style="margin-top:1rem;">
       <legend>Buchkapitel-Zuordnung</legend>

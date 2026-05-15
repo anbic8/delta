@@ -85,8 +85,12 @@
         </div>
         <label>Tags (kommagetrennt) <input type="text" name="tags" value="{{ aufgabe.tags or '' }}"></label>
 
-        <label style="margin-top:.5rem;">Entspricht direkt folgendem Grundwissen
-          <select name="grundwissen_id">
+        <div style="margin-top:.5rem;">
+          <label style="margin-bottom:.25rem; display:block;">Entspricht direkt folgendem Grundwissen</label>
+          <input type="search" placeholder="Filtern…" autocomplete="off"
+                 oninput="deltaFilterSelect(this, document.getElementById('gw-direkt-{{ aufgabe.id }}'))"
+                 style="margin-bottom:.25rem; max-width:100%;">
+          <select name="grundwissen_id" id="gw-direkt-{{ aufgabe.id }}">
             <option value="">– keine –</option>
             {% for gw in grundwissen_liste %}
             <option value="{{ gw.id }}" {% if aufgabe.grundwissen_id == gw.id %}selected{% endif %}>
@@ -94,7 +98,7 @@
             </option>
             {% endfor %}
           </select>
-        </label>
+        </div>
 
         <fieldset style="margin-top:.75rem;">
           <legend>Buchkapitel-Zuordnung</legend>

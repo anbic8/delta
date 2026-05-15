@@ -42,17 +42,19 @@
       <input type="url" name="theorielink" placeholder="https://…">
     </label>
 
-    <label style="margin-top:.75rem;">Verknüpfte Grundwissensaufgabe aus dem Pool (optional)
-      <select name="aufgabe_pool_id">
+    <div style="margin-top:.75rem;">
+      <label style="margin-bottom:.25rem; display:block;">Verknüpfte Grundwissensaufgabe aus dem Pool (optional)</label>
+      <input type="search" placeholder="Filtern…" autocomplete="off"
+             oninput="deltaFilterSelect(this, document.getElementById('aufgabe-pool-neu'))"
+             style="margin-bottom:.25rem; max-width:100%;">
+      <select name="aufgabe_pool_id" id="aufgabe-pool-neu">
         <option value="">– keine –</option>
         {% for a in aufgaben_alle %}
-        <option value="{{ a.id }}">
-          {{ a.titel }}{% if a.kapitel %} · {{ a.kapitel }}{% endif %}
-        </option>
+        <option value="{{ a.id }}">{{ a.titel }}{% if a.kapitel %} · {{ a.kapitel }}{% endif %}</option>
         {% endfor %}
       </select>
       <small class="hint">Wähle die Aufgabe, die direkt diesem Grundwissen entspricht.</small>
-    </label>
+    </div>
 
     <button type="submit" style="margin-top:1rem;">Anlegen</button>
   </form>

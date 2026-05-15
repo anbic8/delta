@@ -72,16 +72,18 @@
     <details style="margin-top:.75rem;">
       <summary>Verknüpfung ändern</summary>
       <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/aufgabe-verknuepfen" style="margin-top:.5rem;">
-        <label>Aufgabe aus dem Pool
-          <select name="aufgabe_id">
-            <option value="">– keine –</option>
-            {% for a in aufgaben_alle %}
-            <option value="{{ a.id }}" {% if direkt and direkt[0].id == a.id %}selected{% endif %}>
-              {{ a.titel }}{% if a.kapitel %} · {{ a.kapitel }}{% endif %}
-            </option>
-            {% endfor %}
-          </select>
-        </label>
+        <label style="margin-bottom:.25rem; display:block;">Aufgabe aus dem Pool</label>
+        <input type="search" placeholder="Filtern…" autocomplete="off"
+               oninput="deltaFilterSelect(this, document.getElementById('aufgabe-pool-{{ eintrag.id }}'))"
+               style="margin-bottom:.25rem; max-width:100%;">
+        <select name="aufgabe_id" id="aufgabe-pool-{{ eintrag.id }}">
+          <option value="">– keine –</option>
+          {% for a in aufgaben_alle %}
+          <option value="{{ a.id }}" {% if direkt and direkt[0].id == a.id %}selected{% endif %}>
+            {{ a.titel }}{% if a.kapitel %} · {{ a.kapitel }}{% endif %}
+          </option>
+          {% endfor %}
+        </select>
         <button type="submit" style="margin-top:.5rem;">Speichern</button>
       </form>
     </details>
