@@ -219,7 +219,10 @@ async def grundwissen_csv_import(kl_id: int, request: Request, file: UploadFile 
     except UnicodeDecodeError:
         text = raw.decode("latin-1")
 
-    reader = csv.DictReader(io.StringIO(text))
+    # Auto-detect delimiter (Komma oder Semikolon)
+    first_line = text.split("\n")[0]
+    delimiter = ";" if first_line.count(";") >= first_line.count(",") else ","
+    reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
     # Normalize header keys
     rows = [{k.strip(): v.strip() for k, v in row.items()} for row in reader]
 
