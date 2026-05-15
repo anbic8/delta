@@ -48,7 +48,6 @@ async def _ollama(system: str, user: str) -> str:
                     {"role": "user", "content": user},
                 ],
                 "temperature": 0.2,
-                "response_format": {"type": "json_object"},
             },
         )
         resp.raise_for_status()
