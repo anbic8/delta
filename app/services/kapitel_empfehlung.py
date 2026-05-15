@@ -98,17 +98,7 @@ def empfehlungen_fuer_kapitel(
             .all()
         )
 
-        scored = []
-        for ba in kandidaten:
-            ba_k_ids = {bak.kompetenz_id for bak in ba.kompetenzen}
-            komp_match = len(ba_k_ids & schwach_k_ids)
-            afb_match = 1 if ba.afb_niveau in ziel else 0
-            mfp_bonus = 1 if ba.minimalfahrplan else 0
-            score = ba.wichtigkeit * 10 + komp_match * 6 + afb_match * 3 + mfp_bonus
-            scored.append((score, ba.id, ba))
-
-        scored.sort(key=lambda x: -x[0])
-        ergebnis[uk] = [ba for _, _, ba in scored[:anzahl]]
+        ergebnis[uk] = _pick_aufgaben(kandidaten, schwach_k_ids, ziel, anzahl)
 
     return ergebnis, komps, afb_profil, ziel
 
@@ -135,19 +125,53 @@ def schueler_afb_profil(schueler_id: int, db: Session) -> dict[AfbNiveau, float]
     return {afb: round(sum(v) / len(v), 1) for afb, v in sammel.items()}
 
 
+def _score_ba(ba, schwach_k_ids, ziel) -> float:
+    ba_k_ids = {bak.kompetenz_id for bak in ba.kompetenzen}
+    return (
+        ba.wichtigkeit * 10
+        + len(ba_k_ids & schwach_k_ids) * 6
+        + (1 if ba.afb_niveau in ziel else 0) * 3
+        + (1 if ba.minimalfahrplan else 0)
+    )
+
+
+def _pick_aufgaben(kandidaten, schwach_k_ids, ziel, anzahl) -> list:
+    """
+    Wählt Aufgaben aus kandidaten:
+    - Mindestens eine pro einzigartiger Beschreibung (beste nach Score)
+    - Danach auffüllen bis anzahl erreicht
+    """
+    scored = sorted(
+        [((_score_ba(ba, schwach_k_ids, ziel)), ba.id, ba) for ba in kandidaten],
+        key=lambda x: -x[0],
+    )
+
+    # Beste Aufgabe pro Beschreibung
+    beste_pro_beschr: dict[str, tuple] = {}
+    rest: list[tuple] = []
+    for sc, ba_id, ba in scored:
+        key = (ba.beschreibung or "").strip()
+        if key not in beste_pro_beschr:
+            beste_pro_beschr[key] = (sc, ba_id, ba)
+        else:
+            rest.append((sc, ba_id, ba))
+
+    result = [ba for _, _, ba in sorted(beste_pro_beschr.values(), key=lambda x: -x[0])]
+    gewählt_ids = {ba.id for ba in result}
+
+    # Auffüllen bis anzahl, wenn noch Platz
+    for _, _, ba in rest:
+        if len(result) >= anzahl:
+            break
+        if ba.id not in gewählt_ids:
+            result.append(ba)
+            gewählt_ids.add(ba.id)
+
+    return result
+
+
 def _score_kandidaten(kandidaten, schwach_k_ids, ziel, anzahl):
-    scored = []
-    for ba in kandidaten:
-        ba_k_ids = {bak.kompetenz_id for bak in ba.kompetenzen}
-        score = (
-            ba.wichtigkeit * 10
-            + len(ba_k_ids & schwach_k_ids) * 6
-            + (1 if ba.afb_niveau in ziel else 0) * 3
-            + (1 if ba.minimalfahrplan else 0)
-        )
-        scored.append((score, ba.id, ba))
-    scored.sort(key=lambda x: -x[0])
-    return [ba for _, _, ba in scored[:anzahl]]
+    return _pick_aufgaben(kandidaten, schwach_k_ids, ziel, anzahl)
 
 
 def empfehlungen_pro_schueler(
