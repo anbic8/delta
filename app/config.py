@@ -15,6 +15,12 @@ class Settings(BaseSettings):
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
 
+    # LLM-Integration
+    llm_backend: str = "ollama"          # "ollama" | "claude"
+    ollama_url: str = "http://localhost:11434"
+    ollama_model: str = "llama3.2"
+    anthropic_api_key: str = ""
+
     empfehlung_schwelle_schwach: float = 60.0
     empfehlung_schwelle_sehr_schwach: float = 40.0
     empfehlung_max_pro_kapitel: int = 2

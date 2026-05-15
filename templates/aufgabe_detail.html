@@ -63,9 +63,15 @@
       <summary>Aufgabe bearbeiten</summary>
       <div style="display:flex; gap:1rem; align-items:flex-start; margin-top:.75rem;">
       <form method="post" action="/ui/aufgaben/{{ aufgabe.id }}/bearbeiten"
-            enctype="multipart/form-data" style="flex:1; min-width:0;">
+            enctype="multipart/form-data"
+            id="form-aufgabe-{{ aufgabe.id }}" style="flex:1; min-width:0;">
         <label>Titel <input type="text" name="titel" value="{{ aufgabe.titel }}" required></label>
-        <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="4">{{ aufgabe.aufgabenstellung }}</textarea></label>
+        <label>Aufgabenstellung
+          <textarea name="aufgabenstellung" id="ta-aufgabe-{{ aufgabe.id }}" rows="4">{{ aufgabe.aufgabenstellung }}</textarea>
+        </label>
+        {% set form_id = "form-aufgabe-" ~ aufgabe.id %}
+        {% set textarea_id = "ta-aufgabe-" ~ aufgabe.id %}
+        {% include "_llm_button.html" %}
         <label>Neues Bild zur Aufgabenstellung (leer lassen = unverändert)
           <input type="file" name="bild_aufgabe" accept="image/*">
         </label>

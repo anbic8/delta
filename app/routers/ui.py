@@ -1291,6 +1291,20 @@ async def _bild_speichern(upload: UploadFile | None, aufgabe_id: int, typ: str) 
     return name
 
 
+@router.post("/aufgaben/llm-vorschlag")
+async def aufgabe_llm_vorschlag(
+    aufgabenstellung: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    from app.services.llm import aufgabe_vorschlag
+    from fastapi.responses import JSONResponse
+    kapitel = _kapitel_liste(db)
+    komps = [{"kuerzel": k.kuerzel, "bezeichnung": k.bezeichnung}
+             for k in db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()]
+    result = await aufgabe_vorschlag(aufgabenstellung, kapitel, komps)
+    return JSONResponse(result)
+
+
 @router.get("/aufgaben/neu")
 def aufgabe_neu_form(request: Request, db: Session = Depends(get_db)):
     from app.models.grundwissen import Grundwissen

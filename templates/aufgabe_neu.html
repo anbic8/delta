@@ -5,9 +5,14 @@
 <h2>Neue Aufgabe</h2>
 
 <div style="display:flex; gap:1.5rem; align-items:flex-start;">
-  <form method="post" action="/ui/aufgaben" enctype="multipart/form-data" style="flex:1; min-width:0;">
+  <form method="post" action="/ui/aufgaben" enctype="multipart/form-data"
+        id="form-aufgabe-neu" style="flex:1; min-width:0;">
     <label>Titel <input type="text" name="titel" required></label>
-    <label>Aufgabenstellung <textarea name="aufgabenstellung" rows="5" required></textarea></label>
+    <label>Aufgabenstellung
+      <textarea name="aufgabenstellung" id="ta-aufgabe-neu" rows="5" required></textarea>
+    </label>
+    {% set form_id = "form-aufgabe-neu" %}{% set textarea_id = "ta-aufgabe-neu" %}
+    {% include "_llm_button.html" %}
     <label>Bild zur Aufgabenstellung (optional)
       <input type="file" name="bild_aufgabe" accept="image/*">
     </label>

@@ -1,0 +1,77 @@
+{# KI-Vorschlag-Button. Erwartet: form_id (ID des umgebenden <form>), textarea_id (Aufgabenstellung) #}
+<div style="display:flex; align-items:center; gap:.5rem; margin:.25rem 0 .75rem;">
+  <button type="button" id="llm-btn-{{ form_id }}"
+          onclick="deltaLlmVorschlag('{{ form_id }}', '{{ textarea_id }}')"
+          style="background:#7c3aed; color:#fff; border:none; border-radius:.4rem;
+                 padding:.35rem .85rem; font-size:.85rem; cursor:pointer; white-space:nowrap;">
+    🤖 KI-Vorschlag
+  </button>
+  <span id="llm-status-{{ form_id }}" style="font-size:.8rem; color:#6c757d;"></span>
+</div>
+
+<script>
+async function deltaLlmVorschlag(formId, textareaId) {
+  const form  = document.getElementById(formId);
+  const ta    = document.getElementById(textareaId);
+  const btn   = document.getElementById('llm-btn-' + formId);
+  const status = document.getElementById('llm-status-' + formId);
+  if (!ta.value.trim()) { status.textContent = 'Bitte zuerst Aufgabenstellung eingeben.'; return; }
+
+  btn.disabled = true;
+  status.textContent = '⏳ Analysiere…';
+
+  const fd = new FormData();
+  fd.append('aufgabenstellung', ta.value);
+
+  try {
+    const resp = await fetch('/ui/aufgaben/llm-vorschlag', { method: 'POST', body: fd });
+    const d = await resp.json();
+
+    if (d.error) { status.textContent = '❌ ' + d.error; return; }
+
+    // Lösung
+    const loesungEl = form.querySelector('[name="loesung"]');
+    if (loesungEl && d.loesung) loesungEl.value = d.loesung;
+
+    // AFB
+    const afbEl = form.querySelector('[name="afb_niveau"]');
+    if (afbEl && d.afb_niveau) afbEl.value = d.afb_niveau;
+
+    // Kapitel – HTMX-Select triggern damit UK-Liste nachlädt
+    const kapEl = form.querySelector('[name="kapitel"]');
+    if (kapEl && d.kapitel) {
+      kapEl.value = d.kapitel;
+      kapEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    // Unterkapitel nach kurzer Pause (UK-Liste braucht Zeit zum Laden)
+    if (d.unterkapitel) {
+      setTimeout(() => {
+        const ukEl = form.querySelector('[name="unterkapitel"]');
+        if (ukEl) ukEl.value = d.unterkapitel;
+      }, 800);
+    }
+
+    // Kompetenzen – Gewichtungsfelder befüllen
+    if (d.kompetenzen && d.kompetenzen.length > 0) {
+      // Alle Kompetenz-Gewichtungsfelder zurücksetzen
+      form.querySelectorAll('[name^="gew_"]').forEach(el => { el.value = ''; });
+      const n = d.kompetenzen.length;
+      const gew = (1 / n).toFixed(2);
+      d.kompetenzen.forEach(k => {
+        // gew_{kompetenz_id} – suche Label mit Kuerzel
+        form.querySelectorAll('[name^="gew_"]').forEach(el => {
+          const label = el.closest('div')?.querySelector('label')?.textContent || '';
+          if (label.startsWith(k + ' ')) el.value = gew;
+        });
+      });
+    }
+
+    status.textContent = '✓ Vorschlag eingetragen';
+  } catch(e) {
+    status.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
