@@ -72,8 +72,9 @@
   </table>
 
   <!-- Schriftliche Leistungen -->
-  {% if item.schriftliche_ergebnisse %}
-  <h2>Schriftliche Leistungen</h2>
+  {% set grosse_ln = item.schriftliche_ergebnisse | selectattr('leistung.art', 'equalto', 'schulaufgabe') | list %}
+  {% set kleine_ln = item.schriftliche_ergebnisse | rejectattr('leistung.art', 'equalto', 'schulaufgabe') | list %}
+  {% macro ln_tabelle(eintraege) %}
   <table>
     <thead>
       <tr>
@@ -86,7 +87,7 @@
       </tr>
     </thead>
     <tbody>
-    {% for e in item.schriftliche_ergebnisse %}
+    {% for e in eintraege %}
     <tr {% if e.grenzfall %}class="grenzfall"{% endif %}>
       <td>{{ e.leistung.datum.strftime('%d.%m.%Y') if e.leistung.datum else '–' }}</td>
       <td>{{ e.leistung.titel }}</td>
@@ -108,6 +109,16 @@
     {% endfor %}
     </tbody>
   </table>
+  {% endmacro %}
+
+  {% if grosse_ln %}
+  <h2>Große Leistungsnachweise (Schulaufgaben)</h2>
+  {{ ln_tabelle(grosse_ln) }}
+  {% endif %}
+
+  {% if kleine_ln %}
+  <h2>Kleine Leistungsnachweise</h2>
+  {{ ln_tabelle(kleine_ln) }}
   {% endif %}
 
   <!-- Mündliche Noten -->

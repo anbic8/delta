@@ -34,8 +34,9 @@
     </table>
 
     <!-- Schriftliche Leistungen -->
-    <h4 style="margin-top:1.5rem;">Schriftliche Leistungen</h4>
-    {% if schriftliche_ergebnisse %}
+    {% set grosse_ln = schriftliche_ergebnisse | selectattr('leistung.art', 'equalto', 'schulaufgabe') | list %}
+    {% set kleine_ln = schriftliche_ergebnisse | rejectattr('leistung.art', 'equalto', 'schulaufgabe') | list %}
+    {% macro noten_tabelle(eintraege) %}
     <table style="font-size:.88rem;">
       <thead>
         <tr>
@@ -45,7 +46,7 @@
         </tr>
       </thead>
       <tbody>
-      {% for e in schriftliche_ergebnisse %}
+      {% for e in eintraege %}
       <tr {% if e.grenzfall %}class="grenzfall"{% endif %}>
         <td style="white-space:nowrap;">{{ e.leistung.datum }}</td>
         <td>{{ e.leistung.titel }}{% if e.grenzfall %} <span title="Grenzfall">🟡</span>{% endif %}</td>
@@ -66,9 +67,15 @@
       {% endfor %}
       </tbody>
     </table>
-    {% else %}
-    <p style="color:#6c757d; font-size:.88rem;">Noch keine schriftlichen Ergebnisse.</p>
-    {% endif %}
+    {% endmacro %}
+
+    <h4 style="margin-top:1.5rem;">Große Leistungsnachweise (Schulaufgaben)</h4>
+    {% if grosse_ln %}{{ noten_tabelle(grosse_ln) }}
+    {% else %}<p style="color:#6c757d; font-size:.88rem;">Keine Schulaufgaben.</p>{% endif %}
+
+    <h4 style="margin-top:1rem;">Kleine Leistungsnachweise</h4>
+    {% if kleine_ln %}{{ noten_tabelle(kleine_ln) }}
+    {% else %}<p style="color:#6c757d; font-size:.88rem;">Keine kleinen LN.</p>{% endif %}
 
     <!-- Mündliche Noten -->
     <h4 style="margin-top:1.5rem;">Mündliche Noten</h4>
