@@ -29,6 +29,17 @@
       <input type="text" name="tags" placeholder="optional, z.B. Übung, Hausaufgabe">
     </label>
 
+    <label style="margin-top:.5rem;">Grundwissen als Vorkenntnis (Mehrfachauswahl mit Strg/Cmd)
+      <select name="gw_vorkenntnis" multiple size="5"
+              style="height:auto; min-height:5rem;">
+        {% for gw in grundwissen_liste %}
+        <option value="{{ gw.id }}">
+          Kl.{{ gw.jahrgangsstufe }} · {{ gw.kapitel }}{% if gw.unterkapitel %} › {{ gw.unterkapitel }}{% endif %} — {{ gw.aufgabe | truncate(60) }}
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+
     <label style="margin-top:.5rem;">Diese Aufgabe entspricht direkt folgendem Grundwissen (optional)
       <select name="grundwissen_id">
         <option value="">– keine –</option>

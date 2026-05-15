@@ -1085,6 +1085,7 @@ def aufgaben_meta_jahrgangsstufe(kapitel: str = "", db: Session = Depends(get_db
 
 @router.post("/aufgaben")
 async def aufgabe_erstellen(
+    request: Request,
     titel: str = Form(...), aufgabenstellung: str = Form(...), loesung: str = Form(""),
     max_punkte: float = Form(...), afb_niveau: str = Form(...), tags: str = Form(""),
     jahrgangsstufe: str = Form(""), kapitel: str = Form(""), unterkapitel: str = Form(""),
@@ -1092,6 +1093,7 @@ async def aufgabe_erstellen(
     bild_aufgabe: UploadFile = File(None), bild_loesung: UploadFile = File(None),
     db: Session = Depends(get_db),
 ):
+    from app.models.grundwissen import AufgabeGrundwissen
     js = int(jahrgangsstufe) if jahrgangsstufe.strip().isdigit() else None
     gw_id = int(grundwissen_id) if grundwissen_id.strip().isdigit() else None
     a = Aufgabe(titel=titel, aufgabenstellung=aufgabenstellung, loesung=loesung or None,
@@ -1103,6 +1105,10 @@ async def aufgabe_erstellen(
     db.refresh(a)
     a.bild_aufgabe = await _bild_speichern(bild_aufgabe, a.id, "aufgabe")
     a.bild_loesung = await _bild_speichern(bild_loesung, a.id, "loesung")
+    form = await request.form()
+    for gw_vid in form.getlist("gw_vorkenntnis"):
+        if str(gw_vid).isdigit():
+            db.add(AufgabeGrundwissen(aufgabe_id=a.id, grundwissen_id=int(gw_vid)))
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a.id}?msg=Aufgabe+angelegt")
 
@@ -1486,8 +1492,10 @@ def grundwissen_suche(request: Request, q: str = "", js: str = "", kap: str = ""
 
 @router.get("/grundwissen/neu")
 def grundwissen_neu_form(request: Request, db: Session = Depends(get_db)):
+    aufgaben_alle = db.query(Aufgabe).order_by(Aufgabe.titel).all()
     return templates.TemplateResponse(request, "grundwissen_neu.html", {
         "kapitel_liste": _kapitel_liste(db),
+        "aufgaben_alle": aufgaben_alle,
     })
 
 
@@ -1497,6 +1505,7 @@ def grundwissen_erstellen(
     kapitel: str = Form(""), kapitel_frei: str = Form(""),
     unterkapitel_sel: str = Form(""), unterkapitel_frei: str = Form(""),
     aufgabe: str = Form(...), loesung: str = Form(""), theorielink: str = Form(""),
+    aufgabe_pool_id: str = Form(""),
     db: Session = Depends(get_db),
 ):
     from app.models.grundwissen import Grundwissen as GW
@@ -1507,6 +1516,11 @@ def grundwissen_erstellen(
     db.add(g)
     db.commit()
     db.refresh(g)
+    if aufgabe_pool_id.strip().isdigit():
+        a = db.get(Aufgabe, int(aufgabe_pool_id))
+        if a:
+            a.grundwissen_id = g.id
+            db.commit()
     return REDIRECT(f"/ui/grundwissen/{g.id}?msg=Angelegt")
 
 
