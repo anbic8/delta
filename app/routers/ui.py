@@ -403,7 +403,7 @@ def leistung_erstellen(
     db: Session = Depends(get_db),
 ):
     from datetime import date
-    ist_detailliert = (art == "schulaufgabe") or (detailliert == "true")
+    ist_detailliert = (art in ("schulaufgabe", "test")) or (detailliert == "true")
     l = SchriftlicheLeistung(
         klasse_id=klasse_id, datum=date.fromisoformat(datum), titel=titel,
         art=LeistungArt(art), detailliert=ist_detailliert, gewichtung=gewichtung,
@@ -425,7 +425,7 @@ def leistung_detail(lid: int, request: Request, db: Session = Depends(get_db)):
     from app.models.test_vorlage import TestVorlage
     aufgaben_pool = (
         db.query(Aufgabe)
-        .filter(sa.not_(sa.func.lower(Aufgabe.tags).contains("übung")))
+        .filter(Aufgabe.tags.is_(None) | ~Aufgabe.tags.ilike("%übung%"))
         .order_by(Aufgabe.titel)
         .all()
     )
