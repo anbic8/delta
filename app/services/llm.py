@@ -40,20 +40,19 @@ async def _ollama(system: str, user: str) -> str:
     from app.config import settings
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(
-            f"{settings.ollama_url}/api/chat",
+            f"{settings.ollama_url}/v1/chat/completions",
             json={
                 "model": settings.ollama_model,
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
-                "format": "json",
-                "stream": False,
-                "options": {"temperature": 0.2},
+                "temperature": 0.2,
+                "response_format": {"type": "json_object"},
             },
         )
         resp.raise_for_status()
-        return resp.json()["message"]["content"]
+        return resp.json()["choices"][0]["message"]["content"]
 
 
 async def _claude(system: str, user: str) -> str:
