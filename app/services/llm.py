@@ -6,12 +6,12 @@ import json
 # Merkmale die aus dem Aufgabentext erkennbar sind
 
 _KOMP_BESCHREIBUNGEN = {
-    "K1": "Argumentieren/Begründen: Aufgabe fragt nach Begründung, Beweis, 'Warum', 'Zeige dass', Erklärung",
-    "K2": "Problemlösen: unbekannter Lösungsweg, mehrere Schritte nötig, kreative Strategie gefragt",
-    "K3": "Modellieren: Sachaufgabe mit realem Kontext, Übersetzung in Mathematik und zurück",
-    "K4": "Darstellen: Tabelle, Graph, Diagramm, geometrische Figur zeichnen oder lesen",
-    "K5": "Kommunizieren: Beschreiben, Erläutern, Fachbegriffe verwenden, Text lesen/verfassen",
-    "K6": "Rechnen/Operieren: Berechnung, Algorithmus, Formel anwenden, Gleichung lösen",
+    "K1": "Mathematisch argumentieren: Begründungen, Beweise, 'Zeige dass', 'Warum gilt...', Zusammenhänge erklären",
+    "K2": "Probleme mathematisch lösen: unbekannter Lösungsweg, Strategie selbst entwickeln, nicht-routinemäßig",
+    "K3": "Mathematisch modellieren: Sachaufgabe mit realem Kontext, Übersetzung Realität↔Mathematik",
+    "K4": "Mathematische Darstellungen verwenden: Graph, Tabelle, Diagramm, geometrische Figur zeichnen oder lesen",
+    "K5": "Mit symbolischen, formalen und technischen Elementen umgehen: Formel anwenden, Gleichung lösen, Algorithmus, Rechnung",
+    "K6": "Mathematisch kommunizieren: Ergebnisse beschreiben, Fachbegriffe, mathematische Texte lesen oder verfassen",
 }
 
 _AFB_BESCHREIBUNGEN = (
