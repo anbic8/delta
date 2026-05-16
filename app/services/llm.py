@@ -49,6 +49,11 @@ Analysiere die Aufgabe und antworte NUR mit gültigem JSON – kein Text davor o
 JSON-Schema (alle Felder PFLICHT):
 {{"loesung":"Musterlösung mit Rechenweg","afb_niveau":"AFB_I|AFB_II|AFB_III","kapitel":"exakt wie unten","unterkapitel":"exakt wie unten","kompetenzen":["K1","K6"]}}
 
+LaTeX-Formatierung in loesung und allen Feldern:
+- Inline-Mathematik: $Formel$ (z.B. $a^2 + b^2 = c^2$)
+- Block-Mathematik:  $$Formel$$ (z.B. $$\\frac{{1}}{{2}} \\cdot b \\cdot h$$)
+- Punkte markieren: [1P] hinter dem Schritt der 1 Punkt gibt
+
 AFB-Niveau – wähle anhand dieser Merkmale:
 {_AFB_BESCHREIBUNGEN}
 

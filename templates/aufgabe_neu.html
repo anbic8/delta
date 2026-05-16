@@ -101,6 +101,20 @@
     });
     </script>
 
+    {% if alle_kompetenzen %}
+    <fieldset style="margin-top:1rem;">
+      <legend>Kompetenzen (optional, Summe muss 1.0 ergeben)</legend>
+      <small class="hint">Wird vom KI-Vorschlag automatisch befüllt.</small>
+      {% for k in alle_kompetenzen %}
+      <div style="display:grid; grid-template-columns:2fr 1fr; gap:.5rem; align-items:center; margin-top:.3rem;">
+        <label style="margin:0;">{{ k.kuerzel }} – {{ k.bezeichnung }}</label>
+        <input type="number" name="gew_{{ k.id }}" step="0.05" min="0" max="1"
+               placeholder="0" id="gew-neu-{{ k.id }}">
+      </div>
+      {% endfor %}
+    </fieldset>
+    {% endif %}
+
     <button type="submit" style="margin-top:1rem;">Anlegen</button>
   </form>
 

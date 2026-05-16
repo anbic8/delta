@@ -1351,9 +1351,11 @@ async def aufgabe_llm_vorschlag(
 def aufgabe_neu_form(request: Request, db: Session = Depends(get_db)):
     from app.models.grundwissen import Grundwissen
     gw_liste = db.query(Grundwissen).order_by(Grundwissen.jahrgangsstufe, Grundwissen.kapitel).all()
+    alle_k = db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()
     return templates.TemplateResponse(request, "aufgabe_neu.html", {
         "kapitel_liste": _kapitel_liste(db),
         "grundwissen_liste": gw_liste,
+        "alle_kompetenzen": alle_k,
     })
 
 
@@ -1398,6 +1400,22 @@ async def aufgabe_erstellen(
     for gw_vid in form.getlist("gw_vorkenntnis"):
         if str(gw_vid).isdigit():
             db.add(AufgabeGrundwissen(aufgabe_id=a.id, grundwissen_id=int(gw_vid)))
+    # Kompetenzen aus Formular
+    alle_k = db.query(Kompetenz).all()
+    komp_eintraege = []
+    for k in alle_k:
+        val = form.get(f"gew_{k.id}", "")
+        try:
+            gew = float(val)
+            if gew > 0:
+                komp_eintraege.append((k.id, gew))
+        except (ValueError, TypeError):
+            pass
+    if komp_eintraege:
+        gesamt = sum(g for _, g in komp_eintraege)
+        for k_id, gew in komp_eintraege:
+            db.add(AufgabeKompetenz(aufgabe_id=a.id, kompetenz_id=k_id,
+                                    gewichtung=round(gew / gesamt, 4)))
     db.commit()
     return REDIRECT(f"/ui/aufgaben/{a.id}?msg=Aufgabe+angelegt")
 
