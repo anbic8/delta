@@ -258,7 +258,10 @@ function changeState(sid, delta) {
   if(!gid) return;
   if(!ST[sid]) ST[sid]={};
   const cur = ST[sid][gid]??0;
-  const next = Math.max(0, Math.min(4, cur + delta));
+  // Grau (0) nur am Anfang: einmal bewertet, bleibt min. Rot (1)
+  const next = delta > 0
+    ? Math.min(4, cur + 1)
+    : cur === 0 ? 0 : Math.max(1, cur - 1);
   if(next===cur) return;
   ST[sid][gid]=next;
   renderGrid();
