@@ -258,14 +258,7 @@ function changeState(sid, delta) {
   if(!gid) return;
   if(!ST[sid]) ST[sid]={};
   const cur = ST[sid][gid]??0;
-  let next;
-  if(delta > 0) {
-    // Klick: 0→1→2→3→4→1 (Grau nur am Anfang, dann Cycle 1–4)
-    next = cur === 0 ? 1 : cur === 4 ? 1 : cur + 1;
-  } else {
-    // Rechtsklick: 4→3→2→1→0 (Grau = zurücksetzen)
-    next = Math.max(0, cur - 1);
-  }
+  const next = Math.max(0, Math.min(4, cur + delta));
   if(next===cur) return;
   ST[sid][gid]=next;
   renderGrid();
