@@ -2252,3 +2252,93 @@ def buchaufgabe_loeschen(ba_id: int, db: Session = Depends(get_db)):
         db.delete(obj)
         db.commit()
     return REDIRECT("/ui/buchaufgaben?msg=Aufgabe+gelöscht")
+
+
+# ── Jahresplan ────────────────────────────────────────────────
+
+@router.get("/jahresplan")
+def jahresplan_index(request: Request, db: Session = Depends(get_db)):
+    from app.models.jahresplan import JahresplanStunde
+    from sqlalchemy import func
+    counts = dict(
+        db.query(JahresplanStunde.jahrgangsstufe, func.count(JahresplanStunde.id))
+        .group_by(JahresplanStunde.jahrgangsstufe)
+        .all()
+    )
+    return templates.TemplateResponse(request, "jahresplan_liste.html", {
+        "jahrgangsstufen": list(range(5, 14)),
+        "counts": counts,
+    })
+
+
+@router.get("/jahresplan/{jg}")
+def jahresplan_detail(jg: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.jahresplan import JahresplanStunde
+    from app.models.grundwissen import Grundwissen as GW
+    from sqlalchemy.orm import joinedload
+
+    eintraege = (
+        db.query(JahresplanStunde)
+        .filter(JahresplanStunde.jahrgangsstufe == jg)
+        .options(
+            joinedload(JahresplanStunde.gw1),
+            joinedload(JahresplanStunde.gw2),
+            joinedload(JahresplanStunde.gw3),
+        )
+        .order_by(JahresplanStunde.stunden_nr)
+        .all()
+    )
+    uk_paare = (
+        db.query(GW.kapitel, GW.unterkapitel)
+        .filter(GW.jahrgangsstufe == jg)
+        .distinct()
+        .order_by(GW.kapitel, GW.unterkapitel)
+        .all()
+    )
+    alle_gw = (
+        db.query(GW)
+        .filter(GW.jahrgangsstufe == jg)
+        .order_by(GW.kapitel, GW.unterkapitel, GW.aufgabe)
+        .all()
+    )
+    return templates.TemplateResponse(request, "jahresplan_detail.html", {
+        "jg": jg,
+        "eintraege": eintraege,
+        "uk_paare": uk_paare,
+        "alle_gw": alle_gw,
+    })
+
+
+@router.post("/jahresplan/{jg}/stunde")
+async def jahresplan_stunde_speichern(jg: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.jahresplan import JahresplanStunde
+    from fastapi import HTTPException
+    body = await request.json()
+    entry_id = body.get("id")
+    if entry_id:
+        e = db.get(JahresplanStunde, int(entry_id))
+        if not e or e.jahrgangsstufe != jg:
+            raise HTTPException(404)
+    else:
+        e = JahresplanStunde(jahrgangsstufe=jg)
+        db.add(e)
+    e.stunden_nr = int(body.get("stunden_nr") or 0)
+    e.kapitel = body.get("kapitel") or None
+    e.unterkapitel = body.get("unterkapitel") or None
+    e.gw1_id = int(body["gw1_id"]) if body.get("gw1_id") else None
+    e.gw2_id = int(body["gw2_id"]) if body.get("gw2_id") else None
+    e.gw3_id = int(body["gw3_id"]) if body.get("gw3_id") else None
+    e.notizen = body.get("notizen") or None
+    db.commit()
+    db.refresh(e)
+    return {"id": e.id}
+
+
+@router.delete("/jahresplan/{jg}/stunde/{stunde_id}")
+def jahresplan_stunde_loeschen(jg: int, stunde_id: int, db: Session = Depends(get_db)):
+    from app.models.jahresplan import JahresplanStunde
+    e = db.get(JahresplanStunde, stunde_id)
+    if e and e.jahrgangsstufe == jg:
+        db.delete(e)
+        db.commit()
+    return {"ok": True}

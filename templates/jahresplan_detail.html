@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% block title %}Jahresplan {{ jg }}{% endblock %}
+{% block content %}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; flex-wrap:wrap; gap:.5rem;">
+  <div>
+    <p style="margin:0;"><a href="/ui/jahresplan">← Jahrespläne</a></p>
+    <h2 style="margin:.25rem 0 0;">📅 Jahresplan – Jahrgangsstufe {{ jg }}</h2>
+  </div>
+  <button onclick="addRow()">+ Stunde hinzufügen</button>
+</div>
+
+<p id="save-hint" style="font-size:.82rem; color:#6c757d; margin-bottom:.75rem;">
+  Änderungen werden automatisch gespeichert.
+</p>
+
+<style>
+.jp-table { width:100%; border-collapse:collapse; font-size:.85rem; }
+.jp-table th { background:var(--pico-muted-background); padding:.4rem .5rem; text-align:left; white-space:nowrap; }
+.jp-table td { padding:.3rem .4rem; border-bottom:1px solid var(--pico-muted-border-color); vertical-align:top; }
+.jp-table tr:hover td { background:var(--pico-card-background-color); }
+.jp-nr { width:3rem; }
+.jp-nr input { width:3.2rem; text-align:center; padding:.25rem; }
+.jp-uk select { width:100%; min-width:160px; padding:.25rem; }
+.jp-gw { min-width:170px; }
+.jp-gw input[type=search] { width:100%; padding:.2rem .4rem; font-size:.75rem; margin-bottom:2px; }
+.jp-gw select { width:100%; padding:.25rem; font-size:.8rem; }
+.jp-notizen input { width:100%; padding:.25rem; }
+.jp-del button { background:none; border:none; cursor:pointer; color:#dc2626; font-size:1rem; padding:.2rem .4rem; }
+.jp-del button:hover { color:#991b1b; }
+.saved-flash { color:#16a34a; font-size:.75rem; }
+</style>
+
+<div style="overflow-x:auto;">
+<table class="jp-table">
+  <thead>
+    <tr>
+      <th class="jp-nr">Nr.</th>
+      <th>Kapitel / Unterkapitel</th>
+      <th>Grundwissen 1</th>
+      <th>Grundwissen 2</th>
+      <th>Grundwissen 3</th>
+      <th>Notizen</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody id="plan-body"></tbody>
+</table>
+</div>
+
+<div style="margin-top:.75rem;">
+  <button onclick="addRow()">+ Stunde hinzufügen</button>
+</div>
+
+<script>
+const JG = {{ jg }};
+
+const UK_PAARE = [{% for kap, uk in uk_paare %}
+  {kap:{{ kap|tojson }}, uk:{{ (uk or '')|tojson }}},
+{% endfor %}];
+
+const ALLE_GW = [{% for gw in alle_gw %}
+  {id:{{ gw.id }}, kap:{{ gw.kapitel|tojson }}, uk:{{ (gw.unterkapitel or '')|tojson }}, text:{{ gw.aufgabe|tojson }}},
+{% endfor %}];
+
+const EINTRAEGE = [{% for e in eintraege %}{
+  id:{{ e.id }},
+  stunden_nr:{{ e.stunden_nr }},
+  kapitel:{{ (e.kapitel or '')|tojson }},
+  unterkapitel:{{ (e.unterkapitel or '')|tojson }},
+  gw1_id:{{ e.gw1_id or 'null' }},
+  gw2_id:{{ e.gw2_id or 'null' }},
+  gw3_id:{{ e.gw3_id or 'null' }},
+  notizen:{{ (e.notizen or '')|tojson }},
+},{% endfor %}];
+
+// ── UK-Select HTML ──
+function buildUkOptions(selectedKap, selectedUk) {
+  let html = '<option value="">– kein UK –</option>';
+  UK_PAARE.forEach(({kap, uk}) => {
+    const val = kap + '|||' + uk;
+    const sel = (kap === selectedKap && uk === selectedUk) ? ' selected' : '';
+    const label = uk ? `${kap} › ${uk}` : kap;
+    html += `<option value="${esc(val)}"${sel}>${esc(label)}</option>`;
+  });
+  return html;
+}
+
+// ── GW-Select HTML ──
+function buildGwOptions(selectedId) {
+  let html = '<option value="">–</option>';
+  let lastKap = null;
+  ALLE_GW.forEach(gw => {
+    if (gw.kap !== lastKap) {
+      if (lastKap !== null) html += '</optgroup>';
+      html += `<optgroup label="${esc(gw.kap)}">`;
+      lastKap = gw.kap;
+    }
+    const sel = gw.id === selectedId ? ' selected' : '';
+    const label = (gw.uk ? gw.uk + ': ' : '') + gw.text;
+    html += `<option value="${gw.id}"${sel}>${esc(label.substring(0, 80))}</option>`;
+  });
+  if (lastKap !== null) html += '</optgroup>';
+  return html;
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Zeile bauen ──
+function buildRow(data) {
+  const tr = document.createElement('tr');
+  tr.dataset.id = data.id || '';
+
+  // Nr
+  const tdNr = document.createElement('td');
+  tdNr.className = 'jp-nr';
+  tdNr.innerHTML = `<input type="number" class="f-nr" value="${data.stunden_nr || ''}" min="1" onchange="saveRow(this.closest('tr'))">`;
+  tr.appendChild(tdNr);
+
+  // UK
+  const tdUk = document.createElement('td');
+  tdUk.className = 'jp-uk';
+  tdUk.innerHTML = `<select class="f-uk" onchange="saveRow(this.closest('tr'))">${buildUkOptions(data.kapitel, data.unterkapitel)}</select>`;
+  tr.appendChild(tdUk);
+
+  // GW 1 / 2 / 3
+  ['gw1_id','gw2_id','gw3_id'].forEach((field, i) => {
+    const td = document.createElement('td');
+    td.className = 'jp-gw';
+    td.innerHTML = `
+      <input type="search" placeholder="🔍 filtern" oninput="filterGw(this)" style="width:100%;padding:.2rem .4rem;font-size:.75rem;margin-bottom:2px;">
+      <select class="f-${field}" onchange="saveRow(this.closest('tr'))">${buildGwOptions(data[field])}</select>`;
+    tr.appendChild(td);
+  });
+
+  // Notizen
+  const tdN = document.createElement('td');
+  tdN.className = 'jp-notizen';
+  tdN.innerHTML = `<input type="text" class="f-notizen" value="${esc(data.notizen || '')}" placeholder="Notizen…" onchange="saveRow(this.closest('tr'))">`;
+  tr.appendChild(tdN);
+
+  // Löschen
+  const tdD = document.createElement('td');
+  tdD.className = 'jp-del';
+  tdD.innerHTML = `<button onclick="deleteRow(this)" title="Löschen">🗑</button>`;
+  tr.appendChild(tdD);
+
+  return tr;
+}
+
+// ── GW-Filter ──
+function filterGw(inp) {
+  const q = inp.value.toLowerCase();
+  const sel = inp.nextElementSibling;
+  sel.querySelectorAll('option').forEach(opt => {
+    opt.hidden = q.length > 0 && opt.value !== '' && !opt.text.toLowerCase().includes(q);
+  });
+  sel.querySelectorAll('optgroup').forEach(og => {
+    const visible = [...og.querySelectorAll('option')].some(o => !o.hidden);
+    og.hidden = !visible;
+  });
+}
+
+// ── Speichern ──
+let saveTimers = new WeakMap();
+async function saveRow(tr) {
+  clearTimeout(saveTimers.get(tr));
+  saveTimers.set(tr, setTimeout(async () => {
+    const ukVal = tr.querySelector('.f-uk').value;
+    let kapitel = null, unterkapitel = null;
+    if (ukVal) {
+      const parts = ukVal.split('|||');
+      kapitel = parts[0] || null;
+      unterkapitel = parts[1] || null;
+    }
+    const data = {
+      id: tr.dataset.id ? parseInt(tr.dataset.id) : null,
+      stunden_nr: parseInt(tr.querySelector('.f-nr').value) || 0,
+      kapitel,
+      unterkapitel,
+      gw1_id: tr.querySelector('.f-gw1_id').value || null,
+      gw2_id: tr.querySelector('.f-gw2_id').value || null,
+      gw3_id: tr.querySelector('.f-gw3_id').value || null,
+      notizen: tr.querySelector('.f-notizen').value || null,
+    };
+    const resp = await fetch(`/ui/jahresplan/${JG}/stunde`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    const result = await resp.json();
+    tr.dataset.id = result.id;
+  }, 400));
+}
+
+// ── Löschen ──
+async function deleteRow(btn) {
+  const tr = btn.closest('tr');
+  const id = tr.dataset.id;
+  if (id) {
+    await fetch(`/ui/jahresplan/${JG}/stunde/${id}`, {method: 'DELETE'});
+  }
+  tr.remove();
+}
+
+// ── Neue Zeile ──
+function addRow() {
+  const rows = document.querySelectorAll('#plan-body tr');
+  const nextNr = rows.length > 0
+    ? Math.max(...[...rows].map(r => parseInt(r.querySelector('.f-nr').value) || 0)) + 1
+    : 1;
+  const tr = buildRow({id: null, stunden_nr: nextNr, kapitel: '', unterkapitel: '', gw1_id: null, gw2_id: null, gw3_id: null, notizen: ''});
+  document.getElementById('plan-body').appendChild(tr);
+  tr.querySelector('.f-nr').focus();
+}
+
+// ── Init ──
+EINTRAEGE.forEach(e => {
+  document.getElementById('plan-body').appendChild(buildRow(e));
+});
+</script>
+{% endblock %}

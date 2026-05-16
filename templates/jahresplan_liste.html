@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Jahrespläne{% endblock %}
+{% block content %}
+<h2>📅 Jahrespläne</h2>
+<p style="color:#6c757d; margin-bottom:1.5rem;">Ein Plan pro Jahrgangsstufe – unabhängig vom Schuljahr.</p>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:.75rem;">
+  {% for jg in jahrgangsstufen %}
+  <a href="/ui/jahresplan/{{ jg }}"
+     style="display:block; padding:1.25rem 1rem; border:1px solid var(--pico-muted-border-color);
+            border-radius:.5rem; text-decoration:none; text-align:center; background:var(--pico-card-background-color);">
+    <div style="font-size:1.5rem; font-weight:700; color:var(--pico-primary);">{{ jg }}</div>
+    <div style="font-size:.78rem; color:#6c757d;">Jahrgangsstufe</div>
+    {% if counts.get(jg) %}
+    <div style="font-size:.75rem; margin-top:.3rem; color:#6c757d;">{{ counts[jg] }} Stunden</div>
+    {% else %}
+    <div style="font-size:.75rem; margin-top:.3rem; color:#9ca3af;">leer</div>
+    {% endif %}
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}
