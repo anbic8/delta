@@ -87,6 +87,9 @@ body {
 
 <!-- GW-Leiste -->
 <div id="topbar">
+  <a href="/ui/klassen/{{ klasse.id }}"
+     style="display:flex; align-items:center; padding:0 8px; color:#93c5fd;
+            text-decoration:none; font-size:1.1rem; flex-shrink:0;" title="Zurück zur Klasse">←</a>
   {% for i in range(3) %}
   <div class="gw-tile {% if i == 0 %}active{% endif %}" id="gw-tile-{{ i }}"
        onclick="activateGw({{ i }})"

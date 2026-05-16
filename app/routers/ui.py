@@ -2288,13 +2288,19 @@ def jahresplan_detail(jg: int, request: Request, db: Session = Depends(get_db)):
         .order_by(JahresplanStunde.stunden_nr)
         .all()
     )
-    uk_paare = (
+    from app.models.aufgabe import Aufgabe
+    gw_uk = set(
         db.query(GW.kapitel, GW.unterkapitel)
         .filter(GW.jahrgangsstufe == jg)
-        .distinct()
-        .order_by(GW.kapitel, GW.unterkapitel)
-        .all()
+        .distinct().all()
     )
+    aufg_uk = set(
+        db.query(Aufgabe.kapitel, Aufgabe.unterkapitel)
+        .filter(Aufgabe.jahrgangsstufe == jg,
+                Aufgabe.kapitel.isnot(None))
+        .distinct().all()
+    )
+    uk_paare = sorted(gw_uk | aufg_uk, key=lambda x: (x[0] or '', x[1] or ''))
     alle_gw = (
         db.query(GW)
         .filter(GW.jahrgangsstufe == jg)
