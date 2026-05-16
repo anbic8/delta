@@ -32,19 +32,19 @@ body {
 /* ── Grid ── */
 #grid-wrap { flex: 1; overflow: auto; padding: 6px; display: flex; flex-direction: column; align-items: center; }
 #sitzplan-grid {
-  display: grid; grid-template-columns: repeat(14, 1fr);
-  gap: 3px; width: 100%; max-width: 1300px;
+  display: grid;
+  gap: 4px; width: 100%; max-width: 1300px;
 }
 .s-cell {
-  border-radius: 5px; display: flex; align-items: center; justify-content: center;
-  font-size: .68rem; font-weight: 600; text-align: center; padding: 3px 2px;
+  border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 600; text-align: center; padding: 4px 3px;
   cursor: pointer; transition: transform .08s, filter .15s;
   touch-action: pan-y; position: relative; min-height: 0;
-  aspect-ratio: 5/3;
+  aspect-ratio: 5/3; line-height: 1.2;
 }
 .s-cell.empty { background: #1f2937; }
 .s-cell:active { transform: scale(.93); }
-.s-cell .s-icon { font-size: .85rem; display: block; }
+.s-cell .s-icon { font-size: .9rem; display: block; }
 
 #tafel { text-align: center; font-size: .7rem; color: #4b5563; padding: 3px; flex-shrink: 0; }
 
@@ -105,15 +105,9 @@ body {
   {% endfor %}
 </div>
 
-<!-- Grid -->
+<!-- Grid (wird per JS aufgebaut) -->
 <div id="grid-wrap">
-  <div id="sitzplan-grid">
-    {% for r in range(9) %}
-      {% for c in range(14) %}
-      <div class="s-cell empty" id="c{{ r }}-{{ c }}" data-r="{{ r }}" data-c="{{ c }}"></div>
-      {% endfor %}
-    {% endfor %}
-  </div>
+  <div id="sitzplan-grid"></div>
   <div id="tafel">▼ TAFEL / VORNE ▼</div>
 </div>
 
@@ -121,7 +115,7 @@ body {
 <div id="nav">
   <a href="/ui/klassen/{{ klasse.id }}/sitzplan" style="color:#60a5fa;">← Zurück</a>
   <span id="active-label">–</span>
-  <span>← runter &nbsp;|&nbsp; hoch →</span>
+  <span>Klick ↑ &nbsp;|&nbsp; Rechtsklick ↓</span>
 </div>
 
 <!-- Picker Modal -->
@@ -137,11 +131,6 @@ body {
 </div>
 
 <script>
-// ── Server-Daten ──
-const PLAETZE = {{ plaetze | map(attribute='__dict__') | list | tojson if false else '[]' }};
-</script>
-<script>
-// Plaetze manuell (Jinja)
 const _PLAETZE = [{% for p in plaetze %}
   {sid:{{p.schueler_id}},r:{{p.reihe}},c:{{p.spalte}},name:{{(p.schueler.nachname+', '+p.schueler.vorname)|tojson}}},
 {% endfor %}];
@@ -156,7 +145,6 @@ const gwSlots = [
   {{gw_slots[2].id if gw_slots[2] else 'null'}}
 ];
 
-// Zustände: {sid: {gwId: zustand}}
 const ST = {};
 {% for sid, gid, z in init_states %}
 if(!ST[{{sid}}]) ST[{{sid}}]={};
@@ -175,6 +163,34 @@ let activeIdx = 0;
 let editSlot = 0;
 let lpTimer = null;
 
+// ── Grid aufbauen (nur belegte Zeilen/Spalten) ──
+function buildGrid() {
+  const grid = document.getElementById('sitzplan-grid');
+  if (_PLAETZE.length === 0) {
+    grid.style.gridTemplateColumns = 'repeat(14,1fr)';
+    return;
+  }
+  const rs = _PLAETZE.map(p => p.r);
+  const cs = _PLAETZE.map(p => p.c);
+  const minR = Math.min(...rs), maxR = Math.max(...rs);
+  const minC = Math.min(...cs), maxC = Math.max(...cs);
+  const cols = maxC - minC + 1;
+
+  grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+  grid.innerHTML = '';
+
+  for (let r = minR; r <= maxR; r++) {
+    for (let c = minC; c <= maxC; c++) {
+      const cell = document.createElement('div');
+      cell.className = 's-cell empty';
+      cell.id = `c${r}-${c}`;
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      grid.appendChild(cell);
+    }
+  }
+}
+
 // ── GW aktivieren ──
 function activateGw(i) {
   activeIdx = i;
@@ -187,7 +203,6 @@ function activateGw(i) {
 
 // ── Grid rendern ──
 function renderGrid() {
-  // Alle Zellen leeren
   document.querySelectorAll('.s-cell').forEach(c => {
     c.className='s-cell empty'; c.style.background=''; c.style.color=''; c.innerHTML='';
     c.dataset.sid='';
@@ -221,9 +236,8 @@ function setupCell(cell, sid) {
     if(Math.abs(dx)>35 && Math.abs(dx)>Math.abs(dy))
       changeState(sid, dx>0?+1:-1);
   },{passive:true});
-  cell.addEventListener('click', e=>{
-    changeState(sid, e.shiftKey?-1:+1);
-  });
+  cell.addEventListener('click', ()=>{ changeState(sid,+1); });
+  cell.addEventListener('contextmenu', e=>{ e.preventDefault(); changeState(sid,-1); });
 }
 
 function changeState(sid, delta) {
@@ -269,7 +283,6 @@ function renderPicker(){
 async function selectGw(id, gw){
   gwSlots[editSlot]=id;
   closePicker();
-  // Tile-Inhalt aktualisieren
   document.getElementById(`gw-body-${editSlot}`).innerHTML=
     `<div class="gw-kap">${gw.kap}${gw.uk?' › '+gw.uk:''}</div><div class="gw-name">${gw.text.substring(0,70)}</div>`;
   await fetch(`/ui/klassen/{{klasse.id}}/live/gw`,{
@@ -280,6 +293,7 @@ async function selectGw(id, gw){
 }
 
 // ── Init ──
+buildGrid();
 activateGw(0);
 </script>
 </body>
