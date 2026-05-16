@@ -102,14 +102,31 @@ def _user_msg(aufgabenstellung: str) -> str:
 
 # ── Backends ──────────────────────────────────────────────────
 
-async def _ollama(system: str, user: str) -> str:
+def _llm_config(db=None) -> dict:
+    """Liest LLM-Einstellungen aus DB (Vorrang) oder .env (Fallback)."""
+    from app.config import settings as cfg
+    if db is None:
+        return {"backend": cfg.llm_backend, "url": cfg.ollama_url,
+                "model": cfg.ollama_model, "api_key": cfg.anthropic_api_key}
+    from app.models.app_einstellung import AppEinstellung
+    def _get(key, fallback):
+        row = db.get(AppEinstellung, key)
+        return row.wert if row and row.wert else fallback
+    return {
+        "backend": _get("llm_backend",  cfg.llm_backend),
+        "url":     _get("ollama_url",   cfg.ollama_url),
+        "model":   _get("ollama_model", cfg.ollama_model),
+        "api_key": cfg.anthropic_api_key,
+    }
+
+
+async def _ollama(system: str, user: str, cfg: dict) -> str:
     import httpx
-    from app.config import settings
     async with httpx.AsyncClient(timeout=120) as client:
         resp = await client.post(
-            f"{settings.ollama_url}/v1/chat/completions",
+            f"{cfg['url']}/v1/chat/completions",
             json={
-                "model": settings.ollama_model,
+                "model": cfg["model"],
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
@@ -121,10 +138,9 @@ async def _ollama(system: str, user: str) -> str:
         return resp.json()["choices"][0]["message"]["content"]
 
 
-async def _claude(system: str, user: str) -> str:
+async def _claude(system: str, user: str, cfg: dict) -> str:
     import anthropic
-    from app.config import settings
-    client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+    client = anthropic.AsyncAnthropic(api_key=cfg["api_key"])
     msg = await client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1024,
@@ -140,22 +156,22 @@ async def aufgabe_vorschlag(
     aufgabenstellung: str,
     uk_paare: list[tuple[str, str]],
     kompetenzen: list[dict],
+    db=None,
 ) -> dict:
     """
     uk_paare: Liste von (kapitel, unterkapitel) aus den Buchaufgaben.
     Gibt zurück: {loesung, afb_niveau, kapitel, unterkapitel, kompetenzen}
     oder {"error": "..."} bei Fehler.
     """
-    from app.config import settings
-
+    cfg = _llm_config(db)
     system = _system_prompt(uk_paare, kompetenzen)
     user = _user_msg(aufgabenstellung)
 
     try:
-        if settings.llm_backend == "claude":
-            raw = await _claude(system, user)
+        if cfg["backend"] == "claude":
+            raw = await _claude(system, user, cfg)
         else:
-            raw = await _ollama(system, user)
+            raw = await _ollama(system, user, cfg)
 
         start = raw.find("{")
         end = raw.rfind("}") + 1

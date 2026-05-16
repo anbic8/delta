@@ -77,9 +77,44 @@ _STATUS_FARBE = {
 }
 
 
+def _get_einstellung(db, schluessel: str, fallback: str = "") -> str:
+    from app.models.app_einstellung import AppEinstellung
+    row = db.get(AppEinstellung, schluessel)
+    return row.wert if row and row.wert is not None else fallback
+
+
+def _set_einstellung(db, schluessel: str, wert: str) -> None:
+    from app.models.app_einstellung import AppEinstellung
+    row = db.get(AppEinstellung, schluessel)
+    if row:
+        row.wert = wert
+    else:
+        db.add(AppEinstellung(schluessel=schluessel, wert=wert))
+
+
 @router.get("/einstellungen")
-def einstellungen(request: Request):
-    return templates.TemplateResponse(request, "einstellungen.html", {})
+def einstellungen(request: Request, db: Session = Depends(get_db)):
+    from app.config import settings as cfg
+    return templates.TemplateResponse(request, "einstellungen.html", {
+        "llm_backend":   _get_einstellung(db, "llm_backend",   cfg.llm_backend),
+        "ollama_url":    _get_einstellung(db, "ollama_url",    cfg.ollama_url),
+        "ollama_model":  _get_einstellung(db, "ollama_model",  cfg.ollama_model),
+        "msg": request.query_params.get("msg"),
+    })
+
+
+@router.post("/einstellungen/llm")
+def einstellungen_llm_speichern(
+    llm_backend: str = Form("ollama"),
+    ollama_url: str = Form(""),
+    ollama_model: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    _set_einstellung(db, "llm_backend",  llm_backend.strip())
+    _set_einstellung(db, "ollama_url",   ollama_url.strip())
+    _set_einstellung(db, "ollama_model", ollama_model.strip())
+    db.commit()
+    return REDIRECT("/ui/einstellungen?msg=LLM-Einstellungen+gespeichert")
 
 
 # ── Schuljahre ────────────────────────────────────────────────
@@ -1308,7 +1343,7 @@ async def aufgabe_llm_vorschlag(
     )
     komps = [{"kuerzel": k.kuerzel, "bezeichnung": k.bezeichnung}
              for k in db.query(Kompetenz).order_by(Kompetenz.kuerzel).all()]
-    result = await aufgabe_vorschlag(aufgabenstellung, uk_paare, komps)
+    result = await aufgabe_vorschlag(aufgabenstellung, uk_paare, komps, db)
     return JSONResponse(result)
 
 

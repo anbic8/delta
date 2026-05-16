@@ -2,8 +2,9 @@
 {% block title %}Einstellungen{% endblock %}
 {% block content %}
 <h2>⚙ Einstellungen</h2>
+{% if msg %}<div class="alert-success">{{ msg }}</div>{% endif %}
 
-<section style="max-width:480px;">
+<section style="max-width:520px;">
   <h3>Darstellung</h3>
   <div style="display:flex; align-items:center; justify-content:space-between; padding:.75rem 0; border-bottom:1px solid var(--pico-muted-border-color, #dee2e6);">
     <div>
@@ -16,12 +17,61 @@
   </div>
 </section>
 
+<section style="max-width:520px; margin-top:2rem;">
+  <h3>🤖 KI-Verbindung (Ollama / Claude)</h3>
+  <form method="post" action="/ui/einstellungen/llm">
+
+    <label>Backend
+      <select name="llm_backend">
+        <option value="ollama" {% if llm_backend == 'ollama' %}selected{% endif %}>Ollama (lokal/Netzwerk)</option>
+        <option value="claude" {% if llm_backend == 'claude' %}selected{% endif %}>Claude API (Anthropic)</option>
+      </select>
+    </label>
+
+    <label style="margin-top:.75rem;">Ollama URL
+      <input type="url" name="ollama_url" value="{{ ollama_url }}"
+             placeholder="http://192.168.178.89:11434">
+      <small class="hint">Netzwerk-IP des Ollama-Rechners</small>
+    </label>
+
+    <label style="margin-top:.5rem;">Ollama Modell
+      <input type="text" name="ollama_model" value="{{ ollama_model }}"
+             placeholder="qwen2.5:7b">
+      <small class="hint">Name exakt wie bei <code>ollama list</code></small>
+    </label>
+
+    <button type="submit" style="margin-top:1rem;">Speichern</button>
+  </form>
+
+  <details style="margin-top:1rem;">
+    <summary style="cursor:pointer; font-size:.88rem; color:#6c757d;">Verbindung testen</summary>
+    <div style="margin-top:.5rem;">
+      <button type="button" onclick="deltaTestLlm()" class="outline secondary"
+              style="font-size:.85rem; padding:.3rem .75rem;">🔌 Verbindung testen</button>
+      <span id="llm-test-result" style="margin-left:.75rem; font-size:.85rem;"></span>
+    </div>
+  </details>
+</section>
+
 <script>
-  // Setze Button-Text auf aktuellen Status
   (function() {
     var cur = document.documentElement.getAttribute('data-theme');
     var btn = document.getElementById('theme-btn');
     if (btn) btn.textContent = cur === 'dark' ? '☀ Light Mode' : '☾ Dark Mode';
   })();
+
+  async function deltaTestLlm() {
+    const result = document.getElementById('llm-test-result');
+    result.textContent = '⏳ Teste…';
+    const fd = new FormData();
+    fd.append('aufgabenstellung', 'Berechne 2 + 2.');
+    try {
+      const r = await fetch('/ui/aufgaben/llm-vorschlag', { method: 'POST', body: fd });
+      const d = await r.json();
+      result.textContent = d.error ? '❌ ' + d.error : '✓ Verbindung OK – Modell antwortet';
+    } catch(e) {
+      result.textContent = '❌ ' + e.message;
+    }
+  }
 </script>
 {% endblock %}
