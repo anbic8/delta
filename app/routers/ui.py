@@ -234,6 +234,96 @@ async def sitzplan_speichern(kl_id: int, request: Request, db: Session = Depends
     return {"ok": True}
 
 
+# ── Live-Sitzplan ────────────────────────────────────────────
+
+@router.get("/klassen/{kl_id}/live")
+def live_view(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.sitzplan import SitzplanPlatz
+    from app.models.live_bewertung import LiveBewertung
+    from app.models.grundwissen import Grundwissen
+    from sqlalchemy.orm import joinedload
+    import sqlalchemy as sa_mod
+
+    kl = db.get(Klasse, kl_id)
+
+    plaetze = (
+        db.query(SitzplanPlatz)
+        .filter(SitzplanPlatz.klasse_id == kl_id)
+        .options(joinedload(SitzplanPlatz.schueler))
+        .all()
+    )
+
+    # GW-Slots aus Einstellungen
+    gw_slot_ids = []
+    for i in range(3):
+        raw = _get_einstellung(db, f"live_{kl_id}_gw{i}", "")
+        gw_slot_ids.append(int(raw) if raw.isdigit() else None)
+    gw_slots = [db.get(Grundwissen, gid) if gid else None for gid in gw_slot_ids]
+
+    # Alle GW für den Picker (nach Jahrgangsstufe der Klasse)
+    alle_gw = (
+        db.query(Grundwissen)
+        .filter(Grundwissen.jahrgangsstufe == kl.jahrgangsstufe)
+        .order_by(Grundwissen.kapitel, Grundwissen.unterkapitel)
+        .all()
+    )
+
+    # Letzter Zustand pro (schueler_id, grundwissen_id)
+    subq = (
+        db.query(
+            LiveBewertung.schueler_id,
+            LiveBewertung.grundwissen_id,
+            sa_mod.func.max(LiveBewertung.erstellt_am).label("max_ts"),
+        )
+        .filter(LiveBewertung.klasse_id == kl_id)
+        .group_by(LiveBewertung.schueler_id, LiveBewertung.grundwissen_id)
+        .subquery()
+    )
+    latest = (
+        db.query(LiveBewertung)
+        .join(subq, sa_mod.and_(
+            LiveBewertung.schueler_id == subq.c.schueler_id,
+            LiveBewertung.grundwissen_id == subq.c.grundwissen_id,
+            LiveBewertung.erstellt_am == subq.c.max_ts,
+        ))
+        .filter(LiveBewertung.klasse_id == kl_id)
+        .all()
+    )
+    init_states = [(b.schueler_id, b.grundwissen_id, b.zustand) for b in latest]
+
+    return templates.TemplateResponse(request, "sitzplan_live.html", {
+        "klasse": kl, "plaetze": plaetze,
+        "gw_slots": gw_slots, "alle_gw": alle_gw,
+        "init_states": init_states,
+    })
+
+
+@router.post("/klassen/{kl_id}/live/bewertung")
+async def live_bewertung_speichern(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.live_bewertung import LiveBewertung
+    from datetime import date
+    body = await request.json()
+    db.add(LiveBewertung(
+        klasse_id=kl_id,
+        schueler_id=int(body["schueler_id"]),
+        grundwissen_id=int(body["grundwissen_id"]),
+        zustand=int(body["zustand"]),
+        datum=date.today(),
+    ))
+    db.commit()
+    return {"ok": True}
+
+
+@router.post("/klassen/{kl_id}/live/gw")
+async def live_gw_setzen(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    body = await request.json()
+    slot = int(body["slot"])
+    gw_id = int(body["grundwissen_id"])
+    _set_einstellung(db, f"live_{kl_id}_gw{slot}", str(gw_id))
+    db.commit()
+    return {"ok": True}
+
+
 # ── Grundwissen-Abfragen CSV-Import ──────────────────────────
 
 @router.post("/klassen/{kl_id}/grundwissen-csv-import")

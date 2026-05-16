@@ -9,6 +9,9 @@
   <div style="display:flex; gap:.5rem; align-items:center;">
     <span id="save-status" style="font-size:.85rem; color:#6c757d;"></span>
     <button onclick="sitzplanSpeichern()" style="padding:.4rem 1rem;">💾 Speichern</button>
+    <a href="/ui/klassen/{{ klasse.id }}/live" role="button"
+       style="padding:.4rem 1rem; background:#16a34a; color:#fff; border-radius:.4rem;
+              text-decoration:none; font-size:.9rem;">▶ Live-Modus</a>
   </div>
 </div>
 {% if msg %}<div class="alert-success">{{ msg }}</div>{% endif %}

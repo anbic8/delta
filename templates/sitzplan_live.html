@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Live – {{ klasse.name }}</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #111827; color: #f9fafb;
+  height: 100dvh; display: flex; flex-direction: column;
+  overflow: hidden; user-select: none; -webkit-user-select: none;
+}
+
+/* ── GW-Leiste ── */
+#topbar { display: flex; gap: 6px; padding: 6px; background: #1f2937; border-bottom: 1px solid #374151; flex-shrink: 0; }
+.gw-tile {
+  flex: 1; border: 2px solid #374151; border-radius: 8px;
+  padding: 6px 10px; cursor: pointer; background: #111827;
+  display: flex; align-items: center; gap: 6px; min-height: 56px;
+  transition: border-color .15s, background .15s;
+}
+.gw-tile.active  { border-color: #3b82f6; background: #1e3a5f; }
+.gw-tile .gw-body { flex: 1; min-width: 0; }
+.gw-tile .gw-kap  { font-size: .65rem; color: #6b7280; }
+.gw-tile .gw-name { font-size: .78rem; font-weight: 600; line-height: 1.25;
+                    overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.gw-tile .gw-edit { font-size: .95rem; color: #6b7280; padding: 4px; flex-shrink: 0; }
+.gw-tile .gw-edit:hover { color: #fff; }
+
+/* ── Grid ── */
+#grid-wrap { flex: 1; overflow: auto; padding: 6px; display: flex; flex-direction: column; align-items: center; }
+#sitzplan-grid {
+  display: grid; grid-template-columns: repeat(14, 1fr);
+  gap: 3px; width: 100%; max-width: 1300px;
+}
+.s-cell {
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  font-size: .68rem; font-weight: 600; text-align: center; padding: 3px 2px;
+  cursor: pointer; transition: transform .08s, filter .15s;
+  touch-action: pan-y; position: relative; min-height: 0;
+  aspect-ratio: 5/3;
+}
+.s-cell.empty { background: #1f2937; }
+.s-cell:active { transform: scale(.93); }
+.s-cell .s-icon { font-size: .85rem; display: block; }
+
+#tafel { text-align: center; font-size: .7rem; color: #4b5563; padding: 3px; flex-shrink: 0; }
+
+/* ── Nav ── */
+#nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 12px; background: #0f172a; border-top: 1px solid #1f2937;
+  font-size: .75rem; color: #6b7280; flex-shrink: 0;
+}
+#active-label { font-size: .78rem; font-weight: 600; color: #93c5fd;
+                max-width: 50%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── GW-Picker Modal ── */
+#modal {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.8); z-index: 200;
+  align-items: center; justify-content: center;
+}
+#modal.open { display: flex; }
+#modal-inner {
+  background: #1f2937; border-radius: 12px; padding: 14px;
+  width: 92%; max-width: 460px; max-height: 82dvh;
+  display: flex; flex-direction: column; gap: 8px;
+}
+#modal-inner h3 { font-size: .95rem; }
+#gw-search {
+  padding: 9px 12px; border-radius: 7px; border: 1px solid #374151;
+  background: #111827; color: #f9fafb; width: 100%; font-size: 1rem;
+}
+#gw-list { overflow-y: auto; flex: 1; }
+.gw-opt {
+  padding: 10px 12px; border-radius: 6px; cursor: pointer;
+  border-bottom: 1px solid #374151; font-size: .88rem;
+}
+.gw-opt:hover { background: #374151; }
+.gw-opt small { display: block; font-size: .7rem; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<!-- GW-Leiste -->
+<div id="topbar">
+  {% for i in range(3) %}
+  <div class="gw-tile {% if i == 0 %}active{% endif %}" id="gw-tile-{{ i }}"
+       onclick="activateGw({{ i }})"
+       onmousedown="lpStart({{ i }})" onmouseup="lpStop()"
+       ontouchstart="lpStart({{ i }})" ontouchend="lpStop()">
+    <div class="gw-body" id="gw-body-{{ i }}">
+      {% if gw_slots[i] %}
+      <div class="gw-kap">{{ gw_slots[i].kapitel }}{% if gw_slots[i].unterkapitel %} › {{ gw_slots[i].unterkapitel }}{% endif %}</div>
+      <div class="gw-name">{{ gw_slots[i].aufgabe | truncate(70) }}</div>
+      {% else %}
+      <div class="gw-name" style="color:#6b7280; font-style:italic;">Grundwissen wählen…</div>
+      {% endif %}
+    </div>
+    <span class="gw-edit" onclick="event.stopPropagation(); openPicker({{ i }})">✏</span>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Grid -->
+<div id="grid-wrap">
+  <div id="sitzplan-grid">
+    {% for r in range(9) %}
+      {% for c in range(14) %}
+      <div class="s-cell empty" id="c{{ r }}-{{ c }}" data-r="{{ r }}" data-c="{{ c }}"></div>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  <div id="tafel">▼ TAFEL / VORNE ▼</div>
+</div>
+
+<!-- Nav -->
+<div id="nav">
+  <a href="/ui/klassen/{{ klasse.id }}/sitzplan" style="color:#60a5fa;">← Zurück</a>
+  <span id="active-label">–</span>
+  <span>← runter &nbsp;|&nbsp; hoch →</span>
+</div>
+
+<!-- Picker Modal -->
+<div id="modal">
+  <div id="modal-inner">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3>Grundwissen wählen</h3>
+      <button onclick="closePicker()" style="background:none;border:none;color:#9ca3af;font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <input id="gw-search" type="search" placeholder="Suchen…" oninput="renderPicker()">
+    <div id="gw-list"></div>
+  </div>
+</div>
+
+<script>
+// ── Server-Daten ──
+const PLAETZE = {{ plaetze | map(attribute='__dict__') | list | tojson if false else '[]' }};
+</script>
+<script>
+// Plaetze manuell (Jinja)
+const _PLAETZE = [{% for p in plaetze %}
+  {sid:{{p.schueler_id}},r:{{p.reihe}},c:{{p.spalte}},name:{{(p.schueler.nachname+', '+p.schueler.vorname)|tojson}}},
+{% endfor %}];
+
+const ALLE_GW = [{% for gw in alle_gw %}
+  {id:{{gw.id}},kap:{{gw.kapitel|tojson}},uk:{{(gw.unterkapitel or '')|tojson}},text:{{gw.aufgabe|tojson}}},
+{% endfor %}];
+
+const gwSlots = [
+  {{gw_slots[0].id if gw_slots[0] else 'null'}},
+  {{gw_slots[1].id if gw_slots[1] else 'null'}},
+  {{gw_slots[2].id if gw_slots[2] else 'null'}}
+];
+
+// Zustände: {sid: {gwId: zustand}}
+const ST = {};
+{% for sid, gid, z in init_states %}
+if(!ST[{{sid}}]) ST[{{sid}}]={};
+ST[{{sid}}][{{gid}}]={{z}};
+{% endfor %}
+
+const DEFS = [
+  {bg:'#374151',fg:'#9ca3af',icon:'',label:'–'},
+  {bg:'#dc2626',fg:'#fff',icon:'⚠',label:'Benötigt Hilfe'},
+  {bg:'#d97706',fg:'#fff',icon:'',label:'Reproduzieren'},
+  {bg:'#16a34a',fg:'#fff',icon:'',label:'Anwenden'},
+  {bg:'#1d4ed8',fg:'#fff',icon:'★',label:'Verallgemeinern'},
+];
+
+let activeIdx = 0;
+let editSlot = 0;
+let lpTimer = null;
+
+// ── GW aktivieren ──
+function activateGw(i) {
+  activeIdx = i;
+  document.querySelectorAll('.gw-tile').forEach((t,j) => t.classList.toggle('active', j===i));
+  const gid = gwSlots[i];
+  const gw = gid ? ALLE_GW.find(g=>g.id===gid) : null;
+  document.getElementById('active-label').textContent = gw ? gw.text.substring(0,50) : 'Kein GW aktiv';
+  renderGrid();
+}
+
+// ── Grid rendern ──
+function renderGrid() {
+  // Alle Zellen leeren
+  document.querySelectorAll('.s-cell').forEach(c => {
+    c.className='s-cell empty'; c.style.background=''; c.style.color=''; c.innerHTML='';
+    c.dataset.sid='';
+  });
+  _PLAETZE.forEach(p => {
+    const cell = document.getElementById(`c${p.r}-${p.c}`);
+    if (!cell) return;
+    const gid = gwSlots[activeIdx];
+    const z = (ST[p.sid]&&gid&&ST[p.sid][gid]!=null) ? ST[p.sid][gid] : 0;
+    const d = DEFS[z];
+    cell.className = 's-cell';
+    cell.style.background = d.bg;
+    cell.style.color = d.fg;
+    cell.dataset.sid = p.sid;
+    cell.innerHTML = `${d.icon?`<span class="s-icon">${d.icon}</span>`:''}${p.name}`;
+    setupCell(cell, p.sid);
+  });
+}
+
+// ── Touch/Click auf Schülerkachel ──
+function setupCell(cell, sid) {
+  let tx=0, ty=0, moved=false;
+  cell.addEventListener('touchstart', e=>{
+    tx=e.touches[0].clientX; ty=e.touches[0].clientY; moved=false;
+  },{passive:true});
+  cell.addEventListener('touchmove', ()=>{ moved=true; },{passive:true});
+  cell.addEventListener('touchend', e=>{
+    if(!moved){ changeState(sid,+1); return; }
+    const dx=e.changedTouches[0].clientX-tx;
+    const dy=e.changedTouches[0].clientY-ty;
+    if(Math.abs(dx)>35 && Math.abs(dx)>Math.abs(dy))
+      changeState(sid, dx>0?+1:-1);
+  },{passive:true});
+  cell.addEventListener('click', e=>{
+    changeState(sid, e.shiftKey?-1:+1);
+  });
+}
+
+function changeState(sid, delta) {
+  const gid = gwSlots[activeIdx];
+  if(!gid) return;
+  if(!ST[sid]) ST[sid]={};
+  const cur = ST[sid][gid]??0;
+  const next = Math.max(0,Math.min(4,cur+delta));
+  if(next===cur) return;
+  ST[sid][gid]=next;
+  renderGrid();
+  fetch(`/ui/klassen/{{klasse.id}}/live/bewertung`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({schueler_id:sid,grundwissen_id:gid,zustand:next})
+  });
+}
+
+// ── Long Press ──
+function lpStart(i){ lpTimer=setTimeout(()=>openPicker(i),600); }
+function lpStop(){ clearTimeout(lpTimer); }
+
+// ── GW-Picker ──
+function openPicker(slot){
+  editSlot=slot;
+  document.getElementById('gw-search').value='';
+  renderPicker();
+  document.getElementById('modal').classList.add('open');
+}
+function closePicker(){ document.getElementById('modal').classList.remove('open'); }
+function renderPicker(){
+  const q=document.getElementById('gw-search').value.toLowerCase();
+  const list=document.getElementById('gw-list');
+  list.innerHTML='';
+  ALLE_GW.filter(g=>!q||g.text.toLowerCase().includes(q)||g.kap.toLowerCase().includes(q))
+    .slice(0,60).forEach(gw=>{
+      const el=document.createElement('div');
+      el.className='gw-opt';
+      el.innerHTML=`<small>${gw.kap}${gw.uk?' › '+gw.uk:''}</small>${gw.text}`;
+      el.onclick=()=>selectGw(gw.id, gw);
+      list.appendChild(el);
+    });
+}
+async function selectGw(id, gw){
+  gwSlots[editSlot]=id;
+  closePicker();
+  // Tile-Inhalt aktualisieren
+  document.getElementById(`gw-body-${editSlot}`).innerHTML=
+    `<div class="gw-kap">${gw.kap}${gw.uk?' › '+gw.uk:''}</div><div class="gw-name">${gw.text.substring(0,70)}</div>`;
+  await fetch(`/ui/klassen/{{klasse.id}}/live/gw`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({slot:editSlot,grundwissen_id:id})
+  });
+  activateGw(activeIdx);
+}
+
+// ── Init ──
+activateGw(0);
+</script>
+</body>
+</html>
