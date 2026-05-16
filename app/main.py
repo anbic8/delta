@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 
 Path("uploads/aufgaben").mkdir(parents=True, exist_ok=True)
 
-from app.models import grundwissen_abfrage, app_einstellung  # noqa: F401
+from app.models import grundwissen_abfrage, app_einstellung, sitzplan  # noqa: F401
 from app.routers import aufgabe, buchaufgabe, klasse, kompetenz, muendliche_note, schueler, schuljahr, schriftliche_leistung, ui
 
 app = FastAPI(title="Delta – Schülerleistungen")

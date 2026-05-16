@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}Sitzplan – {{ klasse.name }}{% endblock %}
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:.75rem; flex-wrap:wrap; gap:.5rem;">
+  <div>
+    <p style="margin:0;"><a href="/ui/klassen/{{ klasse.id }}">← {{ klasse.name }}</a></p>
+    <h2 style="margin:.25rem 0 0;">🪑 Sitzplan – {{ klasse.name }}</h2>
+  </div>
+  <div style="display:flex; gap:.5rem; align-items:center;">
+    <span id="save-status" style="font-size:.85rem; color:#6c757d;"></span>
+    <button onclick="sitzplanSpeichern()" style="padding:.4rem 1rem;">💾 Speichern</button>
+  </div>
+</div>
+{% if msg %}<div class="alert-success">{{ msg }}</div>{% endif %}
+
+<p style="font-size:.85rem; color:#6c757d; margin-bottom:.75rem;">
+  Schüler per Drag &amp; Drop auf die Sitze ziehen. Zurück in die Liste ziehen zum Entfernen.
+  <strong>Tafel / vorne</strong> ist oben.
+</p>
+
+<div style="display:flex; gap:1.25rem; align-items:flex-start;">
+
+  <!-- Grid -->
+  <div style="flex:1; min-width:0;">
+    <div style="text-align:center; font-size:.78rem; color:#9ca3af; margin-bottom:4px; letter-spacing:.05em;">
+      ▲ TAFEL / VORNE ▲
+    </div>
+    <div id="sitzplan-grid"
+         style="display:grid; grid-template-columns:repeat(14,1fr);
+                gap:3px; background:#e5e7eb; border:2px solid #d1d5db; border-radius:.4rem; padding:4px;">
+      {% for r in range(9) %}
+        {% for c in range(14) %}
+        <div class="grid-cell"
+             data-reihe="{{ r }}" data-spalte="{{ c }}"
+             ondragover="event.preventDefault(); this.classList.add('drag-over');"
+             ondragleave="this.classList.remove('drag-over');"
+             ondrop="onDrop(event, this)"
+             style="min-height:52px; background:#fff; border-radius:3px;
+                    display:flex; align-items:center; justify-content:center;
+                    cursor:default; transition:background .15s;">
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+    <div style="text-align:center; font-size:.78rem; color:#9ca3af; margin-top:4px;">
+      hinten
+    </div>
+  </div>
+
+  <!-- Schülerliste -->
+  <div style="width:190px; flex-shrink:0;">
+    <p style="font-size:.85rem; font-weight:600; margin:0 0 .4rem;">Schüler</p>
+    <div id="schueler-liste"
+         style="min-height:80px; border:1px dashed #d1d5db; border-radius:.4rem;
+                padding:6px; background:#f9fafb;"
+         ondragover="event.preventDefault(); this.classList.add('drag-over');"
+         ondragleave="this.classList.remove('drag-over');"
+         ondrop="onDropList(event, this)">
+      <!-- wird per JS befüllt -->
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .grid-cell.drag-over { background: #dbeafe !important; }
+  #schueler-liste.drag-over { background: #fef9c3 !important; }
+  .schueler-chip {
+    font-size: .72rem; font-weight: 600; padding: 2px 5px;
+    border-radius: 3px; cursor: grab; user-select: none;
+    background: #3b82f6; color: #fff; text-align: center;
+    line-height: 1.3; word-break: break-word; width: 100%;
+    box-sizing: border-box;
+  }
+  .schueler-chip:active { cursor: grabbing; }
+  .list-chip {
+    font-size: .8rem; padding: 4px 7px; margin-bottom: 4px;
+    border-radius: .3rem; cursor: grab; user-select: none;
+    background: #e0e7ff; color: #1e3a8a; display: block;
+  }
+  .list-chip:active { cursor: grabbing; }
+</style>
+
+<script>
+// Stammdaten aus Jinja
+const SCHUELER = {
+  {% for s in schueler %}
+  {{ s.id }}: { id: {{ s.id }}, name: "{{ s.nachname }}, {{ s.vorname }}" },
+  {% endfor %}
+};
+
+const PLATZ_MAP = {
+  {% for sid, pos in platz_map.items() %}
+  {{ sid }}: { reihe: {{ pos.reihe }}, spalte: {{ pos.spalte }} },
+  {% endfor %}
+};
+
+// State: schueler_id → {reihe, spalte} | null
+const state = {};  // schueler_id → {reihe, spalte} | null
+
+function init() {
+  // Alle Schüler in state einlesen
+  for (const sid in SCHUELER) {
+    state[sid] = PLATZ_MAP[sid] || null;
+  }
+  render();
+}
+
+function render() {
+  // Grid leeren
+  document.querySelectorAll('.grid-cell').forEach(cell => {
+    cell.innerHTML = '';
+    cell.removeAttribute('data-schueler');
+  });
+
+  // Platzierte Schüler ins Grid
+  for (const sid in state) {
+    if (state[sid]) {
+      const { reihe, spalte } = state[sid];
+      const cell = cellAt(reihe, spalte);
+      if (cell) {
+        cell.dataset.schueler = sid;
+        cell.innerHTML = chipHtml(sid, 'grid');
+      }
+    }
+  }
+
+  // Unplatzierte Schüler in Liste
+  const liste = document.getElementById('schueler-liste');
+  liste.innerHTML = '';
+  const unplatziert = Object.keys(SCHUELER)
+    .filter(sid => !state[sid])
+    .sort((a, b) => SCHUELER[a].name.localeCompare(SCHUELER[b].name));
+  if (unplatziert.length === 0) {
+    liste.innerHTML = '<small style="color:#9ca3af;">Alle platziert ✓</small>';
+  }
+  unplatziert.forEach(sid => {
+    const el = document.createElement('div');
+    el.className = 'list-chip';
+    el.draggable = true;
+    el.dataset.schueler = sid;
+    el.textContent = SCHUELER[sid].name;
+    el.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('schueler_id', sid);
+      e.dataTransfer.setData('from', 'list');
+    });
+    liste.appendChild(el);
+  });
+}
+
+function chipHtml(sid, from) {
+  return `<div class="schueler-chip" draggable="true"
+    ondragstart="event.dataTransfer.setData('schueler_id','${sid}'); event.dataTransfer.setData('from','${from}');"
+    title="${SCHUELER[sid].name}">${SCHUELER[sid].name}</div>`;
+}
+
+function cellAt(reihe, spalte) {
+  return document.querySelector(`.grid-cell[data-reihe="${reihe}"][data-spalte="${spalte}"]`);
+}
+
+function onDrop(event, cell) {
+  event.preventDefault();
+  cell.classList.remove('drag-over');
+  const sid = event.dataTransfer.getData('schueler_id');
+  const from = event.dataTransfer.getData('from');
+  const targetReihe = parseInt(cell.dataset.reihe);
+  const targetSpalte = parseInt(cell.dataset.spalte);
+
+  // Wenn Ziel belegt: tauschen oder verdrängen
+  const vorhandener = cell.dataset.schueler;
+  if (vorhandener && vorhandener !== sid) {
+    // Vorhandenen an alte Position des gezogenen setzen (tauschen)
+    if (from === 'grid' && state[sid]) {
+      state[vorhandener] = { reihe: state[sid].reihe, spalte: state[sid].spalte };
+    } else {
+      state[vorhandener] = null;  // In Liste zurück
+    }
+  }
+
+  // Gezogenen platzieren
+  if (from === 'grid' && state[sid]) {
+    // Alte Zelle freigeben wird durch state[sid] Überschreibung erledigt
+  }
+  state[sid] = { reihe: targetReihe, spalte: targetSpalte };
+  render();
+}
+
+function onDropList(event, liste) {
+  event.preventDefault();
+  liste.classList.remove('drag-over');
+  const sid = event.dataTransfer.getData('schueler_id');
+  state[sid] = null;
+  render();
+}
+
+async function sitzplanSpeichern() {
+  const status = document.getElementById('save-status');
+  status.textContent = '⏳ Speichern…';
+  const layout = [];
+  for (const sid in state) {
+    if (state[sid]) {
+      layout.push({ schueler_id: parseInt(sid), reihe: state[sid].reihe, spalte: state[sid].spalte });
+    }
+  }
+  const resp = await fetch('/ui/klassen/{{ klasse.id }}/sitzplan', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(layout),
+  });
+  status.textContent = resp.ok ? '✓ Gespeichert' : '❌ Fehler';
+  setTimeout(() => { status.textContent = ''; }, 3000);
+}
+
+init();
+</script>
+{% endblock %}

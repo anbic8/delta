@@ -197,6 +197,43 @@ def klasse_detail(kl_id: int, request: Request, db: Session = Depends(get_db)):
     })
 
 
+# ── Sitzplan ─────────────────────────────────────────────────
+
+@router.get("/klassen/{kl_id}/sitzplan")
+def sitzplan_view(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.sitzplan import SitzplanPlatz
+    kl = db.get(Klasse, kl_id)
+    schueler_qs = (
+        db.query(Schueler)
+        .filter(Schueler.klasse_id == kl_id, Schueler.geloescht_am.is_(None))
+        .order_by(Schueler.nachname, Schueler.vorname)
+        .all()
+    )
+    plaetze = db.query(SitzplanPlatz).filter(SitzplanPlatz.klasse_id == kl_id).all()
+    platz_map = {p.schueler_id: {"reihe": p.reihe, "spalte": p.spalte} for p in plaetze}
+    return templates.TemplateResponse(request, "sitzplan.html", {
+        "klasse": kl, "schueler": schueler_qs, "platz_map": platz_map,
+        "msg": request.query_params.get("msg"),
+    })
+
+
+@router.post("/klassen/{kl_id}/sitzplan")
+async def sitzplan_speichern(kl_id: int, request: Request, db: Session = Depends(get_db)):
+    from app.models.sitzplan import SitzplanPlatz
+    import json as _json
+    body = await request.json()
+    db.query(SitzplanPlatz).filter(SitzplanPlatz.klasse_id == kl_id).delete()
+    for eintrag in body:
+        db.add(SitzplanPlatz(
+            klasse_id=kl_id,
+            schueler_id=int(eintrag["schueler_id"]),
+            reihe=int(eintrag["reihe"]),
+            spalte=int(eintrag["spalte"]),
+        ))
+    db.commit()
+    return {"ok": True}
+
+
 # ── Grundwissen-Abfragen CSV-Import ──────────────────────────
 
 @router.post("/klassen/{kl_id}/grundwissen-csv-import")
