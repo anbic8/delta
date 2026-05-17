@@ -1896,7 +1896,7 @@ def _gw_kapitel_liste(db):
 def grundwissen_liste(request: Request, js: str = "", kap: str = "", db: Session = Depends(get_db)):
     from app.models.grundwissen import Grundwissen as GW
     query = db.query(GW)
-    if js and js.isdigit():
+    if js != "" and (js == "0" or js.isdigit()):
         query = query.filter(GW.jahrgangsstufe == int(js))
     if kap:
         query = query.filter(GW.kapitel == kap)
@@ -1917,9 +1917,10 @@ def grundwissen_suche(request: Request, q: str = "", js: str = "", kap: str = ""
     if q:
         like = f"%{q}%"
         query = query.filter(
-            sa.or_(GW.aufgabe.ilike(like), GW.kapitel.ilike(like), GW.unterkapitel.ilike(like))
+            sa.or_(GW.aufgabe.ilike(like), GW.kapitel.ilike(like),
+                   GW.unterkapitel.ilike(like), GW.frage.ilike(like))
         )
-    if js and js.isdigit():
+    if js != "" and (js == "0" or js.isdigit()):
         query = query.filter(GW.jahrgangsstufe == int(js))
     if kap:
         query = query.filter(GW.kapitel == kap)
@@ -1941,15 +1942,20 @@ def grundwissen_erstellen(
     jahrgangsstufe: int = Form(...),
     kapitel: str = Form(""), kapitel_frei: str = Form(""),
     unterkapitel_sel: str = Form(""), unterkapitel_frei: str = Form(""),
-    aufgabe: str = Form(...), loesung: str = Form(""), theorielink: str = Form(""),
+    aufgabe: str = Form(...), loesung: str = Form(""), frage: str = Form(""),
+    wird_abgefragt: str = Form(""), theorielink: str = Form(""),
     aufgabe_pool_id: str = Form(""),
     db: Session = Depends(get_db),
 ):
     from app.models.grundwissen import Grundwissen as GW
     kap = kapitel_frei.strip() or kapitel.strip() or "–"
     uk = unterkapitel_frei.strip() or unterkapitel_sel.strip() or None
-    g = GW(jahrgangsstufe=jahrgangsstufe, kapitel=kap, unterkapitel=uk,
-            aufgabe=aufgabe, loesung=loesung or None, theorielink=theorielink or None)
+    g = GW(
+        jahrgangsstufe=jahrgangsstufe, kapitel=kap, unterkapitel=uk,
+        aufgabe=aufgabe, loesung=loesung or None, frage=frage or None,
+        wird_abgefragt=(wird_abgefragt == "on"),
+        theorielink=theorielink or None,
+    )
     db.add(g)
     db.commit()
     db.refresh(g)
@@ -1964,12 +1970,14 @@ def grundwissen_erstellen(
 @router.get("/grundwissen/{gid}")
 def grundwissen_detail(gid: int, request: Request, db: Session = Depends(get_db)):
     from app.models.grundwissen import Grundwissen as GW, AufgabeGrundwissen
-    g = db.get(GW, gid)
+    from sqlalchemy.orm import joinedload
+    g = db.query(GW).options(joinedload(GW.voraussetzungen)).filter(GW.id == gid).first()
     verwendungen = db.query(AufgabeGrundwissen).filter(AufgabeGrundwissen.grundwissen_id == gid).all()
     aufgaben_alle = db.query(Aufgabe).order_by(Aufgabe.titel).all()
+    alle_gw = db.query(GW).filter(GW.id != gid).order_by(GW.jahrgangsstufe, GW.kapitel, GW.aufgabe).all()
     return templates.TemplateResponse(request, "grundwissen_detail.html", {
         "eintrag": g, "verwendungen": verwendungen,
-        "aufgaben_alle": aufgaben_alle,
+        "aufgaben_alle": aufgaben_alle, "alle_gw": alle_gw,
         "msg": request.query_params.get("msg"),
     })
 
@@ -1992,7 +2000,8 @@ def grundwissen_aufgabe_verknuepfen(gid: int, aufgabe_id: str = Form(""), db: Se
 def grundwissen_bearbeiten(
     gid: int,
     jahrgangsstufe: int = Form(...), kapitel: str = Form(...), unterkapitel: str = Form(""),
-    aufgabe: str = Form(...), loesung: str = Form(""), theorielink: str = Form(""),
+    aufgabe: str = Form(...), loesung: str = Form(""), frage: str = Form(""),
+    wird_abgefragt: str = Form(""), theorielink: str = Form(""),
     db: Session = Depends(get_db),
 ):
     from app.models.grundwissen import Grundwissen as GW
@@ -2002,9 +2011,36 @@ def grundwissen_bearbeiten(
     g.unterkapitel = unterkapitel or None
     g.aufgabe = aufgabe
     g.loesung = loesung or None
+    g.frage = frage or None
+    g.wird_abgefragt = (wird_abgefragt == "on")
     g.theorielink = theorielink or None
     db.commit()
     return REDIRECT(f"/ui/grundwissen/{gid}?msg=Gespeichert")
+
+
+@router.post("/grundwissen/{gid}/voraussetzung-hinzufuegen")
+def gw_voraussetzung_hinzufuegen(gid: int, voraussetzung_id: str = Form(""), db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW
+    from sqlalchemy.orm import joinedload
+    if not voraussetzung_id.strip().isdigit():
+        return REDIRECT(f"/ui/grundwissen/{gid}")
+    vid = int(voraussetzung_id)
+    g = db.query(GW).options(joinedload(GW.voraussetzungen)).filter(GW.id == gid).first()
+    v = db.get(GW, vid)
+    if v and v not in g.voraussetzungen:
+        g.voraussetzungen.append(v)
+        db.commit()
+    return REDIRECT(f"/ui/grundwissen/{gid}?msg=Voraussetzung+hinzugefügt")
+
+
+@router.post("/grundwissen/{gid}/voraussetzung-entfernen/{vid}")
+def gw_voraussetzung_entfernen(gid: int, vid: int, db: Session = Depends(get_db)):
+    from app.models.grundwissen import Grundwissen as GW
+    from sqlalchemy.orm import joinedload
+    g = db.query(GW).options(joinedload(GW.voraussetzungen)).filter(GW.id == gid).first()
+    g.voraussetzungen = [v for v in g.voraussetzungen if v.id != vid]
+    db.commit()
+    return REDIRECT(f"/ui/grundwissen/{gid}?msg=Voraussetzung+entfernt")
 
 
 @router.post("/grundwissen/{gid}/loeschen")

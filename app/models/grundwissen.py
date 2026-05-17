@@ -1,19 +1,29 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
+
+# Selbstreferentielle M2M-Tabelle fuer GW-Voraussetzungen
+grundwissen_voraussetzungen = Table(
+    "grundwissen_voraussetzungen",
+    Base.metadata,
+    Column("gw_id", Integer, ForeignKey("grundwissen.id", ondelete="CASCADE"), primary_key=True),
+    Column("voraussetzung_id", Integer, ForeignKey("grundwissen.id", ondelete="CASCADE"), primary_key=True),
+)
 
 
 class Grundwissen(Base):
     __tablename__ = "grundwissen"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    jahrgangsstufe: Mapped[int] = mapped_column(Integer)
+    jahrgangsstufe: Mapped[int] = mapped_column(Integer)  # 0 = GS (Grundschule)
     kapitel: Mapped[str] = mapped_column(String(100))
     unterkapitel: Mapped[str | None] = mapped_column(String(100), nullable=True)
     aufgabe: Mapped[str] = mapped_column(Text)
     loesung: Mapped[str | None] = mapped_column(Text, nullable=True)
+    frage: Mapped[str | None] = mapped_column(Text, nullable=True)
+    wird_abgefragt: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     theorielink: Mapped[str | None] = mapped_column(Text, nullable=True)
     erstellt_am: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
@@ -22,6 +32,12 @@ class Grundwissen(Base):
     )
     aufgaben_direkt: Mapped[list["Aufgabe"]] = relationship(
         "Aufgabe", foreign_keys="[Aufgabe.grundwissen_id]", back_populates="grundwissen"
+    )
+    voraussetzungen: Mapped[list["Grundwissen"]] = relationship(
+        "Grundwissen",
+        secondary=grundwissen_voraussetzungen,
+        primaryjoin="Grundwissen.id == grundwissen_voraussetzungen.c.gw_id",
+        secondaryjoin="Grundwissen.id == grundwissen_voraussetzungen.c.voraussetzung_id",
     )
 
 
@@ -37,7 +53,7 @@ class AufgabeGrundwissen(Base):
 
 
 class SchuelerGrundwissenFehler(Base):
-    """Markiert welches Grundwissen ein Schüler bei einer bestimmten Aufgabe nicht beherrscht hat."""
+    """Markiert welches GW ein Schueler bei einer Aufgabe nicht beherrscht hat."""
     __tablename__ = "schueler_grundwissen_fehler"
     __table_args__ = (UniqueConstraint("schueler_id", "leistung_aufgabe_id", "grundwissen_id"),)
 

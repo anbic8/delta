@@ -8,7 +8,12 @@
   <form method="post" action="/ui/grundwissen" style="flex:1; min-width:0;">
     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
       <label>Jahrgangsstufe
-        <input type="number" name="jahrgangsstufe" min="5" max="13" required placeholder="5–13">
+        <select name="jahrgangsstufe" required>
+          <option value="0">GS (Grundschule)</option>
+          {% for j in range(5, 14) %}
+          <option value="{{ j }}" {% if j == 5 %}selected{% endif %}>Klasse {{ j }}</option>
+          {% endfor %}
+        </select>
       </label>
       <label>Kapitel
         <select name="kapitel" id="gw-kapitel-neu"
@@ -35,11 +40,19 @@
     <label style="margin-top:.75rem;">Aufgabe / Satz / Definition
       <textarea name="aufgabe" rows="4" required placeholder="z.B. Berechne den Flächeninhalt… oder: Pythagoras: a² + b² = c²"></textarea>
     </label>
+    <label>Frage (optional)
+      <textarea name="frage" rows="2" placeholder="z.B. Wie lautet der Satz des Pythagoras?"></textarea>
+    </label>
     <label>Lösung (optional)
       <textarea name="loesung" rows="3" placeholder="Musterlösung, Formel, Erklärung…"></textarea>
     </label>
     <label>Theorielink (optional)
       <input type="url" name="theorielink" placeholder="https://…">
+    </label>
+
+    <label style="margin-top:.5rem; display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+      <input type="checkbox" name="wird_abgefragt" style="width:auto; margin:0;">
+      Wird regelmäßig abgefragt
     </label>
 
     <div style="margin-top:.75rem;">

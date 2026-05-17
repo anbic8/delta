@@ -22,6 +22,7 @@
           hx-include="[name='q'],[name='kap']"
           style="width:auto;">
     <option value="">Alle Klassen</option>
+    <option value="0" {% if js_filter == "0" %}selected{% endif %}>GS (Grundschule)</option>
     {% for j in range(5, 14) %}
     <option value="{{ j }}" {% if js_filter == j|string %}selected{% endif %}>Klasse {{ j }}</option>
     {% endfor %}

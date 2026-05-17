@@ -12,11 +12,12 @@
   <tbody>
     {% for g in eintraege %}
     <tr>
-      <td>{{ g.jahrgangsstufe }}</td>
+      <td>{{ g.jahrgangsstufe | jg_label }}</td>
       <td><small>{{ g.kapitel }}</small></td>
       <td><small>{{ g.unterkapitel or '–' }}</small></td>
       <td>
         <a href="/ui/grundwissen/{{ g.id }}">{{ g.aufgabe | truncate(60) }}</a>
+        {% if g.wird_abgefragt %}<span class="badge" style="background:#dbeafe;color:#1e40af;font-size:.7rem;margin-left:.3rem;">wird abgefragt</span>{% endif %}
         {% if g.theorielink %}<small> <a href="{{ g.theorielink }}" target="_blank" rel="noopener">🔗</a></small>{% endif %}
       </td>
       <td>

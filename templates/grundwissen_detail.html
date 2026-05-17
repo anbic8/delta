@@ -4,15 +4,21 @@
 <p><a href="/ui/grundwissen">← Grundwissen</a></p>
 <h2>Grundwissen-Eintrag</h2>
 <p>
-  <span class="badge">Klasse {{ eintrag.jahrgangsstufe }}</span>
+  <span class="badge">Klasse {{ eintrag.jahrgangsstufe | jg_label }}</span>
   <span class="badge">{{ eintrag.kapitel }}</span>
   {% if eintrag.unterkapitel %}<span class="badge">{{ eintrag.unterkapitel }}</span>{% endif %}
+  {% if eintrag.wird_abgefragt %}<span class="badge" style="background:#dbeafe;color:#1e40af;">wird abgefragt</span>{% endif %}
 </p>
 
 <div class="r-grid-2">
   <section>
     <h3>Aufgabe / Satz</h3>
     <div style="background:#f8f9fa; padding:1rem; border-radius:.5rem; white-space:pre-wrap;">{{ eintrag.aufgabe }}</div>
+
+    {% if eintrag.frage %}
+    <h4 style="margin-top:1rem;">Frage</h4>
+    <div style="background:#f0f9ff; padding:.75rem 1rem; border-radius:.5rem; white-space:pre-wrap;">{{ eintrag.frage }}</div>
+    {% endif %}
 
     {% if eintrag.loesung %}
     <details style="margin-top:1rem;">
@@ -31,7 +37,12 @@
       <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/bearbeiten" style="flex:1; min-width:0;">
         <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:.5rem;">
           <label>Jahrgangsstufe
-            <input type="number" name="jahrgangsstufe" min="5" max="13" value="{{ eintrag.jahrgangsstufe }}" required>
+            <select name="jahrgangsstufe" required>
+              <option value="0" {% if eintrag.jahrgangsstufe == 0 %}selected{% endif %}>GS (Grundschule)</option>
+              {% for j in range(5, 14) %}
+              <option value="{{ j }}" {% if eintrag.jahrgangsstufe == j %}selected{% endif %}>Klasse {{ j }}</option>
+              {% endfor %}
+            </select>
           </label>
           <label>Kapitel
             <input type="text" name="kapitel" value="{{ eintrag.kapitel }}" required>
@@ -43,13 +54,20 @@
         <label style="margin-top:.5rem;">Aufgabe / Satz
           <textarea name="aufgabe" rows="4" required>{{ eintrag.aufgabe }}</textarea>
         </label>
+        <label>Frage (optional)
+          <textarea name="frage" rows="2">{{ eintrag.frage or '' }}</textarea>
+        </label>
         <label>Lösung
           <textarea name="loesung" rows="3">{{ eintrag.loesung or '' }}</textarea>
         </label>
         <label>Theorielink
           <input type="url" name="theorielink" value="{{ eintrag.theorielink or '' }}">
         </label>
-        <button type="submit" style="margin-top:.5rem;">Speichern</button>
+        <label style="margin-top:.5rem; display:flex; align-items:center; gap:.5rem; cursor:pointer;">
+          <input type="checkbox" name="wird_abgefragt" style="width:auto; margin:0;" {% if eintrag.wird_abgefragt %}checked{% endif %}>
+          Wird regelmäßig abgefragt
+        </label>
+        <button type="submit" style="margin-top:.75rem;">Speichern</button>
       </form>
       {% include "latex_spicker.html" %}
       </div>
@@ -85,6 +103,41 @@
           {% endfor %}
         </select>
         <button type="submit" style="margin-top:.5rem;">Speichern</button>
+      </form>
+    </details>
+
+    <h3 style="margin-top:1.5rem;">Voraussetzungen (andere GW)</h3>
+    <small class="hint">Welches Grundwissen muss bekannt sein, um diesen Eintrag zu verstehen.</small>
+    {% if eintrag.voraussetzungen %}
+    <ul style="padding-left:1.25rem; margin-top:.5rem;">
+      {% for v in eintrag.voraussetzungen %}
+      <li style="margin-bottom:.25rem;">
+        <a href="/ui/grundwissen/{{ v.id }}">{{ v.aufgabe | truncate(60) }}</a>
+        <span style="font-size:.75rem; color:#6c757d;">(Kl. {{ v.jahrgangsstufe | jg_label }} · {{ v.kapitel }})</span>
+        <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/voraussetzung-entfernen/{{ v.id }}" style="display:inline;">
+          <button type="submit" class="outline contrast" style="padding:.1rem .35rem; font-size:.7rem; margin-left:.4rem;">✕</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p style="margin-top:.5rem;"><small style="color:#6c757d;">Keine Voraussetzungen verknüpft.</small></p>
+    {% endif %}
+
+    <details style="margin-top:.75rem;">
+      <summary>Voraussetzung hinzufügen</summary>
+      <form method="post" action="/ui/grundwissen/{{ eintrag.id }}/voraussetzung-hinzufuegen" style="margin-top:.5rem;">
+        <label style="margin-bottom:.25rem; display:block;">Grundwissen auswählen</label>
+        <input type="search" placeholder="Filtern…" autocomplete="off"
+               oninput="deltaFilterSelect(this, document.getElementById('gw-voraus-{{ eintrag.id }}'))"
+               style="margin-bottom:.25rem; max-width:100%;">
+        <select name="voraussetzung_id" id="gw-voraus-{{ eintrag.id }}">
+          <option value="">– auswählen –</option>
+          {% for g in alle_gw %}
+          <option value="{{ g.id }}">Kl.{{ g.jahrgangsstufe | jg_label }} · {{ g.kapitel }}{% if g.unterkapitel %} › {{ g.unterkapitel }}{% endif %}: {{ g.aufgabe | truncate(50) }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" style="margin-top:.5rem;">Hinzufügen</button>
       </form>
     </details>
 

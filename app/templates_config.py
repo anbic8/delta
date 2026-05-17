@@ -36,3 +36,14 @@ def afb_label(value) -> str:
 
 
 templates.env.filters["afb_label"] = afb_label
+
+
+def jg_label(value) -> str:
+    """Gibt 'GS' für 0, sonst die Zahl als String zurück."""
+    try:
+        return "GS" if int(value) == 0 else str(int(value))
+    except (TypeError, ValueError):
+        return str(value)
+
+
+templates.env.filters["jg_label"] = jg_label
